@@ -2,6 +2,7 @@ import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 import AutoFadeCarousel from '../components/AutoFadeCarousel';
 import { FiPhone, FiMail, FiGlobe, FiMapPin } from 'react-icons/fi';
 import { RiInstagramLine, RiTiktokLine } from 'react-icons/ri';
@@ -255,6 +256,7 @@ const Contact: React.FC<ContactPageProps> = () => {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 };

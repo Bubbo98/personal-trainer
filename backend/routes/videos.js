@@ -74,6 +74,49 @@ router.get('/', (req, res) => {
     });
 });
 
+// GET /api/videos/categories
+// Get available video categories for the user
+router.get('/categories', (req, res) => {
+    const userId = req.user.userId;
+
+    const db = new sqlite3.Database(dbPath);
+
+    const query = `
+        SELECT DISTINCT v.category, COUNT(*) as video_count
+        FROM videos v
+        INNER JOIN user_video_permissions uvp ON v.id = uvp.video_id
+        WHERE uvp.user_id = ?
+        AND v.is_active = 1
+        AND uvp.is_active = 1
+        AND (uvp.expires_at IS NULL OR uvp.expires_at > CURRENT_TIMESTAMP)
+        AND v.category IS NOT NULL
+        GROUP BY v.category
+        ORDER BY v.category
+    `;
+
+    db.all(query, [userId], (err, categories) => {
+        db.close();
+
+        if (err) {
+            console.error('Database error:', err.message);
+            return res.status(500).json({
+                success: false,
+                error: 'Database error'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                categories: categories.map(cat => ({
+                    name: cat.category,
+                    videoCount: cat.video_count
+                }))
+            }
+        });
+    });
+});
+
 // GET /api/videos/:id
 // Get specific video details and verify access
 router.get('/:id', (req, res) => {
@@ -162,49 +205,6 @@ router.get('/:id', (req, res) => {
                     grantedAt: video.granted_at,
                     expiresAt: video.expires_at
                 }
-            }
-        });
-    });
-});
-
-// GET /api/videos/categories
-// Get available video categories for the user
-router.get('/categories', (req, res) => {
-    const userId = req.user.userId;
-
-    const db = new sqlite3.Database(dbPath);
-
-    const query = `
-        SELECT DISTINCT v.category, COUNT(*) as video_count
-        FROM videos v
-        INNER JOIN user_video_permissions uvp ON v.id = uvp.video_id
-        WHERE uvp.user_id = ?
-        AND v.is_active = 1
-        AND uvp.is_active = 1
-        AND (uvp.expires_at IS NULL OR uvp.expires_at > CURRENT_TIMESTAMP)
-        AND v.category IS NOT NULL
-        GROUP BY v.category
-        ORDER BY v.category
-    `;
-
-    db.all(query, [userId], (err, categories) => {
-        db.close();
-
-        if (err) {
-            console.error('Database error:', err.message);
-            return res.status(500).json({
-                success: false,
-                error: 'Database error'
-            });
-        }
-
-        res.json({
-            success: true,
-            data: {
-                categories: categories.map(cat => ({
-                    name: cat.category,
-                    videoCount: cat.video_count
-                }))
             }
         });
     });

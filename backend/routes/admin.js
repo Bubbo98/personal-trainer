@@ -171,6 +171,65 @@ router.get('/users', (req, res) => {
     });
 });
 
+// GET /api/admin/users/:id/videos
+// Get videos assigned to specific user
+router.get('/users/:id/videos', (req, res) => {
+    const userId = req.params.id;
+
+    if (!userId || isNaN(userId)) {
+        return res.status(400).json({
+            success: false,
+            error: 'Valid user ID is required'
+        });
+    }
+
+    const db = new sqlite3.Database(dbPath);
+
+    db.all(`
+        SELECT
+            v.id,
+            v.title,
+            v.description,
+            v.file_path,
+            v.duration,
+            v.category,
+            uvp.granted_at,
+            uvp.expires_at
+        FROM videos v
+        INNER JOIN user_video_permissions uvp ON v.id = uvp.video_id
+        WHERE uvp.user_id = ?
+        AND v.is_active = 1
+        AND uvp.is_active = 1
+        ORDER BY uvp.granted_at DESC
+    `, [userId], (err, videos) => {
+        db.close();
+
+        if (err) {
+            console.error('Database error:', err.message);
+            return res.status(500).json({
+                success: false,
+                error: 'Database error'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                videos: videos.map(video => ({
+                    id: video.id,
+                    title: video.title,
+                    description: video.description,
+                    filePath: video.file_path,
+                    duration: video.duration,
+                    category: video.category,
+                    grantedAt: video.granted_at,
+                    expiresAt: video.expires_at
+                }))
+            }
+        });
+    });
+});
+
 // POST /api/admin/users/:id/generate-link
 // Generate new login link for user
 router.post('/users/:id/generate-link', (req, res) => {
@@ -449,6 +508,65 @@ router.post('/videos', (req, res) => {
             }
         });
     });
+});
+
+// DELETE /api/admin/videos/:id
+// Delete video (soft delete - marks as inactive)
+router.delete('/videos/:id', (req, res) => {
+    const videoId = req.params.id;
+
+    if (!videoId || isNaN(videoId)) {
+        return res.status(400).json({
+            success: false,
+            error: 'Valid video ID is required'
+        });
+    }
+
+    const db = new sqlite3.Database(dbPath);
+
+    db.run(
+        'UPDATE videos SET is_active = 0 WHERE id = ?',
+        [videoId],
+        function(err) {
+            if (err) {
+                db.close();
+                console.error('Database error:', err.message);
+                return res.status(500).json({
+                    success: false,
+                    error: 'Database error'
+                });
+            }
+
+            if (this.changes === 0) {
+                db.close();
+                return res.status(404).json({
+                    success: false,
+                    error: 'Video not found'
+                });
+            }
+
+            // Also deactivate all user permissions for this video
+            db.run(
+                'UPDATE user_video_permissions SET is_active = 0 WHERE video_id = ?',
+                [videoId],
+                function(err) {
+                    db.close();
+
+                    if (err) {
+                        console.error('Database error updating permissions:', err.message);
+                        // Still return success for video deletion even if permission update fails
+                    }
+
+                    console.log(`Admin ${req.user.username} deleted video ${videoId}`);
+
+                    res.json({
+                        success: true,
+                        message: 'Video deleted successfully'
+                    });
+                }
+            );
+        }
+    );
 });
 
 module.exports = router;

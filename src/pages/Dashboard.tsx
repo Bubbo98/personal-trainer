@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
-import { FiPlay, FiClock, FiGrid, FiLogOut } from 'react-icons/fi';
+import { FiPlay, FiClock, FiGrid, FiLogOut, FiSearch, FiX } from 'react-icons/fi';
 
 // Constants
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
@@ -47,6 +47,7 @@ interface VideoState {
   videos: Video[];
   categories: Category[];
   selectedCategory: string | null;
+  searchQuery: string;
   loading: boolean;
   error: string | null;
 }
@@ -65,6 +66,12 @@ interface CategoryFilterProps {
   categories: Category[];
   selectedCategory: string | null;
   onSelectCategory: (category: string | null) => void;
+}
+
+interface SearchBarProps {
+  searchQuery: string;
+  onSearch: (query: string) => void;
+  onClear: () => void;
 }
 
 // Utility functions
@@ -219,6 +226,42 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
   );
 };
 
+const SearchBar: React.FC<SearchBarProps> = ({
+  searchQuery,
+  onSearch,
+  onClear
+}) => {
+  return (
+    <div className="relative mb-6">
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          {React.createElement(FiSearch as React.ComponentType<{ className?: string }>, { className: "w-5 h-5 text-gray-400" })}
+        </div>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => onSearch(e.target.value)}
+          placeholder="Cerca video per titolo o descrizione..."
+          className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent text-gray-900 placeholder-gray-500"
+        />
+        {searchQuery && (
+          <button
+            onClick={onClear}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-600 transition-colors"
+          >
+            {React.createElement(FiX as React.ComponentType<{ className?: string }>, { className: "w-5 h-5 text-gray-400" })}
+          </button>
+        )}
+      </div>
+      {searchQuery && (
+        <div className="mt-2 text-sm text-gray-600">
+          Ricerca: "{searchQuery}"
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Dashboard: React.FC<DashboardProps> = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
@@ -235,6 +278,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     videos: [],
     categories: [],
     selectedCategory: null,
+    searchQuery: '',
     loading: false,
     error: null
   });
@@ -316,6 +360,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
         videos: videosResponse.data.videos,
         categories: categoriesResponse.data.categories,
         selectedCategory: null,
+        searchQuery: '',
         loading: false,
         error: null
       });
@@ -360,19 +405,46 @@ const Dashboard: React.FC<DashboardProps> = () => {
     initializeDashboard();
   }, [token, navigate, authenticateWithToken, verifyStoredToken, loadVideos]);
 
-  // Filtered videos based on selected category
+  // Filtered videos based on selected category and search query
   const filteredVideos = useMemo(() => {
-    if (!videoState.selectedCategory) {
-      return videoState.videos;
+    let videos = videoState.videos;
+
+    // Filter by category
+    if (videoState.selectedCategory) {
+      videos = videos.filter(video => video.category === videoState.selectedCategory);
     }
-    return videoState.videos.filter(video => video.category === videoState.selectedCategory);
-  }, [videoState.videos, videoState.selectedCategory]);
+
+    // Filter by search query
+    if (videoState.searchQuery.trim()) {
+      const searchTerm = videoState.searchQuery.toLowerCase().trim();
+      videos = videos.filter(video =>
+        video.title.toLowerCase().includes(searchTerm) ||
+        video.description.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    return videos;
+  }, [videoState.videos, videoState.selectedCategory, videoState.searchQuery]);
 
   // Event handlers
   const handleLogout = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
     navigate('/');
   }, [navigate]);
+
+  const handleSearch = useCallback((query: string) => {
+    setVideoState(prev => ({
+      ...prev,
+      searchQuery: query
+    }));
+  }, []);
+
+  const clearSearch = useCallback(() => {
+    setVideoState(prev => ({
+      ...prev,
+      searchQuery: ''
+    }));
+  }, []);
 
   const handleVideoPlay = useCallback((video: Video) => {
     setSelectedVideo(video);
@@ -468,6 +540,13 @@ const Dashboard: React.FC<DashboardProps> = () => {
             />
           )}
 
+          {/* Search Bar */}
+          <SearchBar
+            searchQuery={videoState.searchQuery}
+            onSearch={handleSearch}
+            onClear={clearSearch}
+          />
+
           {/* Videos Grid */}
           {videoState.loading ? (
             <div className="flex items-center justify-center h-64">
@@ -490,22 +569,51 @@ const Dashboard: React.FC<DashboardProps> = () => {
             <div className="text-center py-16">
               {React.createElement(FiGrid as React.ComponentType<{ className?: string }>, { className: "w-16 h-16 text-gray-400 mx-auto mb-4" })}
               <h3 className="text-xl font-semibold text-gray-600 mb-2">
-                Nessun video disponibile
+                {videoState.searchQuery.trim()
+                  ? 'Nessun video trovato'
+                  : videoState.selectedCategory
+                    ? `Nessun video nella categoria "${videoState.selectedCategory}"`
+                    : 'Nessun video disponibile'
+                }
               </h3>
               <p className="text-gray-500">
-                I tuoi video di allenamento appariranno qui quando saranno assegnati.
+                {videoState.searchQuery.trim()
+                  ? `Non ci sono video che corrispondono a "${videoState.searchQuery}"`
+                  : videoState.selectedCategory
+                    ? 'Prova a selezionare una categoria diversa'
+                    : 'I tuoi video di allenamento appariranno qui quando saranno assegnati.'
+                }
               </p>
+              {videoState.searchQuery.trim() && (
+                <button
+                  onClick={clearSearch}
+                  className="mt-4 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+                >
+                  Cancella ricerca
+                </button>
+              )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredVideos.map((video) => (
-                <VideoCard
-                  key={video.id}
-                  video={video}
-                  onPlay={handleVideoPlay}
-                />
-              ))}
-            </div>
+            <>
+              {/* Results count */}
+              {(videoState.searchQuery.trim() || videoState.selectedCategory) && (
+                <div className="mb-4 text-sm text-gray-600">
+                  {filteredVideos.length} video
+                  {videoState.searchQuery.trim() && ` trovati per "${videoState.searchQuery}"`}
+                  {videoState.selectedCategory && ` nella categoria "${videoState.selectedCategory}"`}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredVideos.map((video) => (
+                  <VideoCard
+                    key={video.id}
+                    video={video}
+                    onPlay={handleVideoPlay}
+                  />
+                ))}
+              </div>
+            </>
           )}
 
           {/* Video Stats */}
