@@ -478,8 +478,8 @@ const TermsOfService: React.FC = () => {
                   <p>Codice Fiscale: MRZJSH91S17F205F</p>
                   <p>Partita IVA: 10657880968</p>
                   <p>Via Piero Bottoni 10, 20141 Milano (MI)</p>
-                  <p>Email: [disponibile su richiesta]</p>
-                  <p>Telefono: [disponibile su richiesta]</p>
+                  <p>Email: josh17111991@gmail.com</p>
+                  <p>Telefono: +39 328 206 2823</p>
                 </div>
 
                 <div className="mt-4 p-3 bg-white rounded border-l-4 border-blue-500">

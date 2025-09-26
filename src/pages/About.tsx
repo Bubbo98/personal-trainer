@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
 import ImageCarousel from '../components/ImageCarousel';
+import Reviews from '../components/Reviews';
 import Footer from '../components/Footer';
 import { getTimelineImages } from '../utils/imageLoader';
 
@@ -282,6 +283,11 @@ const About: React.FC<AboutPageProps> = () => {
                           images={getTimelineImages(index)}
                           alt={`${section.title} - Timeline image ${index + 1}`}
                           className="w-full h-full"
+                          autoplay={true}
+                          autoplayInterval={5000}
+                          pauseOnHover={true}
+                          transitionType="fade"
+                          enableSwipe={false}
                         />
                       </div>
                     </div>
@@ -308,6 +314,11 @@ const About: React.FC<AboutPageProps> = () => {
                           images={getTimelineImages(index)}
                           alt={`${section.title} - Timeline image ${index + 1}`}
                           className="w-full h-full rounded-xl"
+                          autoplay={true}
+                          autoplayInterval={5000}
+                          pauseOnHover={true}
+                          transitionType="fade"
+                          enableSwipe={false}
                         />
                       </div>
 
@@ -328,6 +339,7 @@ const About: React.FC<AboutPageProps> = () => {
           </div>
         </section>
       </main>
+      <Reviews type="public" />
       <Footer />
     </div>
   );

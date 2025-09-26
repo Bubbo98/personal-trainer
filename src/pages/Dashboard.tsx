@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
-import { FiPlay, FiClock, FiGrid, FiLogOut, FiSearch, FiX } from 'react-icons/fi';
+import { FiPlay, FiClock, FiGrid, FiLogOut, FiSearch, FiX, FiStar, FiEdit3, FiTrash2 } from 'react-icons/fi';
 
 // Constants
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
@@ -68,6 +69,22 @@ interface CategoryFilterProps {
   onSelectCategory: (category: string | null) => void;
 }
 
+interface Review {
+  id: number;
+  rating: number;
+  title: string;
+  comment: string;
+  isApproved: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface ReviewFormData {
+  rating: number;
+  title: string;
+  comment: string;
+}
+
 interface SearchBarProps {
   searchQuery: string;
   onSearch: (query: string) => void;
@@ -110,6 +127,7 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
 
 // Components
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ video, onClose }) => {
+  const { t } = useTranslation();
   const videoSrc = `${window.location.origin}/videos/${video.filePath}`;
 
   return (
@@ -118,7 +136,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video, onClose }) => {
         <button
           onClick={onClose}
           className="absolute -top-12 right-0 text-white text-xl hover:text-gray-300 z-10"
-          aria-label="Chiudi video"
+          aria-label={t('dashboard.closeVideo')}
         >
           ✕
         </button>
@@ -155,6 +173,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video, onClose }) => {
 };
 
 const VideoCard: React.FC<VideoCardProps> = ({ video, onPlay }) => {
+  const { t } = useTranslation();
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
       <div className="relative aspect-video bg-gray-200">
@@ -162,7 +181,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onPlay }) => {
           <button
             onClick={() => onPlay(video)}
             className="bg-gray-900 text-white p-4 rounded-full hover:bg-gray-800 transition-colors shadow-lg"
-            aria-label={`Riproduci ${video.title}`}
+            aria-label={`${t('dashboard.playVideo')} ${video.title}`}
           >
             {React.createElement(FiPlay as React.ComponentType<{ className?: string }>, { className: "w-8 h-8 ml-1" })}
           </button>
@@ -196,6 +215,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
   selectedCategory,
   onSelectCategory
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-wrap gap-2 mb-8">
       <button
@@ -206,7 +226,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
         }`}
       >
-        Tutti ({categories.reduce((sum, cat) => sum + cat.videoCount, 0)})
+        {t('dashboard.allCategories')} ({categories.reduce((sum, cat) => sum + cat.videoCount, 0)})
       </button>
 
       {categories.map((category) => (
@@ -231,6 +251,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   onSearch,
   onClear
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="relative mb-6">
       <div className="relative">
@@ -241,7 +262,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           type="text"
           value={searchQuery}
           onChange={(e) => onSearch(e.target.value)}
-          placeholder="Cerca video per titolo o descrizione..."
+          placeholder={t('dashboard.searchPlaceholder')}
           className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent text-gray-900 placeholder-gray-500"
         />
         {searchQuery && (
@@ -255,7 +276,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
       </div>
       {searchQuery && (
         <div className="mt-2 text-sm text-gray-600">
-          Ricerca: "{searchQuery}"
+          {t('dashboard.search')}: "{searchQuery}"
         </div>
       )}
     </div>
@@ -265,6 +286,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
 const Dashboard: React.FC<DashboardProps> = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // State
   const [authState, setAuthState] = useState<AuthState>({
@@ -284,6 +306,14 @@ const Dashboard: React.FC<DashboardProps> = () => {
   });
 
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [review, setReview] = useState<Review | null>(null);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewFormData, setReviewFormData] = useState<ReviewFormData>({
+    rating: 5,
+    title: '',
+    comment: ''
+  });
 
   // Authentication logic
   const authenticateWithToken = useCallback(async (authToken: string) => {
@@ -342,6 +372,59 @@ const Dashboard: React.FC<DashboardProps> = () => {
     return storedToken;
   }, []);
 
+  // Load user's review
+  const loadUserReview = useCallback(async (authToken: string) => {
+    try {
+      const response = await apiCall('/reviews/my', {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      setReview(response.data.review);
+    } catch (error) {
+      console.error('Failed to load review:', error);
+    }
+  }, []);
+
+  // Submit review
+  const submitReview = useCallback(async (authToken: string) => {
+    try {
+      setReviewLoading(true);
+
+      await apiCall('/reviews', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify(reviewFormData)
+      });
+
+      // Reload user's review
+      await loadUserReview(authToken);
+
+      setShowReviewForm(false);
+      setReviewFormData({ rating: 5, title: '', comment: '' });
+    } catch (error) {
+      console.error('Failed to submit review:', error);
+    } finally {
+      setReviewLoading(false);
+    }
+  }, [reviewFormData, loadUserReview]);
+
+  // Delete review
+  const deleteReview = useCallback(async (authToken: string) => {
+    try {
+      setReviewLoading(true);
+
+      await apiCall('/reviews/my', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+
+      setReview(null);
+    } catch (error) {
+      console.error('Failed to delete review:', error);
+    } finally {
+      setReviewLoading(false);
+    }
+  }, []);
+
   // Load videos
   const loadVideos = useCallback(async (authToken: string) => {
     try {
@@ -390,8 +473,11 @@ const Dashboard: React.FC<DashboardProps> = () => {
           authToken = await verifyStoredToken();
         }
 
-        // Load videos with the authenticated token
-        await loadVideos(authToken);
+        // Load videos and review with the authenticated token
+        await Promise.all([
+          loadVideos(authToken),
+          loadUserReview(authToken)
+        ]);
       } catch (error) {
         console.error('Dashboard initialization failed:', error);
         setAuthState(prev => ({
@@ -403,7 +489,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     };
 
     initializeDashboard();
-  }, [token, navigate, authenticateWithToken, verifyStoredToken, loadVideos]);
+  }, [token, navigate, authenticateWithToken, verifyStoredToken, loadVideos, loadUserReview]);
 
   // Filtered videos based on selected category and search query
   const filteredVideos = useMemo(() => {
@@ -454,6 +540,35 @@ const Dashboard: React.FC<DashboardProps> = () => {
     setSelectedVideo(null);
   }, []);
 
+  // Review handlers
+  const handleReviewSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    const authToken = localStorage.getItem(STORAGE_KEY);
+    if (authToken) {
+      await submitReview(authToken);
+    }
+  }, [submitReview]);
+
+  const handleReviewDelete = useCallback(async () => {
+    if (window.confirm('Sei sicuro di voler eliminare la tua recensione?')) {
+      const authToken = localStorage.getItem(STORAGE_KEY);
+      if (authToken) {
+        await deleteReview(authToken);
+      }
+    }
+  }, [deleteReview]);
+
+  const handleEditReview = useCallback(() => {
+    if (review) {
+      setReviewFormData({
+        rating: review.rating,
+        title: review.title,
+        comment: review.comment
+      });
+      setShowReviewForm(true);
+    }
+  }, [review]);
+
   // Component styles
   const pageClassName = 'min-h-screen bg-gray-50';
   const mainClassName = 'pt-28 sm:pt-40 px-6 lg:px-16 pb-16 lg:pb-20';
@@ -469,7 +584,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-                <p className="text-gray-600">Caricamento dashboard...</p>
+                <p className="text-gray-600">{t('dashboard.loading')}</p>
               </div>
             </div>
           </div>
@@ -512,7 +627,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
           <div className="flex items-center justify-between mb-12">
             <div>
               <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
-                Benvenuto{authState.user?.firstName ? `, ${authState.user.firstName}` : ''}!
+                {t('dashboard.welcome')}{authState.user?.firstName ? `, ${authState.user.firstName}` : ''}!
               </h1>
               <p className="text-gray-600">
                 Ecco i tuoi video di allenamento personalizzati
@@ -525,7 +640,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               aria-label="Logout"
             >
               {React.createElement(FiLogOut as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-              <span className="hidden sm:inline">Esci</span>
+              <span className="hidden sm:inline">{t('dashboard.logout')}</span>
             </button>
           </div>
 
@@ -552,7 +667,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-                <p className="text-gray-600">Caricamento video...</p>
+                <p className="text-gray-600">{t('dashboard.loadingVideos')}</p>
               </div>
             </div>
           ) : videoState.error ? (
@@ -562,7 +677,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                 onClick={() => loadVideos(localStorage.getItem(STORAGE_KEY) || '')}
                 className="bg-gray-900 text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-colors"
               >
-                Riprova
+                {t('dashboard.retry')}
               </button>
             </div>
           ) : filteredVideos.length === 0 ? (
@@ -570,10 +685,10 @@ const Dashboard: React.FC<DashboardProps> = () => {
               {React.createElement(FiGrid as React.ComponentType<{ className?: string }>, { className: "w-16 h-16 text-gray-400 mx-auto mb-4" })}
               <h3 className="text-xl font-semibold text-gray-600 mb-2">
                 {videoState.searchQuery.trim()
-                  ? 'Nessun video trovato'
+                  ? t('dashboard.noVideosFound')
                   : videoState.selectedCategory
-                    ? `Nessun video nella categoria "${videoState.selectedCategory}"`
-                    : 'Nessun video disponibile'
+                    ? `${t('dashboard.noVideosInCategory')} "${videoState.selectedCategory}"`
+                    : t('dashboard.noVideosAvailable')
                 }
               </h3>
               <p className="text-gray-500">
@@ -623,7 +738,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="text-center">
                   <div className="text-3xl font-bold text-gray-900">{videoState.videos.length}</div>
-                  <div className="text-gray-600">Video totali</div>
+                  <div className="text-gray-600">{t('dashboard.totalVideos')}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-gray-900">{videoState.categories.length}</div>
@@ -638,6 +753,162 @@ const Dashboard: React.FC<DashboardProps> = () => {
               </div>
             </div>
           )}
+
+          {/* Review Section */}
+          <div className="mt-16 bg-white rounded-xl p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900">La tua recensione</h3>
+              {!review && !showReviewForm && (
+                <button
+                  onClick={() => setShowReviewForm(true)}
+                  className="bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors flex items-center space-x-2"
+                >
+                  {React.createElement(FiStar as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+                  <span>Lascia una recensione</span>
+                </button>
+              )}
+            </div>
+
+            {review && !showReviewForm ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1">
+                      {[...Array(5)].map((_, i) => (
+                        React.createElement(FiStar as React.ComponentType<{ className?: string }>, {
+                          key: i.toString(),
+                          className: `w-5 h-5 ${i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`
+                        })
+                      ))}
+                    </div>
+                    <span className="text-sm text-gray-600">({review.rating}/5)</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={handleEditReview}
+                      className="text-gray-600 hover:text-gray-800 transition-colors"
+                      disabled={reviewLoading}
+                    >
+                      {React.createElement(FiEdit3 as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+                    </button>
+                    <button
+                      onClick={handleReviewDelete}
+                      className="text-red-600 hover:text-red-800 transition-colors"
+                      disabled={reviewLoading}
+                    >
+                      {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+                    </button>
+                  </div>
+                </div>
+                {review.title && (
+                  <h4 className="font-semibold text-gray-900">{review.title}</h4>
+                )}
+                <p className="text-gray-700">{review.comment}</p>
+                <div className="text-sm text-gray-500">
+                  {review.isApproved ? (
+                    <span className="text-green-600">✓ Recensione approvata e visibile pubblicamente</span>
+                  ) : (
+                    <span className="text-yellow-600">⏳ In attesa di approvazione</span>
+                  )}
+                </div>
+                <div className="text-xs text-gray-400">
+                  Pubblicata il {formatDate(review.createdAt)}
+                  {review.updatedAt !== review.createdAt && (
+                    <span> • {t('dashboard.modifiedOn')} {formatDate(review.updatedAt)}</span>
+                  )}
+                </div>
+              </div>
+            ) : showReviewForm ? (
+              <form onSubmit={handleReviewSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Valutazione
+                  </label>
+                  <div className="flex items-center space-x-1">
+                    {[1, 2, 3, 4, 5].map((rating) => (
+                      <button
+                        key={rating}
+                        type="button"
+                        onClick={() => setReviewFormData(prev => ({ ...prev, rating }))}
+                        className={`w-8 h-8 ${rating <= reviewFormData.rating ? 'text-yellow-400' : 'text-gray-300'} hover:text-yellow-400 transition-colors`}
+                      >
+                        {React.createElement(FiStar as React.ComponentType<{ className?: string }>, {
+                          className: `w-6 h-6 ${rating <= reviewFormData.rating ? 'fill-current' : ''}`
+                        })}
+                      </button>
+                    ))}
+                    <span className="ml-2 text-sm text-gray-600">({reviewFormData.rating}/5)</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Titolo (opzionale)
+                  </label>
+                  <input
+                    type="text"
+                    value={reviewFormData.title}
+                    onChange={(e) => setReviewFormData(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+                    placeholder="Titolo della recensione..."
+                    maxLength={200}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Commento *
+                  </label>
+                  <textarea
+                    value={reviewFormData.comment}
+                    onChange={(e) => setReviewFormData(prev => ({ ...prev, comment: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+                    rows={4}
+                    placeholder="Condividi la tua esperienza con gli allenamenti di Joshua..."
+                    required
+                    minLength={10}
+                    maxLength={1000}
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {reviewFormData.comment.length}/1000 caratteri (minimo 10)
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowReviewForm(false);
+                      setReviewFormData({ rating: 5, title: '', comment: '' });
+                    }}
+                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    disabled={reviewLoading}
+                  >
+                    {t('dashboard.cancel')}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={reviewLoading || reviewFormData.comment.length < 10}
+                    className="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    {reviewLoading && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    )}
+                    <span>{review ? 'Aggiorna recensione' : 'Pubblica recensione'}</span>
+                  </button>
+                </div>
+
+                <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
+                  ℹ️ La tua recensione sarà visibile pubblicamente solo dopo l'approvazione dell'amministratore.
+                </div>
+              </form>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p>Non hai ancora lasciato una recensione.</p>
+                <p className="text-sm">Condividi la tua esperienza con gli allenamenti di Joshua!</p>
+              </div>
+            )}
+          </div>
         </div>
       </main>
 

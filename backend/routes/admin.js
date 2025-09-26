@@ -569,4 +569,236 @@ router.delete('/videos/:id', (req, res) => {
     );
 });
 
+// GET /api/admin/reviews
+// Get all reviews (admin view)
+router.get('/reviews', (req, res) => {
+    const db = new sqlite3.Database(dbPath);
+
+    const query = `
+        SELECT
+            r.id,
+            r.rating,
+            r.title,
+            r.comment,
+            r.is_approved,
+            r.is_featured,
+            r.approved_at,
+            r.approved_by,
+            r.created_at,
+            r.updated_at,
+            u.first_name,
+            u.last_name,
+            u.username,
+            u.email
+        FROM reviews r
+        INNER JOIN users u ON r.user_id = u.id
+        ORDER BY r.created_at DESC
+    `;
+
+    db.all(query, [], (err, reviews) => {
+        db.close();
+
+        if (err) {
+            console.error('Database error:', err.message);
+            return res.status(500).json({
+                success: false,
+                error: 'Database error'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                reviews: reviews.map(review => ({
+                    id: review.id,
+                    rating: review.rating,
+                    title: review.title,
+                    comment: review.comment,
+                    isApproved: review.is_approved,
+                    isFeatured: review.is_featured,
+                    approvedAt: review.approved_at,
+                    approvedBy: review.approved_by,
+                    createdAt: review.created_at,
+                    updatedAt: review.updated_at,
+                    user: {
+                        firstName: review.first_name,
+                        lastName: review.last_name,
+                        username: review.username,
+                        email: review.email
+                    }
+                })),
+                totalCount: reviews.length,
+                pendingCount: reviews.filter(r => !r.is_approved).length,
+                approvedCount: reviews.filter(r => r.is_approved).length,
+                featuredCount: reviews.filter(r => r.is_featured).length
+            }
+        });
+    });
+});
+
+// PUT /api/admin/reviews/:id/approve
+// Approve or disapprove a review
+router.put('/reviews/:id/approve', (req, res) => {
+    const reviewId = req.params.id;
+    const { approved } = req.body;
+
+    if (!reviewId || isNaN(reviewId)) {
+        return res.status(400).json({
+            success: false,
+            error: 'Valid review ID is required'
+        });
+    }
+
+    if (typeof approved !== 'boolean') {
+        return res.status(400).json({
+            success: false,
+            error: 'Approved status must be true or false'
+        });
+    }
+
+    const db = new sqlite3.Database(dbPath);
+
+    const updateQuery = `
+        UPDATE reviews
+        SET is_approved = ?,
+            approved_at = ?,
+            approved_by = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    `;
+
+    const approvedAt = approved ? new Date().toISOString() : null;
+    const approvedBy = approved ? req.user.username : null;
+
+    db.run(updateQuery, [approved ? 1 : 0, approvedAt, approvedBy, reviewId], function(err) {
+        db.close();
+
+        if (err) {
+            console.error('Database error:', err.message);
+            return res.status(500).json({
+                success: false,
+                error: 'Database error'
+            });
+        }
+
+        if (this.changes === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Review not found'
+            });
+        }
+
+        console.log(`Admin ${req.user.username} ${approved ? 'approved' : 'disapproved'} review ${reviewId}`);
+
+        res.json({
+            success: true,
+            message: `Review ${approved ? 'approved' : 'disapproved'} successfully`,
+            data: {
+                reviewId: parseInt(reviewId),
+                isApproved: approved,
+                approvedBy: approvedBy,
+                approvedAt: approvedAt
+            }
+        });
+    });
+});
+
+// PUT /api/admin/reviews/:id/feature
+// Feature or unfeature a review
+router.put('/reviews/:id/feature', (req, res) => {
+    const reviewId = req.params.id;
+    const { featured } = req.body;
+
+    if (!reviewId || isNaN(reviewId)) {
+        return res.status(400).json({
+            success: false,
+            error: 'Valid review ID is required'
+        });
+    }
+
+    if (typeof featured !== 'boolean') {
+        return res.status(400).json({
+            success: false,
+            error: 'Featured status must be true or false'
+        });
+    }
+
+    const db = new sqlite3.Database(dbPath);
+
+    db.run(`
+        UPDATE reviews
+        SET is_featured = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    `, [featured ? 1 : 0, reviewId], function(err) {
+        db.close();
+
+        if (err) {
+            console.error('Database error:', err.message);
+            return res.status(500).json({
+                success: false,
+                error: 'Database error'
+            });
+        }
+
+        if (this.changes === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Review not found'
+            });
+        }
+
+        console.log(`Admin ${req.user.username} ${featured ? 'featured' : 'unfeatured'} review ${reviewId}`);
+
+        res.json({
+            success: true,
+            message: `Review ${featured ? 'featured' : 'unfeatured'} successfully`,
+            data: {
+                reviewId: parseInt(reviewId),
+                isFeatured: featured
+            }
+        });
+    });
+});
+
+// DELETE /api/admin/reviews/:id
+// Delete a review (admin only)
+router.delete('/reviews/:id', (req, res) => {
+    const reviewId = req.params.id;
+
+    if (!reviewId || isNaN(reviewId)) {
+        return res.status(400).json({
+            success: false,
+            error: 'Valid review ID is required'
+        });
+    }
+
+    const db = new sqlite3.Database(dbPath);
+
+    db.run('DELETE FROM reviews WHERE id = ?', [reviewId], function(err) {
+        db.close();
+
+        if (err) {
+            console.error('Database error:', err.message);
+            return res.status(500).json({
+                success: false,
+                error: 'Database error'
+            });
+        }
+
+        if (this.changes === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Review not found'
+            });
+        }
+
+        console.log(`Admin ${req.user.username} deleted review ${reviewId}`);
+
+        res.json({
+            success: true,
+            message: 'Review deleted successfully'
+        });
+    });
+});
+
 module.exports = router;

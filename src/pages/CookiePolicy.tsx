@@ -55,7 +55,7 @@ const CookiePolicy: React.FC = () => {
                 <p className="mb-2"><strong>Codice Fiscale:</strong> MRZJSH91S17F205F</p>
                 <p className="mb-2"><strong>Partita IVA:</strong> 10657880968</p>
                 <p className="mb-2"><strong>Indirizzo:</strong> Via Piero Bottoni 10, 20141 Milano (MI)</p>
-                <p className="mb-2"><strong>Email:</strong> [email disponibile su richiesta]</p>
+                <p className="mb-2"><strong>Email:</strong> josh17111991@gmail.com</p>
                 <p><strong>Sito web:</strong> {window.location.origin}</p>
               </div>
             </section>
@@ -543,8 +543,8 @@ const CookiePolicy: React.FC = () => {
                 <div className="space-y-2">
                   <p><strong>Joshua Maurizio - Personal Trainer</strong></p>
                   <p>Via Piero Bottoni 10, 20141 Milano (MI)</p>
-                  <p>Email: [disponibile su richiesta]</p>
-                  <p>Telefono: [disponibile su richiesta]</p>
+                  <p>Email: josh17111991@gmail.com</p>
+                  <p>Telefono: +39 328 206 2823</p>
                 </div>
 
                 <div className="mt-4 p-3 bg-white rounded border-l-4 border-blue-500">
