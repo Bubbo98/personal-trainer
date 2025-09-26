@@ -31,7 +31,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "build-backend": "cd backend && npm install",
+    "vercel-build": "npm run build && npm run build-backend"
   },
   "eslintConfig": {
     "extends": [

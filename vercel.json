@@ -1,0 +1,47 @@
+{
+  "version": 2,
+  "name": "personal-trainer-app",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    },
+    {
+      "src": "backend/server.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": [
+          "backend/database/**",
+          "backend/middleware/**",
+          "backend/routes/**",
+          "backend/scripts/**"
+        ]
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/backend/server.js"
+    },
+    {
+      "src": "/videos/(.*)",
+      "dest": "/public/videos/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/build/$1"
+    }
+  ],
+  "functions": {
+    "backend/server.js": {
+      "includeFiles": "backend/**"
+    }
+  },
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
