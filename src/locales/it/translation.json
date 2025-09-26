@@ -1,0 +1,123 @@
+{
+  "nav": {
+    "about": "Chi sono",
+    "services": "Servizi",
+    "contact": "Contatti"
+  },
+  "hero": {
+    "title": "Hai voglia di cambiamento?",
+    "subtitle": "È arrivato il momento",
+    "consultation": "Prenota la tua consulenza",
+    "discover": "Scopri i miei servizi"
+  },
+  "about": {
+    "title": "CONOSCI JOSHUA",
+    "description": "Mi chiamo Joshua Maurizio e da oltre 10 anni lavoro come personal trainer in alcune delle palestre più rinomate d'Italia (Virgin Active, Hard Candy, Audace Palestre, FitActive, FitExpress, Allenamento Funzionale Milano). Sono certificato AIPT (ASI-CONI) e Burningate, con specializzazioni in bodybuilding natural, functional training, dimagrimento, posturale e calisthenics. Amo accompagnare le persone in un percorso di cambiamento concreto, attraverso allenamenti personalizzati e adatti a ogni esigenza.",
+    "certifications": {
+      "title": "Certificazioni",
+      "list": [
+        "AIPT (ASI-CONI)",
+        "Burningate"
+      ]
+    },
+    "specializations": {
+      "title": "Specializzazioni",
+      "list": [
+        "Corpo libero",
+        "Pesi",
+        "Posturale",
+        "Programmi al femminile"
+      ]
+    },
+    "learnMore": "Scopri di più",
+    "timeline": {
+      "title": "Il Mio Percorso",
+      "sections": [
+        {
+          "title": "Il mio inizio",
+          "content": "A 18 anni ho deciso di cambiare vita e dedicarmi al fitness. Un percorso fatto di impegno, disciplina e voglia di diventare la mia versione migliore."
+        },
+        {
+          "title": "Costanza e determinazione",
+          "content": "Continuo il mio percorso fitness con costanza e determinazione, supportato anche da un nutrizionista. Un cammino di equilibrio tra allenamento, alimentazione e crescita personale."
+        },
+        {
+          "title": "Palestra e disciplina",
+          "content": "Mi alleno in palestra con dedizione per costruire forza, disciplina e benessere. Ogni giorno un passo avanti verso i miei obiettivi."
+        },
+        {
+          "title": "Scoperta del Calisthenics",
+          "content": "Pratico Calisthenics per sviluppare forza, controllo del corpo e agilità. Allenamento costante e passione per superare i miei limiti ogni giorno."
+        },
+        {
+          "title": "Allenamenti con amici",
+          "content": "Pratico Calisthenics al parco con amici, unendo allenamento e divertimento. Ogni sessione è l'occasione per crescere, migliorare e conoscere nuove persone appassionate."
+        },
+        {
+          "title": "Miglioramento continuo",
+          "content": "Miglioro costantemente grazie a allenamenti di Calisthenics ben programmati e al supporto di un nutrizionista di qualità. Un percorso studiato per massimizzare risultati, forza e benessere."
+        },
+        {
+          "title": "Fitness di coppia",
+          "content": "Condivido la mia passione per il fitness con la mia anima gemella, tra allenamenti e crescita insieme. Un percorso di forza, motivazione e divertimento condiviso giorno dopo giorno."
+        },
+        {
+          "title": "Nuova collaborazione",
+          "content": "Inizio una nuova collaborazione lavorativa con la mia compagna, unendo professionalità e sintonia. Insieme trasformiamo idee in progetti concreti, con passione e determinazione."
+        },
+        {
+          "title": "Personal trainer - Pesistica",
+          "content": "Dopo anni di pesistica e lavoro come personal trainer, ho trasformato la mia passione in esperienza concreta. Oggi unisco competenza e dedizione per aiutare gli altri a raggiungere i propri obiettivi."
+        },
+        {
+          "title": "Personal trainer - Calisthenics",
+          "content": "Dopo anni di Calisthenics e esperienza come personal trainer, ho trasformato la passione in competenza. Oggi aiuto gli altri a crescere e a raggiungere i propri obiettivi con metodo e dedizione."
+        },
+        {
+          "title": "Esperienza e conoscenza",
+          "content": "Dopo anni di studi nel fitness e allenamenti di ogni tipo, ho trasformato la passione in esperienza concreta. Oggi unisco conoscenza e pratica per ottenere risultati efficaci e duraturi."
+        }
+      ]
+    }
+  },
+  "services": {
+    "title": "Scopri i miei servizi",
+    "selectService": "Clicca su un servizio per visualizzare i dettagli",
+    "bookSession": "Prenota una sessione",
+    "bookYour": "Prenota il tuo",
+    "selectDateTime": "Seleziona il giorno e l'orario che preferisci",
+    "personal": {
+      "title": "Allenamento 1 to 1",
+      "description": "Allenamenti personalizzati 1 to 1 pensati su misura per te: focus sugli obiettivi, correzione della tecnica e motivazione costante.\nUn percorso esclusivo per massimizzare i risultati in sicurezza ed efficacia."
+    },
+    "calisthenics": {
+      "title": "Servizio Calisthenics & Funzionale",
+      "description": "Allenamenti di Calisthenics e Funzionale per sviluppare forza, mobilità e controllo del corpo.\nUn mix dinamico che migliora prestazioni, resistenza e forma fisica a 360°."
+    },
+    "bodybuilding": {
+      "title": "Servizio Bodybuilding e Performance",
+      "description": "Bodybuilding e Performance per costruire massa muscolare, potenza e definizione.\nUn approccio mirato per incrementare forza, estetica e prestazioni atletiche."
+    },
+    "groupClasses": {
+      "title": "Servizio Corsi di gruppo",
+      "description": "Corsi di gruppo energici e motivanti per allenarsi divertendosi insieme.\nUn mix di dinamismo, socialità e risultati, adatto a ogni livello di preparazione."
+    },
+    "onlineCoaching": {
+      "title": "Servizio Coaching Online",
+      "description": "Coaching online su misura, con programmi personalizzati e supporto costante ovunque tu sia.\nAllenati con flessibilità e raggiungi i tuoi obiettivi con la guida di un professionista."
+    }
+  },
+  "booking": {
+    "title": "Prenota la tua consulenza",
+    "description": "Seleziona il giorno e l'orario che preferisci per la tua consulenza gratuita.",
+    "note": "Durante la chiamata conoscitiva, gestiremo insieme quando vederci per la prima volta in palestra.",
+    "directContact": "Contattami direttamente al numero"
+  },
+  "contact": {
+    "phone": "Tel: 3282062823",
+    "email": "josh17111991@gmail.com",
+    "social": "Social",
+    "website": "Sito web",
+    "bookConsultation": "Prenota la tua consulenza"
+  }
+}
