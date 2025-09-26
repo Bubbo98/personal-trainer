@@ -1,6 +1,7 @@
 import React from 'react';
 import Header from '../components/Header';
 import Hero from '../components/Hero';
+import Reviews from '../components/Reviews';
 import Footer from '../components/Footer';
 
 // Types
@@ -13,6 +14,7 @@ const Home: React.FC<HomePageProps> = () => {
     <div className={pageClassName}>
       <Header />
       <Hero />
+      <Reviews />
       <Footer />
     </div>
   );

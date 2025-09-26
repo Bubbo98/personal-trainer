@@ -119,5 +119,35 @@
     "social": "Social",
     "website": "Website",
     "bookConsultation": "Book your consultation"
+  },
+  "reviews": {
+    "title": "What my clients say",
+    "subtitle": "Read the experiences of those who chose my personalized training journey",
+    "noReviews": "No reviews available at the moment.",
+    "loading": "Loading reviews...",
+    "retry": "Try again",
+    "shareExperience": "Want to share your experience too?",
+    "startJourney": "Start your journey",
+    "previousReviews": "Previous reviews",
+    "nextReviews": "Next reviews",
+    "goToPage": "Go to page"
+  },
+  "dashboard": {
+    "welcome": "Welcome",
+    "logout": "Logout",
+    "loading": "Loading dashboard...",
+    "loadingVideos": "Loading videos...",
+    "retry": "Try again",
+    "searchPlaceholder": "Search videos by title or description...",
+    "allCategories": "All",
+    "totalVideos": "Total videos",
+    "playVideo": "Play",
+    "noVideosFound": "No videos found",
+    "noVideosInCategory": "No videos in category",
+    "noVideosAvailable": "No videos available",
+    "modifiedOn": "Modified on",
+    "cancel": "Cancel",
+    "search": "Search",
+    "closeVideo": "Close video"
   }
 }

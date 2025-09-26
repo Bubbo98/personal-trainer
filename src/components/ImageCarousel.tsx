@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 // Constants
 const SWIPE_THRESHOLD = 50;
 const DRAG_RESISTANCE = 0.3;
-const TRANSITION_DURATION = 300;
+const TRANSITION_DURATION = 800;
 
 // Types
 interface ImageCarouselProps {
@@ -14,6 +14,10 @@ interface ImageCarouselProps {
   showControls?: boolean;
   showIndicators?: boolean;
   enableSwipe?: boolean;
+  autoplay?: boolean;
+  autoplayInterval?: number;
+  pauseOnHover?: boolean;
+  transitionType?: 'slide' | 'fade';
   onImageChange?: (index: number) => void;
   'aria-label'?: string;
 }
@@ -83,31 +87,51 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
   showControls = true,
   showIndicators = true,
   enableSwipe = true,
+  autoplay = false,
+  autoplayInterval = 4000,
+  pauseOnHover = true,
+  transitionType = 'fade',
   onImageChange,
   'aria-label': ariaLabel = "Image carousel"
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const autoplayRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Navigation handlers
+  // Navigation handlers with smooth transitions
+  const changeSlide = useCallback((newIndex: number) => {
+    if (newIndex === currentIndex || isTransitioning) return;
+
+    if (transitionType === 'fade') {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setCurrentIndex(newIndex);
+        onImageChange?.(newIndex);
+        setTimeout(() => setIsTransitioning(false), 50);
+      }, TRANSITION_DURATION / 2);
+    } else {
+      setCurrentIndex(newIndex);
+      onImageChange?.(newIndex);
+    }
+  }, [currentIndex, isTransitioning, transitionType, onImageChange]);
+
   const goToPrevious = useCallback(() => {
     const newIndex = currentIndex === 0 ? images.length - 1 : currentIndex - 1;
-    setCurrentIndex(newIndex);
-    onImageChange?.(newIndex);
-  }, [currentIndex, images.length, onImageChange]);
+    changeSlide(newIndex);
+  }, [currentIndex, images.length, changeSlide]);
 
   const goToNext = useCallback(() => {
     const newIndex = currentIndex === images.length - 1 ? 0 : currentIndex + 1;
-    setCurrentIndex(newIndex);
-    onImageChange?.(newIndex);
-  }, [currentIndex, images.length, onImageChange]);
+    changeSlide(newIndex);
+  }, [currentIndex, images.length, changeSlide]);
 
   const goToSlide = useCallback((index: number) => {
-    if (index >= 0 && index < images.length && index !== currentIndex) {
-      setCurrentIndex(index);
-      onImageChange?.(index);
+    if (index >= 0 && index < images.length) {
+      changeSlide(index);
     }
-  }, [currentIndex, images.length, onImageChange]);
+  }, [images.length, changeSlide]);
 
   const handleNavigate = useCallback((direction: 'prev' | 'next') => {
     if (direction === 'prev') {
@@ -116,6 +140,54 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
       goToNext();
     }
   }, [goToPrevious, goToNext]);
+
+  // Autoplay functionality
+  const startAutoplay = useCallback(() => {
+    if (!autoplay || images.length <= 1) return;
+
+    if (autoplayRef.current) {
+      clearInterval(autoplayRef.current);
+    }
+
+    autoplayRef.current = setInterval(() => {
+      if (!isHovered || !pauseOnHover) {
+        goToNext();
+      }
+    }, autoplayInterval);
+  }, [autoplay, images.length, isHovered, pauseOnHover, autoplayInterval, goToNext]);
+
+  const stopAutoplay = useCallback(() => {
+    if (autoplayRef.current) {
+      clearInterval(autoplayRef.current);
+      autoplayRef.current = null;
+    }
+  }, []);
+
+  // Effect for autoplay
+  useEffect(() => {
+    startAutoplay();
+    return () => stopAutoplay();
+  }, [startAutoplay, stopAutoplay]);
+
+  // Effect for hover state changes
+  useEffect(() => {
+    if (autoplay && pauseOnHover) {
+      if (isHovered) {
+        stopAutoplay();
+      } else {
+        startAutoplay();
+      }
+    }
+  }, [isHovered, autoplay, pauseOnHover, startAutoplay, stopAutoplay]);
+
+  // Hover handlers
+  const handleMouseEnter = useCallback(() => {
+    setIsHovered(true);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsHovered(false);
+  }, []);
 
   // Drag functionality
   const { dragState, handleDragStart, handleDragMove, handleDragEnd } = useDragCarousel(
@@ -140,6 +212,13 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
     if (!enableSwipe) return;
     handleDragEnd();
   }, [enableSwipe, handleDragEnd]);
+
+  const handleMouseLeaveContainer = useCallback(() => {
+    if (enableSwipe) {
+      handleMouseUp();
+    }
+    handleMouseLeave();
+  }, [enableSwipe, handleMouseUp, handleMouseLeave]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (!enableSwipe) return;
@@ -183,10 +262,20 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
     return images.length > 1 ? baseClasses : `${baseClasses} pointer-events-none`;
   }, [className, images.length]);
 
-  const imageStyle = useMemo(() => ({
-    transform: dragState.isDragging ? `translateX(${dragState.dragX * DRAG_RESISTANCE}px)` : 'translateX(0)',
-    transition: dragState.isDragging ? 'none' : `transform ${TRANSITION_DURATION}ms ease-out`
-  }), [dragState.isDragging, dragState.dragX]);
+  const imageStyle = useMemo(() => {
+    if (transitionType === 'fade') {
+      return {
+        opacity: isTransitioning ? 0 : 1,
+        transform: isTransitioning ? 'scale(1.05)' : 'scale(1)',
+        transition: `opacity ${TRANSITION_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1), transform ${TRANSITION_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`
+      };
+    } else {
+      return {
+        transform: dragState.isDragging ? `translateX(${dragState.dragX * DRAG_RESISTANCE}px)` : 'translateX(0)',
+        transition: dragState.isDragging ? 'none' : `transform ${TRANSITION_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`
+      };
+    }
+  }, [transitionType, isTransitioning, dragState.isDragging, dragState.dragX]);
 
   const cursorStyle = useMemo(() => {
     if (!enableSwipe || images.length === 1) return 'default';
@@ -224,7 +313,8 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeaveContainer}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}

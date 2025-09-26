@@ -119,5 +119,35 @@
     "social": "Social",
     "website": "Sito web",
     "bookConsultation": "Prenota la tua consulenza"
+  },
+  "reviews": {
+    "title": "Cosa dicono i miei clienti",
+    "subtitle": "Leggi le esperienze di chi ha scelto il mio percorso di allenamento personalizzato",
+    "noReviews": "Nessuna recensione disponibile al momento.",
+    "loading": "Caricamento recensioni...",
+    "retry": "Riprova",
+    "shareExperience": "Vuoi condividere anche tu la tua esperienza?",
+    "startJourney": "Inizia il tuo percorso",
+    "previousReviews": "Recensioni precedenti",
+    "nextReviews": "Recensioni successive",
+    "goToPage": "Vai alla pagina"
+  },
+  "dashboard": {
+    "welcome": "Benvenuto",
+    "logout": "Esci",
+    "loading": "Caricamento dashboard...",
+    "loadingVideos": "Caricamento video...",
+    "retry": "Riprova",
+    "searchPlaceholder": "Cerca video per titolo o descrizione...",
+    "allCategories": "Tutti",
+    "totalVideos": "Video totali",
+    "playVideo": "Riproduci",
+    "noVideosFound": "Nessun video trovato",
+    "noVideosInCategory": "Nessun video nella categoria",
+    "noVideosAvailable": "Nessun video disponibile",
+    "modifiedOn": "Modificata il",
+    "cancel": "Annulla",
+    "search": "Ricerca",
+    "closeVideo": "Chiudi video"
   }
 }

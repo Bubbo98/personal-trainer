@@ -58,6 +58,23 @@ CREATE TABLE IF NOT EXISTS access_logs (
     FOREIGN KEY (video_id) REFERENCES videos(id)
 );
 
+-- Reviews table - stores user reviews and testimonials
+CREATE TABLE IF NOT EXISTS reviews (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    title VARCHAR(200),
+    comment TEXT NOT NULL,
+    is_approved BOOLEAN DEFAULT 0,
+    is_featured BOOLEAN DEFAULT 0,
+    approved_at DATETIME,
+    approved_by VARCHAR(100),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(user_id) -- One review per user
+);
+
 -- Indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -68,3 +85,7 @@ CREATE INDEX IF NOT EXISTS idx_user_video_permissions_video ON user_video_permis
 CREATE INDEX IF NOT EXISTS idx_access_logs_user ON access_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_access_logs_video ON access_logs(video_id);
 CREATE INDEX IF NOT EXISTS idx_access_logs_time ON access_logs(access_time);
+CREATE INDEX IF NOT EXISTS idx_reviews_user ON reviews(user_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_approved ON reviews(is_approved);
+CREATE INDEX IF NOT EXISTS idx_reviews_featured ON reviews(is_featured);
+CREATE INDEX IF NOT EXISTS idx_reviews_rating ON reviews(rating);

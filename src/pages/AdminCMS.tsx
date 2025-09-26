@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
 import {
   FiUsers,
@@ -12,7 +13,9 @@ import {
   FiLogOut,
   FiCopy,
   FiCheck,
-  FiX
+  FiX,
+  FiStar,
+  FiMessageSquare
 } from 'react-icons/fi';
 
 // Constants
@@ -60,6 +63,25 @@ interface CreateVideoForm {
   duration: number;
   category: string;
   thumbnailPath: string;
+}
+
+interface Review {
+  id: number;
+  rating: number;
+  title: string;
+  comment: string;
+  isApproved: boolean;
+  isFeatured: boolean;
+  createdAt: string;
+  updatedAt: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  user: {
+    firstName: string;
+    lastName: string;
+    username: string;
+    email: string;
+  };
 }
 
 interface AdminState {
@@ -842,14 +864,245 @@ const VideoManagement: React.FC = () => {
   );
 };
 
+const ReviewManagement: React.FC = () => {
+  const { t } = useTranslation();
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const loadReviews = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await apiCall('/admin/reviews');
+      setReviews(response.data.reviews);
+    } catch (error) {
+      console.error('Failed to load reviews:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadReviews();
+  }, [loadReviews]);
+
+  const handleApproveReview = async (reviewId: number, approved: boolean) => {
+    try {
+      await apiCall(`/admin/reviews/${reviewId}/approve`, {
+        method: 'PUT',
+        body: JSON.stringify({ approved })
+      });
+      loadReviews();
+    } catch (error) {
+      alert(`Errore: ${error instanceof Error ? error.message : 'Operazione fallita'}`);
+    }
+  };
+
+  const handleFeatureReview = async (reviewId: number, featured: boolean) => {
+    try {
+      await apiCall(`/admin/reviews/${reviewId}/feature`, {
+        method: 'PUT',
+        body: JSON.stringify({ featured })
+      });
+      loadReviews();
+    } catch (error) {
+      alert(`Errore: ${error instanceof Error ? error.message : 'Operazione fallita'}`);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: number, authorName: string) => {
+    if (window.confirm(`Sei sicuro di voler eliminare la recensione di ${authorName}?`)) {
+      try {
+        await apiCall(`/admin/reviews/${reviewId}`, {
+          method: 'DELETE'
+        });
+        loadReviews();
+      } catch (error) {
+        alert(`Errore: ${error instanceof Error ? error.message : 'Eliminazione fallita'}`);
+      }
+    }
+  };
+
+  const StarRating: React.FC<{ rating: number }> = ({ rating }) => (
+    <div className="flex items-center space-x-1">
+      {[...Array(5)].map((_, i) => (
+        React.createElement(FiStar as React.ComponentType<{ className?: string }>, {
+          key: i.toString(),
+          className: `w-4 h-4 ${i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`
+        })
+      ))}
+    </div>
+  );
+
+  if (loading && reviews.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-gray-900">Gestione Recensioni</h2>
+        <div className="text-sm text-gray-600">
+          {reviews.length} recensioni totali
+        </div>
+      </div>
+
+      {/* Reviews List */}
+      {reviews.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-xl">
+          <p className="text-gray-600">{t('reviews.noReviews')}</p>
+        </div>
+      ) : (
+        <div className="grid gap-6">
+          {reviews.map((review) => (
+            <div key={review.id} className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-4 mb-2">
+                    <h3 className="font-semibold text-gray-900">
+                      {review.user.firstName} {review.user.lastName}
+                    </h3>
+                    <StarRating rating={review.rating} />
+                    <span className="text-sm text-gray-600">({review.rating}/5)</span>
+                  </div>
+
+                  {review.title && (
+                    <h4 className="font-medium text-gray-900 mb-2">{review.title}</h4>
+                  )}
+
+                  <p className="text-gray-700 mb-3 leading-relaxed">{review.comment}</p>
+
+                  <div className="flex items-center space-x-4 text-sm text-gray-500">
+                    <span>Creata: {formatDate(review.createdAt)}</span>
+                    {review.updatedAt !== review.createdAt && (
+                      <span>Modificata: {formatDate(review.updatedAt)}</span>
+                    )}
+                    {review.approvedAt && (
+                      <span>Approvata: {formatDate(review.approvedAt)}</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2 ml-4">
+                  {/* Status badges */}
+                  <div className="flex flex-col space-y-1">
+                    <span className={`text-xs px-2 py-1 rounded-full ${review.isApproved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                      {review.isApproved ? 'Approvata' : 'In attesa'}
+                    </span>
+                    {review.isFeatured && (
+                      <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                        In evidenza
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                <div className="flex space-x-2">
+                  {/* Approve/Reject buttons */}
+                  {!review.isApproved ? (
+                    <button
+                      onClick={() => handleApproveReview(review.id, true)}
+                      className="bg-green-600 text-white px-3 py-1 text-sm rounded-lg hover:bg-green-700 flex items-center space-x-1"
+                    >
+                      {React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+                      <span>Approva</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleApproveReview(review.id, false)}
+                      className="bg-yellow-600 text-white px-3 py-1 text-sm rounded-lg hover:bg-yellow-700 flex items-center space-x-1"
+                    >
+                      {React.createElement(FiX as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+                      <span>Rimuovi approvazione</span>
+                    </button>
+                  )}
+
+                  {/* Feature/Unfeature buttons */}
+                  {review.isApproved && (
+                    !review.isFeatured ? (
+                      <button
+                        onClick={() => handleFeatureReview(review.id, true)}
+                        className="bg-blue-600 text-white px-3 py-1 text-sm rounded-lg hover:bg-blue-700 flex items-center space-x-1"
+                      >
+                        {React.createElement(FiStar as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+                        <span>Metti in evidenza</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleFeatureReview(review.id, false)}
+                        className="bg-gray-600 text-white px-3 py-1 text-sm rounded-lg hover:bg-gray-700 flex items-center space-x-1"
+                      >
+                        {React.createElement(FiStar as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+                        <span>Rimuovi evidenza</span>
+                      </button>
+                    )
+                  )}
+                </div>
+
+                {/* Delete button */}
+                <button
+                  onClick={() => handleDeleteReview(review.id, `${review.user.firstName} ${review.user.lastName}`)}
+                  className="bg-red-600 text-white px-3 py-1 text-sm rounded-lg hover:bg-red-700 flex items-center space-x-1"
+                >
+                  {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+                  <span>Elimina</span>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Summary stats */}
+      {reviews.length > 0 && (
+        <div className="bg-white rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistiche</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-900">{reviews.length}</div>
+              <div className="text-sm text-gray-600">Totali</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">
+                {reviews.filter(r => r.isApproved).length}
+              </div>
+              <div className="text-sm text-gray-600">Approvate</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">
+                {reviews.filter(r => r.isFeatured).length}
+              </div>
+              <div className="text-sm text-gray-600">In evidenza</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-900">
+                {reviews.length > 0 ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1) : '0'}
+              </div>
+              <div className="text-sm text-gray-600">Media voti</div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const AdminCMS: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [adminState, setAdminState] = useState<AdminState>({
     isAuthenticated: false,
     loading: true,
     error: null
   });
-  const [activeTab, setActiveTab] = useState<'users' | 'videos'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'videos' | 'reviews'>('users');
 
   // Check authentication on mount
   useEffect(() => {
@@ -978,10 +1231,28 @@ const AdminCMS: React.FC = () => {
               {React.createElement(FiVideo as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
               <span>Video</span>
             </button>
+
+            <button
+              onClick={() => setActiveTab('reviews')}
+              className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+                activeTab === 'reviews'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+              <span>Recensioni</span>
+            </button>
           </div>
 
           {/* Tab Content */}
-          {activeTab === 'users' ? <UserManagement /> : <VideoManagement />}
+          {activeTab === 'users' ? (
+            <UserManagement />
+          ) : activeTab === 'videos' ? (
+            <VideoManagement />
+          ) : (
+            <ReviewManagement />
+          )}
 
         </div>
       </main>
