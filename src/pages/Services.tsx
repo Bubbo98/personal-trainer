@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import Cal from '@calcom/embed-react';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 
 // Types
 interface Service {
@@ -309,6 +310,7 @@ const Services: React.FC<ServicesPageProps> = () => {
         )}
 
       </main>
+      <Footer />
     </div>
   );
 };

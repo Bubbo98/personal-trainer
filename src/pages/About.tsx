@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
 import ImageCarousel from '../components/ImageCarousel';
+import Footer from '../components/Footer';
 import { getTimelineImages } from '../utils/imageLoader';
 
 // Constants
@@ -327,6 +328,7 @@ const About: React.FC<AboutPageProps> = () => {
           </div>
         </section>
       </main>
+      <Footer />
     </div>
   );
 };

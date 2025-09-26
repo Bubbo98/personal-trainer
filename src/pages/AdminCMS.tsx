@@ -189,6 +189,7 @@ const LoginForm: React.FC<{ onLogin: () => void }> = ({ onLogin }) => {
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
+  const [userVideos, setUserVideos] = useState<Record<number, Video[]>>({});
   const [loading, setLoading] = useState(false);
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -220,6 +221,18 @@ const UserManagement: React.FC = () => {
       setVideos(response.data.videos);
     } catch (error) {
       console.error('Failed to load videos:', error);
+    }
+  }, []);
+
+  const loadUserVideos = useCallback(async (userId: number) => {
+    try {
+      const response = await apiCall(`/admin/users/${userId}/videos`);
+      setUserVideos(prev => ({
+        ...prev,
+        [userId]: response.data.videos
+      }));
+    } catch (error) {
+      console.error('Failed to load user videos:', error);
     }
   }, []);
 
@@ -268,6 +281,15 @@ const UserManagement: React.FC = () => {
     }
   };
 
+  const handleToggleUserDetails = (user: User) => {
+    if (selectedUser?.id === user.id) {
+      setSelectedUser(null);
+    } else {
+      setSelectedUser(user);
+      loadUserVideos(user.id);
+    }
+  };
+
   const handleAssignVideo = async (userId: number, videoId: number) => {
     try {
       await apiCall(`/admin/users/${userId}/videos/${videoId}`, {
@@ -275,6 +297,7 @@ const UserManagement: React.FC = () => {
       });
 
       loadUsers(); // Refresh user data
+      loadUserVideos(userId); // Refresh user's videos
       alert('Video assegnato con successo!');
     } catch (error) {
       alert(`Errore: ${error instanceof Error ? error.message : 'Assegnazione fallita'}`);
@@ -288,6 +311,7 @@ const UserManagement: React.FC = () => {
       });
 
       loadUsers(); // Refresh user data
+      loadUserVideos(userId); // Refresh user's videos
       alert('Accesso video revocato!');
     } catch (error) {
       alert(`Errore: ${error instanceof Error ? error.message : 'Revoca fallita'}`);
@@ -456,7 +480,7 @@ const UserManagement: React.FC = () => {
                       {user.videoCount} video
                     </div>
                     <button
-                      onClick={() => setSelectedUser(selectedUser?.id === user.id ? null : user)}
+                      onClick={() => handleToggleUserDetails(user)}
                       className="text-sm text-blue-600 hover:text-blue-800"
                     >
                       {selectedUser?.id === user.id ? 'Nascondi' : 'Gestisci'}
@@ -488,31 +512,76 @@ const UserManagement: React.FC = () => {
             <h4 className="font-medium text-gray-900 mb-4">
               Gestisci video per {selectedUser.firstName} {selectedUser.lastName}
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {videos.map((video) => (
-                <div key={video.id} className="bg-white p-4 rounded-lg border">
-                  <div className="mb-2">
-                    <div className="font-medium text-sm text-gray-900">{video.title}</div>
-                    <div className="text-xs text-gray-500">
-                      {video.category} • {formatDuration(video.duration)}
+
+            {/* Currently Assigned Videos */}
+            {userVideos[selectedUser.id] && userVideos[selectedUser.id].length > 0 && (
+              <div className="mb-6">
+                <h5 className="font-medium text-sm text-gray-700 mb-3 flex items-center">
+                  {React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: "w-4 h-4 text-green-600 mr-2" })}
+                  Video Assegnati ({userVideos[selectedUser.id].length})
+                </h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {userVideos[selectedUser.id].map((video) => (
+                    <div key={video.id} className="bg-white p-3 rounded-lg border border-green-200 bg-green-50">
+                      <div className="mb-2">
+                        <div className="font-medium text-sm text-gray-900 flex items-center">
+                          {React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: "w-3 h-3 text-green-600 mr-1" })}
+                          {video.title}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {video.category} • {formatDuration(video.duration)}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleRevokeVideo(selectedUser.id, video.id)}
+                        className="w-full bg-red-600 text-white text-xs py-1 px-2 rounded hover:bg-red-700"
+                      >
+                        Revoca Accesso
+                      </button>
                     </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleAssignVideo(selectedUser.id, video.id)}
-                      className="flex-1 bg-green-600 text-white text-xs py-1 px-2 rounded hover:bg-green-700"
-                    >
-                      Assegna
-                    </button>
-                    <button
-                      onClick={() => handleRevokeVideo(selectedUser.id, video.id)}
-                      className="flex-1 bg-red-600 text-white text-xs py-1 px-2 rounded hover:bg-red-700"
-                    >
-                      Revoca
-                    </button>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+            )}
+
+            {/* Available Videos to Assign */}
+            <div>
+              <h5 className="font-medium text-sm text-gray-700 mb-3">
+                Video Disponibili
+              </h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {videos
+                  .filter(video => {
+                    const userHasVideo = userVideos[selectedUser.id]?.some(uv => uv.id === video.id);
+                    return !userHasVideo;
+                  })
+                  .map((video) => (
+                    <div key={video.id} className="bg-white p-3 rounded-lg border">
+                      <div className="mb-2">
+                        <div className="font-medium text-sm text-gray-900">{video.title}</div>
+                        <div className="text-xs text-gray-500">
+                          {video.category} • {formatDuration(video.duration)}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleAssignVideo(selectedUser.id, video.id)}
+                        className="w-full bg-green-600 text-white text-xs py-1 px-2 rounded hover:bg-green-700"
+                      >
+                        Assegna Video
+                      </button>
+                    </div>
+                  ))
+                }
+              </div>
+
+              {videos.filter(video => {
+                const userHasVideo = userVideos[selectedUser.id]?.some(uv => uv.id === video.id);
+                return !userHasVideo;
+              }).length === 0 && (
+                <div className="text-center text-gray-500 text-sm py-8">
+                  Tutti i video sono già stati assegnati a questo utente
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -572,6 +641,23 @@ const VideoManagement: React.FC = () => {
       alert('Video creato con successo!');
     } catch (error) {
       alert(`Errore: ${error instanceof Error ? error.message : 'Creazione fallita'}`);
+    }
+  };
+
+  const handleDeleteVideo = async (videoId: number, videoTitle: string) => {
+    if (!window.confirm(`Sei sicuro di voler eliminare il video "${videoTitle}"?\n\nQuesta azione rimuoverà anche tutti gli accessi degli utenti a questo video.`)) {
+      return;
+    }
+
+    try {
+      await apiCall(`/admin/videos/${videoId}`, {
+        method: 'DELETE'
+      });
+
+      setVideos(prev => prev.filter(video => video.id !== videoId));
+      alert('Video eliminato con successo!');
+    } catch (error) {
+      alert(`Errore: ${error instanceof Error ? error.message : 'Eliminazione fallita'}`);
     }
   };
 
@@ -735,8 +821,18 @@ const VideoManagement: React.FC = () => {
                 <span>Creato: {formatDate(video.createdAt)}</span>
               </div>
 
-              <div className="text-xs text-gray-500 bg-gray-100 rounded p-2">
+              <div className="text-xs text-gray-500 bg-gray-100 rounded p-2 mb-3">
                 <strong>File:</strong> {video.filePath}
+              </div>
+
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => handleDeleteVideo(video.id, video.title)}
+                  className="flex-1 bg-red-600 text-white text-sm py-2 px-3 rounded-lg hover:bg-red-700 flex items-center justify-center space-x-1"
+                >
+                  {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+                  <span>Elimina</span>
+                </button>
               </div>
             </div>
           </div>

@@ -7,6 +7,9 @@ import Services from './pages/Services';
 import Booking from './pages/Booking';
 import Dashboard from './pages/Dashboard';
 import AdminCMS from './pages/AdminCMS';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import CookiePolicy from './pages/CookiePolicy';
 
 function App() {
   return (
@@ -21,6 +24,9 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/:token" element={<Dashboard />} />
           <Route path="/admin" element={<AdminCMS />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/cookie-policy" element={<CookiePolicy />} />
         </Routes>
       </div>
     </Router>

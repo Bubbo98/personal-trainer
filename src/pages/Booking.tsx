@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import Cal from '@calcom/embed-react';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 
 // Constants
 const BOOKING_IMAGE_SRC = '/prenotaLaConsulenza.jpg';
@@ -133,6 +134,7 @@ const Booking: React.FC<BookingPageProps> = () => {
           />
         </div>
       </main>
+      <Footer />
     </div>
   );
 };
