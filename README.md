@@ -52,7 +52,7 @@ npm start
 ### **4. Accesso Admin CMS**
 - URL: `http://localhost:3000/admin`
 - Username: `joshua_admin`
-- Password: `trainer2025!`
+- Password: `Joshua@PT_Milano2025!#Secure`
 
 ## 📁 **Struttura Progetto**
 
@@ -157,19 +157,36 @@ vercel --prod
 ```
 
 ### **Environment Variables**
+
+⚠️ **IMPORTANTE**: Prima del deploy in produzione, genera nuove chiavi sicure!
+
 ```env
 # Frontend
 REACT_APP_API_URL=https://tuodominio.com/api
 
-# Backend
-JWT_SECRET=your-production-secret
+# Backend - MODIFICA QUESTE CHIAVI PER LA PRODUZIONE!
+JWT_SECRET=3c6618153b67e5654191362f29bc197d83b57e4b63a16b321597b6a629f0722488d1284e3faf52fd36bb6ea57fa67ad298b41c51a2e05620a45584a6b069ad46
 DB_PATH=./database/app.db
 NODE_ENV=production
 FRONTEND_URL=https://tuodominio.com
+ADMIN_USERNAME=joshua_admin
+ADMIN_PASSWORD=Joshua@PT_Milano2025!#Secure
+```
+
+### **🔐 Generazione Chiavi Sicure**
+```bash
+# Genera nuovo JWT_SECRET
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+
+# Genera password sicura
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
 ## 📚 **Documentazione**
 
+- [`DEPLOYMENT.md`](./DEPLOYMENT.md) - 🚀 **Guida Deploy in Produzione**
+- [`SECURITY.md`](./SECURITY.md) - 🔐 **Guida Sicurezza (LEGGI PRIMA DEL DEPLOY!)**
+- [`backend/README.md`](./backend/README.md) - Documentazione Backend API
 - [`ADMIN_CMS_GUIDE.md`](./ADMIN_CMS_GUIDE.md) - Guida completa utilizzo CMS
 - [`BACKEND_DOCUMENTATION.md`](./BACKEND_DOCUMENTATION.md) - Documentazione API tecnica
 - [`DEMO_SCRIPT.md`](./DEMO_SCRIPT.md) - Script demo passo-passo

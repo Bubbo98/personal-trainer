@@ -20,16 +20,34 @@ vercel login
 4. Aggiungi le seguenti variabili:
 
 ```env
-# Backend Variables
-JWT_SECRET=your-super-secure-jwt-secret-for-production
+# Backend Variables - ⚠️ GENERA NUOVE CHIAVI PER PRODUZIONE!
+JWT_SECRET=GENERA_NUOVA_CHIAVE_128_CARATTERI_HEX
 DB_PATH=./backend/database/app.db
 NODE_ENV=production
 ADMIN_USERNAME=joshua_admin
-ADMIN_PASSWORD=your-secure-admin-password
+ADMIN_PASSWORD=CAMBIA_CON_PASSWORD_SICURA
 FRONTEND_URL=https://tuodominio.vercel.app
 
 # Frontend Variables
 REACT_APP_API_URL=https://tuodominio.vercel.app/api
+```
+
+### **⚠️ SICUREZZA CRITICA - LEGGI PRIMA DEL DEPLOY!**
+
+**Prima di andare in produzione, DEVI generare nuove chiavi sicure:**
+
+```bash
+# 1. Genera JWT_SECRET sicuro (128 caratteri hex)
+node -e "console.log('JWT_SECRET=' + require('crypto').randomBytes(64).toString('hex'))"
+
+# 2. Genera password admin sicura
+node -e "console.log('ADMIN_PASSWORD=' + require('crypto').randomBytes(32).toString('base64').replace(/[^a-zA-Z0-9]/g, '') + '@Pt2025!')"
+```
+
+**Esempio di chiavi generate (NON usare in produzione):**
+```env
+JWT_SECRET=f8e9a7b2c1d4e6f8a9b2c1d4e6f8a9b2c1d4e6f8a9b2c1d4e6f8a9b2c1d4e6f8a9b2c1d4e6f8a9b2c1d4e6f8a9b2c1d4e6f8a9b2c1d4e6f8
+ADMIN_PASSWORD=Tr@1n3r_M1l@n0_Pr0duct10n_2025!#$ecur3
 ```
 
 ### **3. Deploy**
@@ -88,13 +106,28 @@ vercel-project/
 
 ### **1. Cambia Password Default**
 ```env
-ADMIN_PASSWORD=new-super-secure-password-2025
+ADMIN_PASSWORD=Joshua@PT_Milano_Production_2025!#Secure
 ```
 
-### **2. JWT Secret Sicuro**
+### **2. JWT Secret Sicuro (128 caratteri)**
 ```bash
-# Genera secret casuale
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+# Genera secret casuale 128 caratteri
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+```
+
+### **3. Audit di Sicurezza Pre-Deploy**
+```bash
+# Test lunghezza JWT_SECRET
+node -e "console.log('JWT length:', process.env.JWT_SECRET?.length)"
+
+# Verifica complessità password
+node -e "const pwd = process.env.ADMIN_PASSWORD; console.log('Password strong:', /^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{12,}$/.test(pwd))"
+
+# Security audit dependencies
+npm audit
+
+# Test endpoints sicurezza
+curl -H "Origin: http://malicious-site.com" https://tuodominio.com/api/health
 ```
 
 ### **3. Rimuovi Link Admin dalla Home**
@@ -195,19 +228,42 @@ curl https://tuodominio.com/api/health
 
 ## ✅ **Checklist Pre-Go-Live**
 
+### **🔧 Setup Tecnico**
 - [ ] ✅ Account Vercel configurato
 - [ ] ✅ Repository GitHub collegato
-- [ ] ✅ Environment variables impostate
 - [ ] ✅ Build success locale
 - [ ] ✅ Deploy di test funzionante
+- [ ] ✅ Dominio personalizzato configurato
+- [ ] ✅ SSL certificate attivo
+
+### **🔐 Sicurezza (CRITICO!)**
+- [ ] ✅ JWT_SECRET generato (128 caratteri hex)
+- [ ] ✅ ADMIN_PASSWORD cambiato con password complessa
+- [ ] ✅ Environment variables produzione impostate
+- [ ] ✅ npm audit pulito (no vulnerabilità)
+- [ ] ✅ Test security headers (CORS, Helmet)
+- [ ] ✅ Rate limiting testato
+- [ ] ✅ Link admin rimosso dalla home page
+
+### **🎬 Funzionalità**
 - [ ] ✅ Admin CMS accessibile
 - [ ] ✅ Test creazione utente
 - [ ] ✅ Test accesso cliente
 - [ ] ✅ Video caricati e funzionanti
-- [ ] ✅ Dominio personalizzato configurato
-- [ ] ✅ SSL certificate attivo
-- [ ] ✅ Password production sicure
+- [ ] ✅ Sistema recensioni operativo
+- [ ] ✅ Email notifications (se implementate)
+
+### **📊 Monitoring**
+- [ ] ✅ Health check endpoint funzionante
+- [ ] ✅ Error logging configurato
 - [ ] ✅ Backup database fatto
+- [ ] ✅ Analytics Vercel attivate
+
+### **📚 Documentazione**
+- [ ] ✅ Credenziali admin documentate (sicure)
+- [ ] ✅ Processo backup documentato
+- [ ] ✅ Incident response plan pronto
+- [ ] ✅ Guida utente completa
 
 ---
 
