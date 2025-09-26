@@ -1,0 +1,123 @@
+{
+  "nav": {
+    "about": "About",
+    "services": "Services",
+    "contact": "Contact"
+  },
+  "hero": {
+    "title": "Ready for a change?",
+    "subtitle": "The time has come",
+    "consultation": "Book your consultation",
+    "discover": "Discover my services"
+  },
+  "about": {
+    "title": "MEET JOSHUA",
+    "description": "My name is Joshua Maurizio and for over 10 years I have been working as a personal trainer in some of the most renowned gyms in Italy (Virgin Active, Hard Candy, Audace Palestre, FitActive, FitExpress, Allenamento Funzionale Milano). I am certified AIPT (ASI-CONI) and Burningate, with specializations in natural bodybuilding, functional training, weight loss, postural and calisthenics. I love accompanying people on a journey of concrete change, through personalized training adapted to every need.",
+    "certifications": {
+      "title": "Certifications",
+      "list": [
+        "AIPT (ASI-CONI)",
+        "Burningate"
+      ]
+    },
+    "specializations": {
+      "title": "Specializations",
+      "list": [
+        "Bodyweight training",
+        "Weight training",
+        "Postural training",
+        "Women's programs"
+      ]
+    },
+    "learnMore": "Learn more",
+    "timeline": {
+      "title": "My Journey",
+      "sections": [
+        {
+          "title": "My beginning",
+          "content": "At 18, I decided to change my life and dedicate myself to fitness. A journey made of commitment, discipline and the desire to become my best version."
+        },
+        {
+          "title": "Consistency and determination",
+          "content": "I continue my fitness journey with consistency and determination, also supported by a nutritionist. A path of balance between training, nutrition and personal growth."
+        },
+        {
+          "title": "Gym and discipline",
+          "content": "I train in the gym with dedication to build strength, discipline and well-being. Every day a step forward towards my goals."
+        },
+        {
+          "title": "Discovery of Calisthenics",
+          "content": "I practice Calisthenics to develop strength, body control and agility. Consistent training and passion to overcome my limits every day."
+        },
+        {
+          "title": "Training with friends",
+          "content": "I practice Calisthenics in the park with friends, combining training and fun. Every session is an opportunity to grow, improve and meet new passionate people."
+        },
+        {
+          "title": "Continuous improvement",
+          "content": "I constantly improve thanks to well-programmed Calisthenics workouts and the support of a quality nutritionist. A studied path to maximize results, strength and well-being."
+        },
+        {
+          "title": "Couple fitness",
+          "content": "I share my passion for fitness with my soulmate, between workouts and growing together. A journey of strength, motivation and fun shared day after day."
+        },
+        {
+          "title": "New collaboration",
+          "content": "I start a new work collaboration with my partner, combining professionalism and harmony. Together we transform ideas into concrete projects, with passion and determination."
+        },
+        {
+          "title": "Personal trainer - Weight training",
+          "content": "After years of weight training and working as a personal trainer, I have transformed my passion into concrete experience. Today I combine competence and dedication to help others achieve their goals."
+        },
+        {
+          "title": "Personal trainer - Calisthenics",
+          "content": "After years of Calisthenics and experience as a personal trainer, I have transformed passion into competence. Today I help others grow and achieve their goals with method and dedication."
+        },
+        {
+          "title": "Experience and knowledge",
+          "content": "After years of fitness studies and training of all kinds, I have transformed passion into concrete experience. Today I combine knowledge and practice to obtain effective and lasting results."
+        }
+      ]
+    }
+  },
+  "services": {
+    "title": "Discover my services",
+    "selectService": "Click on a service to view details",
+    "bookSession": "Book a session",
+    "bookYour": "Book your",
+    "selectDateTime": "Select your preferred date and time",
+    "personal": {
+      "title": "1-to-1 Training",
+      "description": "Personalized 1-to-1 training designed just for you: focus on goals, technique correction and constant motivation.\nAn exclusive journey to maximize results in safety and effectiveness."
+    },
+    "calisthenics": {
+      "title": "Calisthenics & Functional Service",
+      "description": "Calisthenics and Functional training to develop strength, mobility and body control.\nA dynamic mix that improves performance, endurance and 360° fitness."
+    },
+    "bodybuilding": {
+      "title": "Bodybuilding & Performance Service",
+      "description": "Bodybuilding and Performance to build muscle mass, power and definition.\nA targeted approach to increase strength, aesthetics and athletic performance."
+    },
+    "groupClasses": {
+      "title": "Group Classes Service",
+      "description": "Energetic and motivating group classes to train while having fun together.\nA mix of dynamism, sociability and results, suitable for every fitness level."
+    },
+    "onlineCoaching": {
+      "title": "Online Coaching Service",
+      "description": "Tailored online coaching with personalized programs and constant support wherever you are.\nTrain with flexibility and achieve your goals with the guidance of a professional."
+    }
+  },
+  "booking": {
+    "title": "Book your consultation",
+    "description": "Select your preferred date and time for your free consultation.",
+    "note": "During the introductory call, we'll arrange when to meet for the first time at the gym.",
+    "directContact": "Contact me directly at"
+  },
+  "contact": {
+    "phone": "Tel: 3282062823",
+    "email": "josh17111991@gmail.com",
+    "social": "Social",
+    "website": "Website",
+    "bookConsultation": "Book your consultation"
+  }
+}

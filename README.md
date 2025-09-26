@@ -1,46 +1,237 @@
-# Getting Started with Create React App
+# 💪 Personal Trainer App - Joshua Maurizio
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Sistema completo per la gestione di video personalizzati per clienti personal trainer con architettura ultra-budget (€10/anno).
 
-## Available Scripts
+## 🎯 **Caratteristiche Principali**
 
-In the project directory, you can run:
+### **Per il Personal Trainer (Admin)**
+- 🎛️ **Admin CMS completo** per gestire utenti e video
+- 👥 **Creazione utenti** con link di accesso automatici
+- 🎬 **Gestione video** con controllo accessi granulare
+- 📊 **Dashboard statistiche** e monitoraggio accessi
+- 🔗 **Link personalizzati** per ogni cliente
 
-### `npm start`
+### **Per i Clienti**
+- 🔐 **Accesso diretto** tramite link personalizzato
+- 🎬 **Dashboard video** con solo i contenuti assegnati
+- 📱 **Interfaccia responsive** mobile-friendly
+- ⚡ **Player video integrato** con controlli completi
+- 📈 **Statistiche personali** di utilizzo
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## 🏗️ **Architettura Ultra-Budget**
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+- **Frontend**: React + TypeScript + Tailwind CSS
+- **Backend**: Node.js + Express + SQLite
+- **Hosting**: Vercel (gratuito)
+- **Storage**: Video locali in /public
+- **Costo totale**: €10/anno (solo dominio)
 
-### `npm test`
+## 🚀 **Quick Start**
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### **1. Clone e Setup**
+```bash
+git clone https://github.com/Bubbo98/personal-trainer.git
+cd personal-trainer
+npm install
+```
 
-### `npm run build`
+### **2. Backend Setup**
+```bash
+cd backend
+npm install
+npm run init-db
+npm run dev
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### **3. Frontend Start**
+```bash
+# In altra terminal
+npm start
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### **4. Accesso Admin CMS**
+- URL: `http://localhost:3000/admin`
+- Username: `joshua_admin`
+- Password: `trainer2025!`
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## 📁 **Struttura Progetto**
 
-### `npm run eject`
+```
+personal-trainer-app/
+├── src/
+│   ├── components/          # Componenti React riutilizzabili
+│   ├── pages/              # Pagine principali (Home, About, Services, etc.)
+│   ├── locales/            # File traduzioni (IT/EN)
+│   └── utils/              # Utility e helper functions
+├── backend/
+│   ├── routes/             # API endpoints (auth, videos, admin)
+│   ├── middleware/         # Middleware di autenticazione
+│   ├── database/           # Schema e script database
+│   └── scripts/            # Script di inizializzazione
+├── public/
+│   ├── videos/             # Storage video organizzato per categorie
+│   ├── images/             # Immagini del sito
+│   └── assets/             # Altri asset statici
+└── docs/                   # Documentazione completa
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+## 🎛️ **Admin CMS**
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### **Gestione Utenti**
+- ✅ Crea nuovi clienti con form semplice
+- ✅ Genera link di accesso automatici (30 giorni validità)
+- ✅ Assegna/revoca video specifici per utente
+- ✅ Monitora accessi e statistiche
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+### **Gestione Video**
+- ✅ Aggiungi video al catalogo
+- ✅ Organizza per categorie (Calisthenics, Bodyweight, Recovery, etc.)
+- ✅ Controlla statistiche utilizzo
+- ✅ Gestisci metadati (titolo, descrizione, durata)
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+## 🔐 **Sistema di Autenticazione**
 
-## Learn More
+### **Flusso Utente**
+1. Admin crea utente tramite CMS
+2. Sistema genera link personalizzato (JWT 30 giorni)
+3. Cliente riceve link via email/WhatsApp
+4. Accesso automatico alla dashboard personalizzata
+5. Visualizzazione solo video assegnati
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### **Sicurezza**
+- 🔒 JWT tokens con scadenza
+- 🔒 Password hash con bcrypt
+- 🔒 Rate limiting API
+- 🔒 CORS protection
+- 🔒 Input validation
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## 📊 **API Endpoints**
+
+### **Autenticazione** (`/api/auth`)
+- `POST /login` - Login admin
+- `POST /login-link` - Accesso tramite link
+- `GET /verify` - Verifica token
+
+### **Video** (`/api/videos`) - Richiede auth
+- `GET /` - Lista video utente
+- `GET /:id` - Dettagli video specifico
+- `GET /categories` - Categorie disponibili
+
+### **Admin** (`/api/admin`) - Richiede admin
+- `POST /users` - Crea utente
+- `GET /users` - Lista utenti
+- `POST /users/:id/generate-link` - Genera link
+- `POST /users/:userId/videos/:videoId` - Assegna video
+- `GET /videos` - Gestione catalogo video
+
+## 🎬 **Gestione Video**
+
+### **Struttura Directory**
+```
+public/videos/
+├── calisthenics/
+│   ├── intro.mp4
+│   └── advanced.mp4
+├── bodyweight/
+│   ├── full-workout.mp4
+│   └── beginner.mp4
+└── recovery/
+    ├── stretching.mp4
+    └── yoga.mp4
+```
+
+### **Workflow Aggiunta Video**
+1. Upload fisico file in `/public/videos/categoria/`
+2. Crea entry nel CMS (titolo, path, durata, categoria)
+3. Assegna agli utenti tramite interfaccia CMS
+
+## 🚀 **Deployment**
+
+### **Vercel (Consigliato)**
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel --prod
+```
+
+### **Environment Variables**
+```env
+# Frontend
+REACT_APP_API_URL=https://tuodominio.com/api
+
+# Backend
+JWT_SECRET=your-production-secret
+DB_PATH=./database/app.db
+NODE_ENV=production
+FRONTEND_URL=https://tuodominio.com
+```
+
+## 📚 **Documentazione**
+
+- [`ADMIN_CMS_GUIDE.md`](./ADMIN_CMS_GUIDE.md) - Guida completa utilizzo CMS
+- [`BACKEND_DOCUMENTATION.md`](./BACKEND_DOCUMENTATION.md) - Documentazione API tecnica
+- [`DEMO_SCRIPT.md`](./DEMO_SCRIPT.md) - Script demo passo-passo
+
+## 🛠️ **Sviluppo**
+
+### **Scripts Disponibili**
+```bash
+# Frontend
+npm start          # Dev server
+npm run build      # Build produzione
+npm test           # Run tests
+
+# Backend
+npm run dev        # Dev server con nodemon
+npm run init-db    # Inizializza database
+npm start          # Production server
+```
+
+### **Tech Stack**
+- **Frontend**: React 19, TypeScript, Tailwind CSS, React Router
+- **Backend**: Node.js, Express, SQLite, JWT, bcrypt
+- **Build**: Create React App, Webpack
+- **Deploy**: Vercel, Serverless Functions
+
+## 📈 **Roadmap**
+
+### **v1.1** (Prossime Features)
+- [ ] Video streaming protetto con token
+- [ ] Sistema notifiche email
+- [ ] Analytics avanzate dashboard
+- [ ] Upload video diretto da CMS
+
+### **v2.0** (Future)
+- [ ] Multi-tenancy (più trainer)
+- [ ] Video transcoding automatico
+- [ ] Mobile app dedicata
+- [ ] Integrazione pagamenti
+
+## 🤝 **Contribuire**
+
+1. Fork del repository
+2. Crea feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit delle modifiche (`git commit -m 'Add AmazingFeature'`)
+4. Push al branch (`git push origin feature/AmazingFeature`)
+5. Apri Pull Request
+
+## 📄 **Licenza**
+
+Distribuito sotto licenza MIT. Vedi `LICENSE` per maggiori informazioni.
+
+## 📞 **Contatti**
+
+**Joshua Maurizio** - Personal Trainer
+- 📧 Email: josh17111991@gmail.com
+- 📱 WhatsApp: +39 328 206 2823
+- 📍 Milano, Italia
+- 🌐 [Allenamento Funzionale Milano](https://www.allenamentofunzionalemilano.net)
+
+---
+
+⭐ **Se questo progetto ti è utile, lascia una stella!**
+
+**💰 Sistema completo con costo operativo di soli €10/anno**
+**🚀 Pronto per il deploy in produzione**
