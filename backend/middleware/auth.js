@@ -35,7 +35,7 @@ const authenticateToken = (req, res, next) => {
 const verifyActiveUser = (req, res, next) => {
     const db = new sqlite3.Database(dbPath);
 
-    db.get(
+    db.getCallback(
         'SELECT id, username, email, is_active FROM users WHERE id = ? AND is_active = 1',
         [req.user.userId],
         (err, user) => {
