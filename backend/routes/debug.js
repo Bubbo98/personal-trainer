@@ -33,6 +33,71 @@ router.get('/database', (req, res) => {
     });
 });
 
+// POST /api/debug/password
+// Test password verification for admin user
+router.post('/password', (req, res) => {
+    const { password } = req.body;
+
+    if (!password) {
+        return res.status(400).json({
+            success: false,
+            error: 'Password is required'
+        });
+    }
+
+    console.log('=== DEBUG: Testing password verification ===');
+    console.log('Input password:', password);
+
+    const db = createDatabase();
+
+    // Get admin user's password hash
+    db.getCallback('SELECT password_hash FROM users WHERE username = ?', ['joshua_admin'], async (err, user) => {
+        db.close();
+
+        if (err) {
+            console.error('❌ Password debug query failed:', err);
+            return res.status(500).json({
+                success: false,
+                error: 'Database query failed',
+                details: err.message
+            });
+        }
+
+        if (!user) {
+            console.error('❌ Admin user not found');
+            return res.status(404).json({
+                success: false,
+                error: 'Admin user not found'
+            });
+        }
+
+        console.log('Stored password hash:', user.password_hash);
+
+        try {
+            const bcrypt = require('bcryptjs');
+            const isValid = await bcrypt.compare(password, user.password_hash);
+
+            console.log('Password comparison result:', isValid);
+
+            res.json({
+                success: true,
+                data: {
+                    passwordValid: isValid,
+                    hashExists: !!user.password_hash,
+                    hashLength: user.password_hash?.length || 0
+                }
+            });
+        } catch (compareErr) {
+            console.error('❌ Password comparison error:', compareErr);
+            res.status(500).json({
+                success: false,
+                error: 'Password comparison failed',
+                details: compareErr.message
+            });
+        }
+    });
+});
+
 // GET /api/debug/users
 // Test users table access
 router.get('/users', (req, res) => {
