@@ -1,15 +1,14 @@
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
+const { createDatabase } = require('../utils/database');
 const { authenticateToken, verifyActiveUser } = require('../middleware/auth');
 require('dotenv').config();
 
 const router = express.Router();
-const dbPath = process.env.DB_PATH || './database/app.db';
 
 // GET /api/reviews/public
 // Get approved reviews for public display
 router.get('/public', (req, res) => {
-    const db = new sqlite3.Database(dbPath);
+    const db = createDatabase();
 
     const query = `
         SELECT
@@ -27,7 +26,7 @@ router.get('/public', (req, res) => {
         ORDER BY r.is_featured DESC, r.created_at DESC
     `;
 
-    db.all(query, [], (err, reviews) => {
+    db.allCallback(query, [], (err, reviews) => {
         db.close();
 
         if (err) {
@@ -63,7 +62,7 @@ router.get('/public', (req, res) => {
 // GET /api/reviews/featured
 // Get only featured reviews for home page
 router.get('/featured', (req, res) => {
-    const db = new sqlite3.Database(dbPath);
+    const db = createDatabase();
 
     const query = `
         SELECT
@@ -81,7 +80,7 @@ router.get('/featured', (req, res) => {
         LIMIT 6
     `;
 
-    db.all(query, [], (err, reviews) => {
+    db.allCallback(query, [], (err, reviews) => {
         db.close();
 
         if (err) {
@@ -119,7 +118,7 @@ router.use(authenticateToken);
 // Get current user's review
 router.get('/my', (req, res) => {
     const userId = req.user.userId;
-    const db = new sqlite3.Database(dbPath);
+    const db = createDatabase();
 
     const query = `
         SELECT
@@ -134,7 +133,7 @@ router.get('/my', (req, res) => {
         WHERE user_id = ?
     `;
 
-    db.get(query, [userId], (err, review) => {
+    db.getCallback(query, [userId], (err, review) => {
         db.close();
 
         if (err) {
@@ -168,9 +167,6 @@ router.post('/', (req, res) => {
     const userId = req.user.userId;
     const { rating, title, comment } = req.body;
 
-    console.log('Database path:', dbPath);
-    console.log('User ID:', userId);
-
     // Validation
     if (!rating || !comment) {
         return res.status(400).json({
@@ -200,32 +196,19 @@ router.post('/', (req, res) => {
         });
     }
 
-    const db = new sqlite3.Database(dbPath);
+    const db = createDatabase();
 
-    // Ensure reviews table exists
-    db.run(`
-        CREATE TABLE IF NOT EXISTS reviews (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
-            title VARCHAR(200),
-            comment TEXT NOT NULL,
-            is_approved BOOLEAN DEFAULT 0,
-            is_featured BOOLEAN DEFAULT 0,
-            approved_at DATETIME,
-            approved_by VARCHAR(100),
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            UNIQUE(user_id)
-        )
-    `, (err) => {
-        if (err) {
-            console.error('Error creating reviews table:', err.message);
-        }
+    // Log review data to Vercel logs for tracking
+    console.log('📝 NEW REVIEW SUBMITTED:');
+    console.log(`User: ${req.user.username} (ID: ${userId})`);
+    console.log(`Rating: ${rating}/5`);
+    console.log(`Title: ${title}`);
+    console.log(`Comment: ${comment}`);
+    console.log(`Timestamp: ${new Date().toISOString()}`);
+    console.log('='.repeat(50));
 
-        // Check if user already has a review
-        db.get('SELECT id FROM reviews WHERE user_id = ?', [userId], (err, existingReview) => {
+    // Check if user already has a review
+    db.getCallback('SELECT id FROM reviews WHERE user_id = ?', [userId], (err, existingReview) => {
         if (err) {
             db.close();
             console.error('Database error in SELECT:', err.message);
@@ -238,7 +221,7 @@ router.post('/', (req, res) => {
 
         if (existingReview) {
             // Update existing review
-            db.run(`
+            db.runCallback(`
                 UPDATE reviews
                 SET rating = ?, title = ?, comment = ?,
                     is_approved = 0, updated_at = CURRENT_TIMESTAMP
@@ -267,7 +250,7 @@ router.post('/', (req, res) => {
             });
         } else {
             // Create new review
-            db.run(`
+            db.runCallback(`
                 INSERT INTO reviews (user_id, rating, title, comment)
                 VALUES (?, ?, ?, ?)
             `, [userId, rating, title, comment], function(err) {
@@ -294,16 +277,15 @@ router.post('/', (req, res) => {
             });
         }
     });
-    });
 });
 
 // DELETE /api/reviews/my
 // Delete user's own review
 router.delete('/my', (req, res) => {
     const userId = req.user.userId;
-    const db = new sqlite3.Database(dbPath);
+    const db = createDatabase();
 
-    db.run('DELETE FROM reviews WHERE user_id = ?', [userId], function(err) {
+    db.runCallback('DELETE FROM reviews WHERE user_id = ?', [userId], function(err) {
         db.close();
 
         if (err) {
