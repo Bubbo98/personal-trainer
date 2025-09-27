@@ -93,7 +93,6 @@ const About: React.FC<AboutPageProps> = () => {
     if (!timelineRef.current || typeof window === 'undefined') return;
 
     const timeline = timelineRef.current;
-    const timelineRect = timeline.getBoundingClientRect();
     const isMobile = window.innerWidth < 1024; // lg breakpoint
 
     if (!isMobile) {
