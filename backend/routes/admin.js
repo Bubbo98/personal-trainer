@@ -243,7 +243,7 @@ router.post('/users/:id/generate-link', (req, res) => {
 
     const db = createDatabase();
 
-    db.get(
+    db.getCallback(
         'SELECT id, username, email, first_name, last_name FROM users WHERE id = ? AND is_active = 1',
         [userId],
         (err, user) => {
