@@ -122,7 +122,7 @@ router.post('/users', async (req, res) => {
 // GET /api/admin/users
 // Get all users
 router.get('/users', (req, res) => {
-    const db = new sqlite3.Database(dbPath);
+    const db = createDatabase();
 
     db.allCallback(`
         SELECT
@@ -139,7 +139,7 @@ router.get('/users', (req, res) => {
         LEFT JOIN user_video_permissions uvp ON u.id = uvp.user_id AND uvp.is_active = 1
         GROUP BY u.id
         ORDER BY u.created_at DESC
-    `, (err, users) => {
+    `, [], (err, users) => {
         db.close();
 
         if (err) {
@@ -182,7 +182,7 @@ router.get('/users/:id/videos', (req, res) => {
         });
     }
 
-    const db = new sqlite3.Database(dbPath);
+    const db = createDatabase();
 
     db.allCallback(`
         SELECT
@@ -241,7 +241,7 @@ router.post('/users/:id/generate-link', (req, res) => {
         });
     }
 
-    const db = new sqlite3.Database(dbPath);
+    const db = createDatabase();
 
     db.get(
         'SELECT id, username, email, first_name, last_name FROM users WHERE id = ? AND is_active = 1',
@@ -302,10 +302,10 @@ router.post('/users/:userId/videos/:videoId', (req, res) => {
         });
     }
 
-    const db = new sqlite3.Database(dbPath);
+    const db = createDatabase();
 
     // First verify user and video exist
-    db.get(
+    db.getCallback(
         'SELECT COUNT(*) as count FROM users WHERE id = ? AND is_active = 1',
         [userId],
         (err, userResult) => {
@@ -334,7 +334,7 @@ router.post('/users/:userId/videos/:videoId', (req, res) => {
                         INSERT OR REPLACE INTO user_video_permissions
                         (user_id, video_id, granted_by, expires_at, is_active)
                         VALUES (?, ?, ?, ?, 1)
-                    `, [userId, videoId, req.user.username, expiresAt], function(err) {
+                    `, [userId, videoId, req.user.username, expiresAt || null], function(err) {
                         db.close();
 
                         if (err) {
@@ -377,9 +377,9 @@ router.delete('/users/:userId/videos/:videoId', (req, res) => {
         });
     }
 
-    const db = new sqlite3.Database(dbPath);
+    const db = createDatabase();
 
-    db.run(
+    db.runCallback(
         'UPDATE user_video_permissions SET is_active = 0 WHERE user_id = ? AND video_id = ?',
         [userId, videoId],
         function(err) {
@@ -413,7 +413,7 @@ router.delete('/users/:userId/videos/:videoId', (req, res) => {
 // GET /api/admin/videos
 // Get all videos (admin view)
 router.get('/videos', (req, res) => {
-    const db = new sqlite3.Database(dbPath);
+    const db = createDatabase();
 
     db.allCallback(`
         SELECT
@@ -424,7 +424,7 @@ router.get('/videos', (req, res) => {
         WHERE v.is_active = 1
         GROUP BY v.id
         ORDER BY v.created_at DESC
-    `, (err, videos) => {
+    `, [], (err, videos) => {
         db.close();
 
         if (err) {
@@ -475,9 +475,9 @@ router.post('/videos', (req, res) => {
         });
     }
 
-    const db = new sqlite3.Database(dbPath);
+    const db = createDatabase();
 
-    db.run(`
+    db.runCallback(`
         INSERT INTO videos (title, description, file_path, duration, thumbnail_path, category)
         VALUES (?, ?, ?, ?, ?, ?)
     `, [title, description, filePath, duration, thumbnailPath, category], function(err) {
@@ -521,9 +521,9 @@ router.delete('/videos/:id', (req, res) => {
         });
     }
 
-    const db = new sqlite3.Database(dbPath);
+    const db = createDatabase();
 
-    db.run(
+    db.runCallback(
         'UPDATE videos SET is_active = 0 WHERE id = ?',
         [videoId],
         function(err) {
@@ -571,7 +571,7 @@ router.delete('/videos/:id', (req, res) => {
 // GET /api/admin/reviews
 // Get all reviews (admin view)
 router.get('/reviews', (req, res) => {
-    const db = new sqlite3.Database(dbPath);
+    const db = createDatabase();
 
     const query = `
         SELECT
@@ -655,7 +655,7 @@ router.put('/reviews/:id/approve', (req, res) => {
         });
     }
 
-    const db = new sqlite3.Database(dbPath);
+    const db = createDatabase();
 
     const updateQuery = approved
         ? `UPDATE reviews
@@ -675,7 +675,7 @@ router.put('/reviews/:id/approve', (req, res) => {
         ? [req.user.username, reviewId]
         : [reviewId];
 
-    db.run(updateQuery, params, function(err) {
+    db.runCallback(updateQuery, params, function(err) {
         db.close();
 
         if (err) {
@@ -728,9 +728,9 @@ router.put('/reviews/:id/feature', (req, res) => {
         });
     }
 
-    const db = new sqlite3.Database(dbPath);
+    const db = createDatabase();
 
-    db.run(`
+    db.runCallback(`
         UPDATE reviews
         SET is_featured = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
@@ -777,9 +777,9 @@ router.delete('/reviews/:id', (req, res) => {
         });
     }
 
-    const db = new sqlite3.Database(dbPath);
+    const db = createDatabase();
 
-    db.run('DELETE FROM reviews WHERE id = ?', [reviewId], function(err) {
+    db.runCallback('DELETE FROM reviews WHERE id = ?', [reviewId], function(err) {
         db.close();
 
         if (err) {

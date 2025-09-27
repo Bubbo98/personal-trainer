@@ -270,7 +270,7 @@ router.post('/', (req, res) => {
                     success: true,
                     message: 'Review submitted successfully. It will be visible after admin approval.',
                     data: {
-                        reviewId: this.lastID,
+                        reviewId: Number(this.lastID),
                         needsApproval: true
                     }
                 });
