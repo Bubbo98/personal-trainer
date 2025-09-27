@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth');
 const videoRoutes = require('./routes/videos');
 const adminRoutes = require('./routes/admin');
 const reviewRoutes = require('./routes/reviews');
+const debugRoutes = require('./routes/debug');
 const { authenticateToken } = require('./middleware/auth');
 
 const app = express();
@@ -55,6 +56,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/videos', authenticateToken, videoRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/debug', debugRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
