@@ -1,9 +1,6 @@
 const jwt = require('jsonwebtoken');
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const { createDatabase } = require('../utils/database');
 require('dotenv').config();
-
-const dbPath = process.env.DB_PATH || './database/app.db';
 
 // JWT Authentication Middleware
 const authenticateToken = (req, res, next) => {
@@ -33,7 +30,7 @@ const authenticateToken = (req, res, next) => {
 
 // Middleware to verify user exists and is active
 const verifyActiveUser = (req, res, next) => {
-    const db = new sqlite3.Database(dbPath);
+    const db = createDatabase();
 
     db.getCallback(
         'SELECT id, username, email, is_active FROM users WHERE id = ? AND is_active = 1',
@@ -80,8 +77,6 @@ const requireAdmin = (req, res, next) => {
 
 // Middleware to log access attempts
 const logAccess = (req, res, next) => {
-    const db = new sqlite3.Database(dbPath);
-
     const logData = {
         user_id: req.user ? req.user.userId : null,
         access_time: new Date().toISOString(),
@@ -99,7 +94,6 @@ const logAccess = (req, res, next) => {
         time: logData.access_time
     });
 
-    db.close();
     next();
 };
 
