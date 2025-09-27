@@ -7,10 +7,10 @@ import Contact from './pages/Contact';
 import Services from './pages/Services';
 import Booking from './pages/Booking';
 import Dashboard from './pages/Dashboard';
-import AdminCMS from './pages/AdminCMS';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import CookiePolicy from './pages/CookiePolicy';
+import AdminCMS from './pages/AdminCMS';
 
 // Custom scroll restoration component
 const ScrollToTop: React.FC = () => {
