@@ -47,9 +47,9 @@ router.post('/users', async (req, res) => {
         // Hash password
         const passwordHash = await bcrypt.hash(password, 10);
 
-        const db = new sqlite3.Database(dbPath);
+        const db = createDatabase();
 
-        db.run(`
+        db.runCallback(`
             INSERT INTO users (username, email, password_hash, first_name, last_name)
             VALUES (?, ?, ?, ?, ?)
         `, [username, email, passwordHash, firstName, lastName], function(err) {
@@ -71,7 +71,7 @@ router.post('/users', async (req, res) => {
             const userId = this.lastID;
 
             // Get the created user
-            db.get(
+            db.getCallback(
                 'SELECT id, username, email, first_name, last_name, created_at FROM users WHERE id = ?',
                 [userId],
                 (err, user) => {
@@ -124,7 +124,7 @@ router.post('/users', async (req, res) => {
 router.get('/users', (req, res) => {
     const db = new sqlite3.Database(dbPath);
 
-    db.all(`
+    db.allCallback(`
         SELECT
             u.id,
             u.username,
@@ -184,7 +184,7 @@ router.get('/users/:id/videos', (req, res) => {
 
     const db = new sqlite3.Database(dbPath);
 
-    db.all(`
+    db.allCallback(`
         SELECT
             v.id,
             v.title,
@@ -317,7 +317,7 @@ router.post('/users/:userId/videos/:videoId', (req, res) => {
                 });
             }
 
-            db.get(
+            db.getCallback(
                 'SELECT COUNT(*) as count FROM videos WHERE id = ? AND is_active = 1',
                 [videoId],
                 (err, videoResult) => {
@@ -330,7 +330,7 @@ router.post('/users/:userId/videos/:videoId', (req, res) => {
                     }
 
                     // Grant permission (INSERT OR REPLACE to handle duplicates)
-                    db.run(`
+                    db.runCallback(`
                         INSERT OR REPLACE INTO user_video_permissions
                         (user_id, video_id, granted_by, expires_at, is_active)
                         VALUES (?, ?, ?, ?, 1)
@@ -415,7 +415,7 @@ router.delete('/users/:userId/videos/:videoId', (req, res) => {
 router.get('/videos', (req, res) => {
     const db = new sqlite3.Database(dbPath);
 
-    db.all(`
+    db.allCallback(`
         SELECT
             v.*,
             COUNT(uvp.user_id) as user_count
@@ -545,7 +545,7 @@ router.delete('/videos/:id', (req, res) => {
             }
 
             // Also deactivate all user permissions for this video
-            db.run(
+            db.runCallback(
                 'UPDATE user_video_permissions SET is_active = 0 WHERE video_id = ?',
                 [videoId],
                 function(err) {
@@ -594,7 +594,7 @@ router.get('/reviews', (req, res) => {
         ORDER BY r.created_at DESC
     `;
 
-    db.all(query, [], (err, reviews) => {
+    db.allCallback(query, [], (err, reviews) => {
         db.close();
 
         if (err) {
