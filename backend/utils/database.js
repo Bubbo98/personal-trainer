@@ -4,21 +4,28 @@ require('dotenv').config();
 
 // Database factory - returns the appropriate client based on environment
 function createDatabase() {
+    console.log('=== DATABASE SELECTION ===');
+    console.log('TURSO_DATABASE_URL:', process.env.TURSO_DATABASE_URL ? 'SET' : 'NOT SET');
+    console.log('TURSO_AUTH_TOKEN:', process.env.TURSO_AUTH_TOKEN ? 'SET' : 'NOT SET');
+    console.log('NODE_ENV:', process.env.NODE_ENV);
+
     if (process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN) {
-        console.log('Using Turso cloud database');
+        console.log('✅ Using Turso cloud database');
         return createTursoClient();
     } else {
-        console.log('Using local SQLite database');
+        console.log('⚠️ Using local SQLite database (fallback)');
         return createLocalClient();
     }
 }
 
 // Turso cloud client
 function createTursoClient() {
+    console.log('🚀 Creating Turso client...');
     const client = createClient({
         url: process.env.TURSO_DATABASE_URL,
         authToken: process.env.TURSO_AUTH_TOKEN,
     });
+    console.log('✅ Turso client created successfully');
 
     return {
         // Wrapper to make Turso API similar to sqlite3
@@ -46,27 +53,46 @@ function createTursoClient() {
 
         // For compatibility with sqlite3 callbacks
         getCallback: (query, params, callback) => {
+            console.log('🔍 Turso GET:', query, params);
             client.execute({ sql: query, args: params })
-                .then(result => callback(null, result.rows[0] || null))
-                .catch(err => callback(err, null));
+                .then(result => {
+                    console.log('✅ Turso GET result:', result.rows.length, 'rows');
+                    callback(null, result.rows[0] || null);
+                })
+                .catch(err => {
+                    console.error('❌ Turso GET error:', err);
+                    callback(err, null);
+                });
         },
 
         allCallback: (query, params, callback) => {
+            console.log('📋 Turso ALL:', query, params);
             client.execute({ sql: query, args: params })
-                .then(result => callback(null, result.rows))
-                .catch(err => callback(err, null));
+                .then(result => {
+                    console.log('✅ Turso ALL result:', result.rows.length, 'rows');
+                    callback(null, result.rows);
+                })
+                .catch(err => {
+                    console.error('❌ Turso ALL error:', err);
+                    callback(err, null);
+                });
         },
 
         runCallback: (query, params, callback) => {
+            console.log('⚡ Turso RUN:', query, params);
             client.execute({ sql: query, args: params })
                 .then(result => {
+                    console.log('✅ Turso RUN result:', result.rowsAffected, 'rows affected');
                     const context = {
                         lastID: result.lastInsertRowid,
                         changes: result.rowsAffected
                     };
                     callback.call(context, null);
                 })
-                .catch(err => callback(err));
+                .catch(err => {
+                    console.error('❌ Turso RUN error:', err);
+                    callback(err);
+                });
         }
     };
 }
