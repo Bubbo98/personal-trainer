@@ -658,19 +658,25 @@ router.put('/reviews/:id/approve', (req, res) => {
 
     const db = new sqlite3.Database(dbPath);
 
-    const updateQuery = `
-        UPDATE reviews
-        SET is_approved = ?,
-            approved_at = ?,
-            approved_by = ?,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-    `;
+    const updateQuery = approved
+        ? `UPDATE reviews
+           SET is_approved = 1,
+               approved_at = CURRENT_TIMESTAMP,
+               approved_by = ?,
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = ?`
+        : `UPDATE reviews
+           SET is_approved = 0,
+               approved_at = NULL,
+               approved_by = NULL,
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = ?`;
 
-    const approvedAt = approved ? new Date().toISOString() : null;
-    const approvedBy = approved ? req.user.username : null;
+    const params = approved
+        ? [req.user.username, reviewId]
+        : [reviewId];
 
-    db.run(updateQuery, [approved ? 1 : 0, approvedAt, approvedBy, reviewId], function(err) {
+    db.run(updateQuery, params, function(err) {
         db.close();
 
         if (err) {
@@ -696,8 +702,8 @@ router.put('/reviews/:id/approve', (req, res) => {
             data: {
                 reviewId: parseInt(reviewId),
                 isApproved: approved,
-                approvedBy: approvedBy,
-                approvedAt: approvedAt
+                approvedBy: approved ? req.user.username : null,
+                approvedAt: approved ? new Date().toISOString() : null
             }
         });
     });

@@ -113,7 +113,7 @@ router.get('/featured', (req, res) => {
 });
 
 // User routes (require authentication)
-router.use(authenticateToken, verifyActiveUser);
+router.use(authenticateToken);
 
 // GET /api/reviews/my
 // Get current user's review
@@ -168,6 +168,9 @@ router.post('/', (req, res) => {
     const userId = req.user.userId;
     const { rating, title, comment } = req.body;
 
+    console.log('Database path:', dbPath);
+    console.log('User ID:', userId);
+
     // Validation
     if (!rating || !comment) {
         return res.status(400).json({
@@ -199,11 +202,34 @@ router.post('/', (req, res) => {
 
     const db = new sqlite3.Database(dbPath);
 
-    // Check if user already has a review
-    db.get('SELECT id FROM reviews WHERE user_id = ?', [userId], (err, existingReview) => {
+    // Ensure reviews table exists
+    db.run(`
+        CREATE TABLE IF NOT EXISTS reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+            title VARCHAR(200),
+            comment TEXT NOT NULL,
+            is_approved BOOLEAN DEFAULT 0,
+            is_featured BOOLEAN DEFAULT 0,
+            approved_at DATETIME,
+            approved_by VARCHAR(100),
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            UNIQUE(user_id)
+        )
+    `, (err) => {
+        if (err) {
+            console.error('Error creating reviews table:', err.message);
+        }
+
+        // Check if user already has a review
+        db.get('SELECT id FROM reviews WHERE user_id = ?', [userId], (err, existingReview) => {
         if (err) {
             db.close();
-            console.error('Database error:', err.message);
+            console.error('Database error in SELECT:', err.message);
+            console.error('Full error:', err);
             return res.status(500).json({
                 success: false,
                 error: 'Database error'
@@ -267,6 +293,7 @@ router.post('/', (req, res) => {
                 });
             });
         }
+    });
     });
 });
 
