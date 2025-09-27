@@ -28,6 +28,7 @@ ADMIN_USERNAME=joshua_admin
 ADMIN_PASSWORD=CAMBIA_CON_PASSWORD_SICURA
 FRONTEND_URL=https://tuodominio.vercel.app
 
+
 # Frontend Variables
 REACT_APP_API_URL=https://tuodominio.vercel.app/api
 ```

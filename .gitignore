@@ -38,3 +38,4 @@ backend/yarn-error.log*
 
 # OS files
 Thumbs.db
+.vercel

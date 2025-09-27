@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "name": "personal-trainer-app",
   "builds": [
     {
       "src": "package.json",
@@ -36,11 +35,6 @@
       "dest": "/build/$1"
     }
   ],
-  "functions": {
-    "backend/server.js": {
-      "includeFiles": "backend/**"
-    }
-  },
   "env": {
     "NODE_ENV": "production"
   }
