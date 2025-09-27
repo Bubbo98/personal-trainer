@@ -6,12 +6,10 @@ import {
   FiUsers,
   FiVideo,
   FiPlus,
-  FiEdit3,
   FiTrash2,
   FiLink,
   FiEye,
   FiLogOut,
-  FiCopy,
   FiCheck,
   FiX,
   FiStar,
@@ -1096,7 +1094,7 @@ const ReviewManagement: React.FC = () => {
 
 const AdminCMS: React.FC = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  // const { t } = useTranslation(); // Unused for now
   const [adminState, setAdminState] = useState<AdminState>({
     isAuthenticated: false,
     loading: true,

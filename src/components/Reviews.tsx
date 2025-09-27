@@ -202,7 +202,7 @@ const Reviews: React.FC<ReviewsProps> = ({ type = 'featured' }) => {
     };
 
     loadReviews();
-  }, []);
+  }, [type]);
 
   const sectionClassName = 'py-16 lg:py-20 bg-gray-50';
   const containerClassName = 'max-w-7xl mx-auto px-6 lg:px-16';

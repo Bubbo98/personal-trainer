@@ -14,7 +14,7 @@ interface HeroImage {
   breakpoint: string;
 }
 
-interface ActionButton {
+interface ActionButtonType {
   key: string;
   translationKey: string;
   onClick: () => void;
@@ -36,7 +36,7 @@ const ResponsiveImage: React.FC<HeroImage> = ({ src, alt, className, breakpoint 
 );
 
 const ActionButton: React.FC<{
-  button: ActionButton;
+  button: ActionButtonType;
   children: React.ReactNode;
 }> = ({ button, children }) => (
   <button
@@ -99,7 +99,7 @@ const Hero: React.FC = () => {
   ], []);
 
   // Action buttons configuration
-  const actionButtons: ActionButton[] = useMemo(() => [
+  const actionButtons: ActionButtonType[] = useMemo(() => [
     {
       key: 'consultation',
       translationKey: 'hero.consultation',
