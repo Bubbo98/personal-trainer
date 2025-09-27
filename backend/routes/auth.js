@@ -1,12 +1,11 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const sqlite3 = require('sqlite3').verbose();
+const { createDatabase } = require('../utils/database');
 const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 
 const router = express.Router();
-const dbPath = process.env.DB_PATH || './database/app.db';
 
 // Generate JWT Token
 const generateToken = (user) => {
@@ -48,9 +47,9 @@ router.post('/login', async (req, res) => {
             });
         }
 
-        const db = new sqlite3.Database(dbPath);
+        const db = createDatabase();
 
-        db.get(
+        db.getCallback(
             'SELECT * FROM users WHERE username = ? AND is_active = 1',
             [username],
             async (err, user) => {
@@ -84,12 +83,17 @@ router.post('/login', async (req, res) => {
                 const token = generateToken(user);
 
                 // Update last login
-                const updateDb = new sqlite3.Database(dbPath);
-                updateDb.run(
+                const updateDb = createDatabase();
+                updateDb.runCallback(
                     'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?',
-                    [user.id]
+                    [user.id],
+                    function(err) {
+                        updateDb.close();
+                        if (err) {
+                            console.error('Error updating last login:', err);
+                        }
+                    }
                 );
-                updateDb.close();
 
                 res.json({
                     success: true,
@@ -145,9 +149,9 @@ router.post('/login-link', (req, res) => {
                 });
             }
 
-            const db = new sqlite3.Database(dbPath);
+            const db = createDatabase();
 
-            db.get(
+            db.getCallback(
                 'SELECT * FROM users WHERE id = ? AND is_active = 1',
                 [decoded.userId],
                 (err, user) => {
@@ -172,12 +176,17 @@ router.post('/login-link', (req, res) => {
                     const sessionToken = generateToken(user);
 
                     // Update last login
-                    const updateDb = new sqlite3.Database(dbPath);
-                    updateDb.run(
+                    const updateDb = createDatabase();
+                    updateDb.runCallback(
                         'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?',
-                        [user.id]
+                        [user.id],
+                        function(err) {
+                            updateDb.close();
+                            if (err) {
+                                console.error('Error updating last login:', err);
+                            }
+                        }
                     );
-                    updateDb.close();
 
                     res.json({
                         success: true,
@@ -226,9 +235,9 @@ router.get('/verify', (req, res) => {
             });
         }
 
-        const db = new sqlite3.Database(dbPath);
+        const db = createDatabase();
 
-        db.get(
+        db.getCallback(
             'SELECT id, username, email, first_name, last_name FROM users WHERE id = ? AND is_active = 1',
             [decoded.userId],
             (err, user) => {

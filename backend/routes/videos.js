@@ -1,12 +1,11 @@
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
+const { createDatabase } = require('../utils/database');
 const path = require('path');
 const fs = require('fs');
 const { verifyActiveUser } = require('../middleware/auth');
 require('dotenv').config();
 
 const router = express.Router();
-const dbPath = process.env.DB_PATH || './database/app.db';
 
 // Apply user verification middleware to all routes
 router.use(verifyActiveUser);
@@ -16,7 +15,7 @@ router.use(verifyActiveUser);
 router.get('/', (req, res) => {
     const userId = req.user.userId;
 
-    const db = new sqlite3.Database(dbPath);
+    const db = createDatabase();
 
     const query = `
         SELECT
@@ -39,7 +38,7 @@ router.get('/', (req, res) => {
         ORDER BY v.created_at DESC
     `;
 
-    db.all(query, [userId], (err, videos) => {
+    db.allCallback(query, [userId], (err, videos) => {
         db.close();
 
         if (err) {
@@ -79,7 +78,7 @@ router.get('/', (req, res) => {
 router.get('/categories', (req, res) => {
     const userId = req.user.userId;
 
-    const db = new sqlite3.Database(dbPath);
+    const db = createDatabase();
 
     const query = `
         SELECT DISTINCT v.category, COUNT(*) as video_count
@@ -94,7 +93,7 @@ router.get('/categories', (req, res) => {
         ORDER BY v.category
     `;
 
-    db.all(query, [userId], (err, categories) => {
+    db.allCallback(query, [userId], (err, categories) => {
         db.close();
 
         if (err) {
@@ -130,7 +129,7 @@ router.get('/:id', (req, res) => {
         });
     }
 
-    const db = new sqlite3.Database(dbPath);
+    const db = createDatabase();
 
     const query = `
         SELECT
@@ -153,7 +152,7 @@ router.get('/:id', (req, res) => {
         AND (uvp.expires_at IS NULL OR uvp.expires_at > CURRENT_TIMESTAMP)
     `;
 
-    db.get(query, [userId, videoId], (err, video) => {
+    db.getCallback(query, [userId, videoId], (err, video) => {
         if (err) {
             db.close();
             console.error('Database error:', err.message);
@@ -172,7 +171,7 @@ router.get('/:id', (req, res) => {
         }
 
         // Log video access
-        db.run(`
+        db.runCallback(`
             INSERT INTO access_logs (user_id, video_id, ip_address, user_agent)
             VALUES (?, ?, ?, ?)
         `, [
@@ -180,7 +179,7 @@ router.get('/:id', (req, res) => {
             videoId,
             req.ip || req.connection.remoteAddress,
             req.get('User-Agent')
-        ], (logErr) => {
+        ], function(logErr) {
             if (logErr) {
                 console.error('Failed to log access:', logErr.message);
             }
@@ -216,7 +215,7 @@ router.get('/category/:category', (req, res) => {
     const userId = req.user.userId;
     const category = req.params.category;
 
-    const db = new sqlite3.Database(dbPath);
+    const db = createDatabase();
 
     const query = `
         SELECT
@@ -240,7 +239,7 @@ router.get('/category/:category', (req, res) => {
         ORDER BY v.created_at DESC
     `;
 
-    db.all(query, [userId, category], (err, videos) => {
+    db.allCallback(query, [userId, category], (err, videos) => {
         db.close();
 
         if (err) {
