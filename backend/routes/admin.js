@@ -1,12 +1,11 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const sqlite3 = require('sqlite3').verbose();
+const { createDatabase } = require('../utils/database');
 const jwt = require('jsonwebtoken');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 require('dotenv').config();
 
 const router = express.Router();
-const dbPath = process.env.DB_PATH || './database/app.db';
 
 // Apply authentication and admin check to all routes
 router.use(authenticateToken);
