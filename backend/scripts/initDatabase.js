@@ -14,24 +14,66 @@ if (!fs.existsSync(dbDir)) {
     console.log(`Created database directory: ${dbDir}`);
 }
 
-console.log('Initializing database...');
+console.log('Checking database...');
 
+// Check if database already exists and has tables
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Error opening database:', err.message);
         process.exit(1);
     }
     console.log(`Connected to SQLite database: ${dbPath}`);
+
+    // Check if users table exists
+    db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='users'", (err, row) => {
+        if (row) {
+            console.log('Database already initialized, skipping schema creation');
+            // Just ensure admin user exists with correct password
+            ensureAdminUser(db);
+            return;
+        } else {
+            console.log('Database not initialized, creating schema...');
+            initializeDatabase(db);
+        }
+    });
 });
 
-// Read and execute schema
-const schema = fs.readFileSync(schemaPath, 'utf8');
+// Function to ensure admin user exists with correct password
+function ensureAdminUser(db) {
+    const adminUsername = process.env.ADMIN_USERNAME || 'joshua_admin';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const hashedPassword = bcrypt.hashSync(adminPassword, 10);
 
-// Split schema into individual statements
-const statements = schema.split(';').filter(stmt => stmt.trim().length > 0);
+    db.run(`
+        INSERT OR REPLACE INTO users (username, email, password_hash, first_name, last_name)
+        VALUES (?, ?, ?, ?, ?)
+    `, [
+        adminUsername,
+        'admin@joshuapt.com',
+        hashedPassword,
+        'Joshua',
+        'Admin'
+    ], function(err) {
+        if (err) {
+            console.error('Error creating/updating admin user:', err.message);
+        } else {
+            console.log('Admin user ensured with correct password');
+        }
+        db.close();
+        process.exit(0);
+    });
+}
 
-// Execute each statement
-db.serialize(() => {
+// Function to initialize database with schema and sample data
+function initializeDatabase(db) {
+    // Read and execute schema
+    const schema = fs.readFileSync(schemaPath, 'utf8');
+
+    // Split schema into individual statements
+    const statements = schema.split(';').filter(stmt => stmt.trim().length > 0);
+
+    // Execute each statement
+    db.serialize(() => {
     statements.forEach((statement, index) => {
         db.run(statement, (err) => {
             if (err) {
@@ -114,4 +156,5 @@ db.serialize(() => {
         }
         process.exit(0);
     });
-});
+    });
+}
