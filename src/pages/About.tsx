@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
 import ImageCarousel from '../components/ImageCarousel';
@@ -10,17 +10,17 @@ import { getTimelineImages } from '../utils/imageLoader';
 const SCROLL_OFFSET = 120;
 const TIMELINE_RECALC_DELAY = 100;
 const TIMELINE_INIT_DELAY = 500;
-const MOBILE_BREAKPOINT = 1024;
+// const MOBILE_BREAKPOINT = 1024; // Unused for now
 
 // Types
 interface ConnectionPath {
   d: string;
 }
 
-interface TimelineState {
-  paths: ConnectionPath[];
-  viewBox: string;
-}
+// interface TimelineState {
+//   paths: ConnectionPath[];
+//   viewBox: string;
+// }
 
 interface TimelineSection {
   title: string;
@@ -86,7 +86,7 @@ const TimelineSVGPath: React.FC = () => (
 const About: React.FC<AboutPageProps> = () => {
   const { t } = useTranslation();
   const timelineRef = useRef<HTMLDivElement>(null);
-  const [timelineState, setTimelineState] = useState<TimelineState>({ paths: [], viewBox: "0 0 100 100" });
+  // const [timelineState, setTimelineState] = useState<TimelineState>({ paths: [], viewBox: "0 0 100 100" }); // Unused for now
   const connectionPointsRef = useRef<(HTMLDivElement | null)[]>([]);
 
   const calculateConnectionPaths = useCallback(() => {
@@ -97,7 +97,7 @@ const About: React.FC<AboutPageProps> = () => {
     const isMobile = window.innerWidth < 1024; // lg breakpoint
 
     if (!isMobile) {
-      setTimelineState({ paths: [], viewBox: "0 0 100 100" });
+      // setTimelineState({ paths: [], viewBox: "0 0 100 100" }); // Unused for now
       return;
     }
 
@@ -142,10 +142,10 @@ const About: React.FC<AboutPageProps> = () => {
     }
 
 
-    setTimelineState({
-      paths,
-      viewBox: `0 0 ${timelineRect.width} ${timelineRect.height}`
-    });
+    // setTimelineState({
+    //   paths,
+    //   viewBox: `0 0 ${timelineRect.width} ${timelineRect.height}`
+    // }); // Unused for now
   }, []);
 
   const handleScrollToTimeline = useCallback(() => {
