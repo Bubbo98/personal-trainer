@@ -149,5 +149,176 @@
     "cancel": "Annulla",
     "search": "Ricerca",
     "closeVideo": "Chiudi video"
+  },
+  "pages": {
+    "home": {
+      "title": "Personal Trainer Joshua"
+    },
+    "about": {
+      "title": "Chi Sono"
+    },
+    "contact": {
+      "title": "Contatti"
+    },
+    "services": {
+      "title": "Servizi"
+    },
+    "booking": {
+      "title": "Prenota la Tua Consulenza"
+    },
+    "dashboard": {
+      "title": "Dashboard"
+    },
+    "admin": {
+      "title": "Admin Panel"
+    },
+    "privacy": {
+      "title": "Privacy Policy"
+    },
+    "terms": {
+      "title": "Termini e Condizioni di Servizio"
+    },
+    "cookies": {
+      "title": "Cookie Policy"
+    }
+  },
+  "footer": {
+    "personalTrainer": "Personal Trainer",
+    "schedule": "Orari",
+    "contacts": "Contatti",
+    "fiscalData": "Dati Fiscali",
+    "mondayFriday": "Lunedì - Venerdì",
+    "workouts": "🏋️ Allenamenti: 9:00 - 17:00",
+    "consultations": "💬 Consulenze: 17:00 - 19:00",
+    "allRightsReserved": "Tutti i diritti riservati",
+    "copyright": "© {year} Joshua Maurizio - Personal Trainer",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Termini di Servizio",
+    "cookiePolicy": "Cookie Policy",
+    "qualifiedTrainer": "🏃‍♂️ Personal Trainer qualificato e certificato - Milano",
+    "disclaimer": "I programmi di allenamento sono personalizzati e sviluppati in base alle esigenze individuali. Si consiglia sempre di consultare un medico prima di iniziare qualsiasi programma di fitness.",
+    "functionalTraining": "Allenamento Funzionale Milano"
+  },
+  "common": {
+    "cancel": "Annulla",
+    "save": "Salva",
+    "delete": "Elimina",
+    "edit": "Modifica",
+    "loading": "Caricamento...",
+    "submit": "Invia",
+    "close": "Chiudi"
+  },
+  "admin": {
+    "title": "Admin CMS",
+    "siteManagement": "Gestisci utenti e video del sistema",
+    "viewSite": "Visualizza Sito",
+    "logout": "Logout",
+    "sessionExpired": "Sessione scaduta",
+    "login": {
+      "title": "Admin CMS",
+      "username": "Username",
+      "password": "Password",
+      "loginButton": "Accedi",
+      "loginProgress": "Login...",
+      "loginFailed": "Login fallito"
+    },
+    "users": {
+      "title": "Gestione Utenti",
+      "tabTitle": "Utenti",
+      "newUser": "Nuovo Utente",
+      "firstName": "Nome",
+      "lastName": "Cognome",
+      "username": "Username",
+      "email": "Email",
+      "password": "Password",
+      "active": "Attivo",
+      "inactive": "Inattivo",
+      "lastLogin": "Ultimo accesso",
+      "never": "Mai",
+      "videoCount": "Video",
+      "actions": "Azioni",
+      "manage": "Gestisci",
+      "hide": "Nascondi",
+      "generateAccessLink": "Genera link di accesso",
+      "assignVideo": "Assegna Video",
+      "revokeVideo": "Revoca Video",
+      "userCreatedSuccess": "Utente creato con successo!",
+      "accessLinkGenerated": "Link di accesso generato!",
+      "videoAssignedSuccess": "Video assegnato con successo!",
+      "videoRevokedSuccess": "Video revocato con successo!",
+      "createUserFailed": "Creazione fallita",
+      "generateLinkFailed": "Generazione link fallita",
+      "assignVideoFailed": "Assegnazione fallita",
+      "revokeVideoFailed": "Revoca fallita",
+      "availableVideos": "Video Disponibili",
+      "allVideosAssigned": "Tutti i video sono già stati assegnati a questo utente",
+      "manageVideosFor": "Gestisci video per"
+    },
+    "videos": {
+      "title": "Gestione Video",
+      "tabTitle": "Video",
+      "newVideo": "Nuovo Video",
+      "videoTitle": "Titolo",
+      "description": "Descrizione",
+      "filePath": "Percorso File",
+      "filePathHelp": "Percorso relativo a /public/videos/",
+      "duration": "Durata (secondi)",
+      "category": "Categoria",
+      "selectCategory": "Seleziona categoria",
+      "thumbnailPath": "Percorso Thumbnail",
+      "thumbnailPathHelp": "Percorso relativo a /public/thumbnails/",
+      "titlePlaceholder": "Nome del video",
+      "descriptionPlaceholder": "Descrizione del video",
+      "filePathPlaceholder": "categoria/nome-file.mp4",
+      "thumbnailPlaceholder": "categoria/thumb.jpg",
+      "userCount": "Utenti",
+      "createdAt": "Creato il",
+      "categories": {
+        "calisthenics": "Calisthenics",
+        "bodyweight": "Bodyweight",
+        "recovery": "Recovery",
+        "strength": "Strength",
+        "cardio": "Cardio"
+      },
+      "videoCreatedSuccess": "Video creato con successo!",
+      "videoDeletedSuccess": "Video eliminato con successo!",
+      "createVideoFailed": "Creazione fallita",
+      "deleteVideoFailed": "Eliminazione fallita",
+      "deleteConfirm": "Sei sicuro di voler eliminare il video \"{title}\"?\n\nQuesta azione rimuoverà anche tutti gli accessi degli utenti a questo video."
+    },
+    "reviews": {
+      "title": "Gestione Recensioni",
+      "tabTitle": "Recensioni",
+      "rating": "Valutazione",
+      "reviewTitle": "Titolo",
+      "comment": "Commento",
+      "author": "Autore",
+      "status": "Stato",
+      "actions": "Azioni",
+      "approved": "Approvata",
+      "pending": "In attesa",
+      "featured": "In evidenza",
+      "approve": "Approva",
+      "unapprove": "Rimuovi approvazione",
+      "toggleFeatured": "Evidenzia",
+      "deleteReview": "Elimina",
+      "reviewApprovedSuccess": "Recensione approvata con successo!",
+      "reviewUnapprovedSuccess": "Approvazione rimossa con successo!",
+      "reviewFeaturedSuccess": "Stato evidenza modificato con successo!",
+      "reviewDeletedSuccess": "Recensione eliminata con successo!",
+      "operationFailed": "Operazione fallita",
+      "deleteFailed": "Eliminazione fallita",
+      "totalReviews": "recensioni totali",
+      "modified": "Modificata",
+      "statistics": "Statistiche",
+      "total": "Totali",
+      "approvedCount": "Approvate",
+      "featuredCount": "In evidenza",
+      "averageRating": "Media voti",
+      "deleteConfirm": "Sei sicuro di voler eliminare la recensione di {authorName}?"
+    },
+    "errors": {
+      "error": "Errore"
+    }
   }
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Helmet } from 'react-helmet-async';
 import Header from '../components/Header';
 import ImageCarousel from '../components/ImageCarousel';
 import Reviews from '../components/Reviews';
@@ -206,6 +207,9 @@ const About: React.FC<AboutPageProps> = () => {
 
   return (
     <div className={pageClassName} style={{ scrollBehavior: 'smooth' }}>
+      <Helmet>
+        <title>{t('pages.about.title')}</title>
+      </Helmet>
       <Header />
 
       <main className={mainClassName}>
