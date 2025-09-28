@@ -108,43 +108,6 @@ function initializeDatabase(db) {
         }
     });
 
-    // Insert sample videos
-    const sampleVideos = [
-        {
-            title: 'Introduzione al Calisthenics',
-            description: 'Video introduttivo sui movimenti base del calisthenics',
-            file_path: 'calisthenics/intro.mp4',
-            category: 'calisthenics',
-            duration: 900 // 15 minutes
-        },
-        {
-            title: 'Workout Completo Corpo Libero',
-            description: 'Allenamento completo utilizzando solo il peso corporeo',
-            file_path: 'bodyweight/full-workout.mp4',
-            category: 'bodyweight',
-            duration: 1800 // 30 minutes
-        },
-        {
-            title: 'Stretching Post Allenamento',
-            description: 'Routine di stretching da fare dopo ogni allenamento',
-            file_path: 'recovery/post-workout-stretch.mp4',
-            category: 'recovery',
-            duration: 600 // 10 minutes
-        }
-    ];
-
-    sampleVideos.forEach((video) => {
-        db.run(`
-            INSERT OR REPLACE INTO videos (title, description, file_path, category, duration)
-            VALUES (?, ?, ?, ?, ?)
-        `, [video.title, video.description, video.file_path, video.category, video.duration], function(err) {
-            if (err) {
-                console.error(`Error inserting video "${video.title}":`, err.message);
-            } else {
-                console.log(`Inserted sample video: ${video.title}`);
-            }
-        });
-    });
 
     console.log('Database initialization completed!');
 

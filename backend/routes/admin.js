@@ -37,28 +37,28 @@ router.post('/users', async (req, res) => {
             lastName
         } = req.body;
 
-        if (!username || !email || !password) {
+        if (!username) {
             return res.status(400).json({
                 success: false,
-                error: 'Username, email, and password are required'
+                error: 'Username is required'
             });
         }
 
-        // Hash password
-        const passwordHash = await bcrypt.hash(password, 10);
+        // Hash password only if provided
+        const passwordHash = password ? await bcrypt.hash(password, 10) : null;
 
         const db = createDatabase();
 
         db.runCallback(`
             INSERT INTO users (username, email, password_hash, first_name, last_name)
             VALUES (?, ?, ?, ?, ?)
-        `, [username, email, passwordHash, firstName, lastName], function(err) {
+        `, [username, email || null, passwordHash, firstName, lastName], function(err) {
             if (err) {
                 db.close();
                 if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
                     return res.status(409).json({
                         success: false,
-                        error: 'Username or email already exists'
+                        error: 'Username already exists'
                     });
                 }
                 console.error('Database error:', err.message);
@@ -87,7 +87,7 @@ router.post('/users', async (req, res) => {
 
                     // Generate login link token
                     const loginToken = generateLoginLinkToken(user);
-                    const loginUrl = `${process.env.FRONTEND_URL}/dashboard/${loginToken}`;
+                    const loginUrl = `https://esercizifacili.com/dashboard/${loginToken}`;
 
                     console.log(`Admin ${req.user.username} created user: ${user.username}`);
 
@@ -137,6 +137,7 @@ router.get('/users', (req, res) => {
             COUNT(uvp.video_id) as video_count
         FROM users u
         LEFT JOIN user_video_permissions uvp ON u.id = uvp.user_id AND uvp.is_active = 1
+        WHERE u.is_active = 1
         GROUP BY u.id
         ORDER BY u.created_at DESC
     `, [], (err, users) => {
@@ -266,7 +267,7 @@ router.post('/users/:id/generate-link', (req, res) => {
 
             // Generate new login token
             const loginToken = generateLoginLinkToken(user);
-            const loginUrl = `${process.env.FRONTEND_URL}/dashboard/${loginToken}`;
+            const loginUrl = `https://esercizifacili.com/dashboard/${loginToken}`;
 
             console.log(`Admin ${req.user.username} generated login link for user: ${user.username}`);
 
@@ -480,7 +481,7 @@ router.post('/videos', (req, res) => {
     db.runCallback(`
         INSERT INTO videos (title, description, file_path, duration, thumbnail_path, category)
         VALUES (?, ?, ?, ?, ?, ?)
-    `, [title, description, filePath, duration, thumbnailPath, category], function(err) {
+    `, [title, description || null, filePath, duration || null, thumbnailPath || null, category || null], function(err) {
         db.close();
 
         if (err) {
@@ -497,7 +498,7 @@ router.post('/videos', (req, res) => {
             success: true,
             message: 'Video created successfully',
             data: {
-                id: this.lastID,
+                id: Number(this.lastID),
                 title,
                 description,
                 filePath,
@@ -804,6 +805,68 @@ router.delete('/reviews/:id', (req, res) => {
             message: 'Review deleted successfully'
         });
     });
+});
+
+// DELETE /api/admin/users/:id
+// Delete user (soft delete - marks as inactive)
+router.delete('/users/:id', (req, res) => {
+    const userId = req.params.id;
+
+    if (!userId || isNaN(userId)) {
+        return res.status(400).json({
+            success: false,
+            error: 'Valid user ID is required'
+        });
+    }
+
+    const db = createDatabase();
+
+    db.runCallback(
+        'UPDATE users SET is_active = 0 WHERE id = ?',
+        [userId],
+        function(err) {
+            if (err) {
+                db.close();
+                console.error('Database error:', err.message);
+                return res.status(500).json({
+                    success: false,
+                    error: 'Database error'
+                });
+            }
+
+            if (this.changes === 0) {
+                db.close();
+                return res.status(404).json({
+                    success: false,
+                    error: 'User not found'
+                });
+            }
+
+            // Also deactivate all user permissions for this user
+            db.runCallback(
+                'UPDATE user_video_permissions SET is_active = 0 WHERE user_id = ?',
+                [userId],
+                function(err) {
+                    db.close();
+
+                    if (err) {
+                        console.error('Database error:', err.message);
+                        return res.status(500).json({
+                            success: false,
+                            error: 'Database error'
+                        });
+                    }
+
+                    console.log(`Admin ${req.user.username} deleted user ID: ${userId}`);
+
+                    res.json({
+                        success: true,
+                        message: 'User deleted successfully'
+                    });
+                }
+            );
+        }
+    );
 });
 
 module.exports = router;

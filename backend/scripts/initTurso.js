@@ -21,8 +21,8 @@ async function initTursoDatabase() {
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username VARCHAR(255) UNIQUE NOT NULL,
-                email VARCHAR(255) UNIQUE NOT NULL,
-                password_hash VARCHAR(255) NOT NULL,
+                email VARCHAR(255) UNIQUE,
+                password_hash VARCHAR(255),
                 first_name VARCHAR(100),
                 last_name VARCHAR(100),
                 is_active BOOLEAN DEFAULT 1,
@@ -126,41 +126,6 @@ async function initTursoDatabase() {
         });
         console.log('✅ Admin user created/updated');
 
-        // Insert sample videos
-        const sampleVideos = [
-            {
-                title: 'Introduzione al Calisthenics',
-                description: 'Video introduttivo sui movimenti base del calisthenics',
-                file_path: 'calisthenics/intro.mp4',
-                category: 'calisthenics',
-                duration: 900
-            },
-            {
-                title: 'Workout Completo Corpo Libero',
-                description: 'Allenamento completo utilizzando solo il peso corporeo',
-                file_path: 'bodyweight/full-workout.mp4',
-                category: 'bodyweight',
-                duration: 1800
-            },
-            {
-                title: 'Stretching Post Allenamento',
-                description: 'Routine di stretching da fare dopo ogni allenamento',
-                file_path: 'recovery/post-workout-stretch.mp4',
-                category: 'recovery',
-                duration: 600
-            }
-        ];
-
-        for (const video of sampleVideos) {
-            await client.execute({
-                sql: `
-                    INSERT OR REPLACE INTO videos (title, description, file_path, category, duration)
-                    VALUES (?, ?, ?, ?, ?)
-                `,
-                args: [video.title, video.description, video.file_path, video.category, video.duration]
-            });
-        }
-        console.log('✅ Sample videos created');
 
         console.log('\n🎉 Turso database initialized successfully!');
         console.log('Your database is ready to use.');
