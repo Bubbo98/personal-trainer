@@ -9,8 +9,8 @@ import CategoryFilter from '../components/dashboard/CategoryFilter';
 import SearchBar from '../components/dashboard/SearchBar';
 import { FiGrid, FiLogOut, FiStar, FiEdit3, FiTrash2 } from 'react-icons/fi';
 
-import { User, Video, Category, AuthState, VideoState, Review, ReviewFormData } from '../types/dashboard';
-import { API_BASE_URL, STORAGE_KEY, formatDuration, formatDate, apiCall } from '../utils/dashboardUtils';
+import { Video, AuthState, VideoState, Review, ReviewFormData } from '../types/dashboard';
+import { STORAGE_KEY, formatDate, apiCall } from '../utils/dashboardUtils';
 
 interface DashboardProps {}
 

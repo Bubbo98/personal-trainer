@@ -6,7 +6,7 @@ import {
   FiVideo,
   FiX
 } from 'react-icons/fi';
-import { apiCall, formatDate, formatDuration, STORAGE_KEY } from '../../utils/adminUtils';
+import { apiCall, formatDate, formatDuration } from '../../utils/adminUtils';
 import { Video, CreateVideoForm } from '../../types/admin';
 
 const VideoManagement: React.FC = () => {
@@ -177,11 +177,8 @@ const VideoManagement: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
                   >
                     <option value="">{t('admin.videos.selectCategory')}</option>
-                    <option value="calisthenics">{t('admin.videos.categories.calisthenics')}</option>
-                    <option value="bodyweight">{t('admin.videos.categories.bodyweight')}</option>
-                    <option value="recovery">{t('admin.videos.categories.recovery')}</option>
-                    <option value="strength">{t('admin.videos.categories.strength')}</option>
-                    <option value="cardio">{t('admin.videos.categories.cardio')}</option>
+                    <option value="palestra">{t('admin.videos.categories.palestra')}</option>
+                    <option value="corpoLibero">{t('admin.videos.categories.corpoLibero')}</option>
                   </select>
                 </div>
               </div>
