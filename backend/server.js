@@ -22,8 +22,26 @@ app.use(helmet({
 }));
 
 // CORS configuration
+const allowedOrigins = [
+    'http://localhost:3000',
+    'https://personal-trainer-prod.vercel.app',
+    'https://esercizifacili.com',
+    'https://www.esercizifacili.com',
+    'https://app.esercizifacili.com'
+];
+
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: function (origin, callback) {
+        // Allow requests with no origin (mobile apps, curl, etc.)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+        return callback(new Error(msg), false);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
