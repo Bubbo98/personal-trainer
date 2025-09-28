@@ -26,8 +26,6 @@ export interface Video {
 
 export interface CreateUserForm {
   username: string;
-  email: string;
-  password: string;
   firstName: string;
   lastName: string;
 }

@@ -60,7 +60,7 @@ const AdminCMS: React.FC = () => {
     };
 
     checkAuth();
-  }, []);
+  }, [t]);
 
   const handleLogin = () => {
     setAdminState({

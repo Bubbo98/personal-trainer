@@ -4,9 +4,10 @@ import {
   FiPlus,
   FiLink,
   FiCheck,
-  FiX
+  FiX,
+  FiTrash2
 } from 'react-icons/fi';
-import { apiCall, formatDate, formatDuration, STORAGE_KEY } from '../../utils/adminUtils';
+import { apiCall, formatDate, formatDuration } from '../../utils/adminUtils';
 import { User, Video, CreateUserForm } from '../../types/admin';
 
 const UserManagement: React.FC = () => {
@@ -21,8 +22,6 @@ const UserManagement: React.FC = () => {
 
   const [createUserForm, setCreateUserForm] = useState<CreateUserForm>({
     username: '',
-    email: '',
-    password: '',
     firstName: '',
     lastName: ''
   });
@@ -76,8 +75,6 @@ const UserManagement: React.FC = () => {
       setUsers(prev => [response.data.user, ...prev]);
       setCreateUserForm({
         username: '',
-        email: '',
-        password: '',
         firstName: '',
         lastName: ''
       });
@@ -139,6 +136,24 @@ const UserManagement: React.FC = () => {
       alert(t('admin.users.videoRevokedSuccess'));
     } catch (error) {
       alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.users.revokeVideoFailed')}`);
+    }
+  };
+
+  const handleDeleteUser = async (userId: number, userName: string) => {
+    if (!window.confirm(`${t('admin.users.confirmDelete')} ${userName}?`)) {
+      return;
+    }
+
+    try {
+      await apiCall(`/admin/users/${userId}`, {
+        method: 'DELETE'
+      });
+
+      loadUsers(); // Refresh user data
+      setSelectedUser(null); // Clear selected user if it was deleted
+      alert(t('admin.users.userDeletedSuccess'));
+    } catch (error) {
+      alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.users.deleteUserFailed')}`);
     }
   };
 
@@ -209,28 +224,6 @@ const UserManagement: React.FC = () => {
                   required
                   value={createUserForm.username}
                   onChange={(e) => setCreateUserForm(prev => ({ ...prev, username: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.users.email')}</label>
-                <input
-                  type="email"
-                  required
-                  value={createUserForm.email}
-                  onChange={(e) => setCreateUserForm(prev => ({ ...prev, email: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.users.password')}</label>
-                <input
-                  type="password"
-                  required
-                  value={createUserForm.password}
-                  onChange={(e) => setCreateUserForm(prev => ({ ...prev, password: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
                 />
               </div>
@@ -321,6 +314,13 @@ const UserManagement: React.FC = () => {
                         title={t('admin.users.generateAccessLink')}
                       >
                         {React.createElement(FiLink as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteUser(user.id, `${user.firstName} ${user.lastName}`)}
+                        className="text-red-600 hover:text-red-800 p-1"
+                        title={t('admin.users.deleteUser')}
+                      >
+                        {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
                       </button>
                     </div>
                   </td>
