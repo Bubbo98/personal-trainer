@@ -1,10 +1,17 @@
 import React from 'react';
+import { Helmet } from 'react-helmet-async';
+import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 const CookiePolicy: React.FC = () => {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen bg-white">
+      <Helmet>
+        <title>{t('pages.cookies.title')}</title>
+      </Helmet>
       <Header />
 
       <main className="pt-28 sm:pt-40 px-6 lg:px-16 pb-16">

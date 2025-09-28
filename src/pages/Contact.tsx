@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import AutoFadeCarousel from '../components/AutoFadeCarousel';
@@ -203,6 +204,9 @@ const Contact: React.FC<ContactPageProps> = () => {
 
   return (
     <div className={pageClassName}>
+      <Helmet>
+        <title>{t('pages.contact.title')}</title>
+      </Helmet>
       <Header />
 
       <main className={mainClassName}>

@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { FiMapPin, FiPhone, FiMail, FiClock, FiUser, FiFileText } from 'react-icons/fi';
 
 const Footer: React.FC = () => {
+  const { t } = useTranslation();
   return (
     <footer className="bg-gray-900 text-white">
       <div className=" px-6 lg:px-10 py-12 flex flex-col md:flex-row items-center gap-8">
@@ -20,7 +22,7 @@ const Footer: React.FC = () => {
         <div className=" grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Informazioni Personali */}
           <div className="space-y-4">
-            <h3 className="text-xl font-bold mb-6">Personal Trainer</h3>
+            <h3 className="text-xl font-bold mb-6">{t('footer.personalTrainer')}</h3>
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 {React.createElement(FiUser as React.ComponentType<{ className?: string }>, { className: "w-5 h-5 text-gray-400 flex-shrink-0" })}
@@ -38,15 +40,15 @@ const Footer: React.FC = () => {
 
           {/* Orari di Lavoro */}
           <div className="space-y-4">
-            <h3 className="text-xl font-bold mb-6">Orari</h3>
+            <h3 className="text-xl font-bold mb-6">{t('footer.schedule')}</h3>
             <div className="space-y-3">
               <div className="flex items-start space-x-3">
                 {React.createElement(FiClock as React.ComponentType<{ className?: string }>, { className: "w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" })}
                 <div className="text-gray-300">
-                  <div className="font-medium text-white mb-2">Lunedì - Venerdì</div>
+                  <div className="font-medium text-white mb-2">{t('footer.mondayFriday')}</div>
                   <div className="text-sm space-y-1">
-                    <div>🏋️ Allenamenti: 9:00 - 17:00</div>
-                    <div>💬 Consulenze: 17:00 - 19:00</div>
+                    <div>{t('footer.workouts')}</div>
+                    <div>{t('footer.consultations')}</div>
                   </div>
                 </div>
               </div>
@@ -55,7 +57,7 @@ const Footer: React.FC = () => {
 
           {/* Contatti */}
           <div className="space-y-4">
-            <h3 className="text-xl font-bold mb-6">Contatti</h3>
+            <h3 className="text-xl font-bold mb-6">{t('footer.contacts')}</h3>
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 {React.createElement(FiPhone as React.ComponentType<{ className?: string }>, { className: "w-5 h-5 text-gray-400 flex-shrink-0" })}
@@ -74,7 +76,7 @@ const Footer: React.FC = () => {
 
           {/* Informazioni Legali */}
           <div className="space-y-4">
-            <h3 className="text-xl font-bold mb-6">Dati Fiscali</h3>
+            <h3 className="text-xl font-bold mb-6">{t('footer.fiscalData')}</h3>
             <div className="space-y-3">
               <div className="flex items-start space-x-3">
                 {React.createElement(FiFileText as React.ComponentType<{ className?: string }>, { className: "w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" })}
@@ -100,10 +102,10 @@ const Footer: React.FC = () => {
             {/* Sezione 2 - Informazioni Centro */}
             <div className="text-center space-y-3">
               <div className="text-gray-400 text-sm">
-                © {new Date().getFullYear()} Joshua Maurizio - Personal Trainer
+                {t('footer.copyright', { year: new Date().getFullYear() })}
               </div>
               <div className="text-gray-500 text-xs">
-                Tutti i diritti riservati
+                {t('footer.allRightsReserved')}
               </div>
             </div>
 
@@ -114,19 +116,19 @@ const Footer: React.FC = () => {
               to="/privacy-policy"
               className="text-gray-400 hover:text-white transition-colors"
             >
-              Privacy Policy
+              {t('footer.privacyPolicy')}
             </Link>
             <Link
               to="/terms-of-service"
               className="text-gray-400 hover:text-white transition-colors"
             >
-              Termini di Servizio
+              {t('footer.termsOfService')}
             </Link>
             <Link
               to="/cookie-policy"
               className="text-gray-400 hover:text-white transition-colors"
             >
-              Cookie Policy
+              {t('footer.cookiePolicy')}
             </Link>
           </div>
         </div>
@@ -137,11 +139,10 @@ const Footer: React.FC = () => {
         <div className="mt-8 pt-6 border-t border-gray-800">
           <div className="text-xs text-gray-500 text-center space-y-2">
             <p>
-              🏃‍♂️ Personal Trainer qualificato e certificato - Milano
+              {t('footer.qualifiedTrainer')}
             </p>
             <p>
-              I programmi di allenamento sono personalizzati e sviluppati in base alle esigenze individuali.
-              Si consiglia sempre di consultare un medico prima di iniziare qualsiasi programma di fitness.
+              {t('footer.disclaimer')}
             </p>
           </div>
         </div>
@@ -155,7 +156,7 @@ const Footer: React.FC = () => {
               />
               <div className="text-center">
                 <div className="text-gray-300 text-sm font-medium">
-                  Allenamento Funzionale Milano
+                  {t('footer.functionalTraining')}
                 </div>
                 <a
                   href="https://www.allenamentofunzionalemilano.net"

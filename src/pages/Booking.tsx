@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Helmet } from 'react-helmet-async';
 import Cal from '@calcom/embed-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -98,6 +99,9 @@ const Booking: React.FC<BookingPageProps> = () => {
 
   return (
     <div className={pageClassName}>
+      <Helmet>
+        <title>{t('pages.booking.title')}</title>
+      </Helmet>
       <Header />
 
       <main className={mainClassName}>
