@@ -5,7 +5,8 @@ import {
   FiLink,
   FiCheck,
   FiX,
-  FiTrash2
+  FiTrash2,
+  FiSearch
 } from 'react-icons/fi';
 import { apiCall, formatDate, formatDuration } from '../../utils/adminUtils';
 import { User, Video, CreateUserForm } from '../../types/admin';
@@ -19,6 +20,7 @@ const UserManagement: React.FC = () => {
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [createUserForm, setCreateUserForm] = useState<CreateUserForm>({
     username: '',
@@ -157,6 +159,19 @@ const UserManagement: React.FC = () => {
     }
   };
 
+  // Filter users based on search term
+  const filteredUsers = users.filter(user => {
+    if (!searchTerm) return true;
+
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      (user.firstName && user.firstName.toLowerCase().includes(searchLower)) ||
+      (user.lastName && user.lastName.toLowerCase().includes(searchLower)) ||
+      user.username.toLowerCase().includes(searchLower) ||
+      (user.email && user.email.toLowerCase().includes(searchLower))
+    );
+  });
+
   if (loading && users.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -177,6 +192,27 @@ const UserManagement: React.FC = () => {
           {React.createElement(FiPlus as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
           <span>{t('admin.users.newUser')}</span>
         </button>
+      </div>
+
+      {/* Search Bar */}
+      <div className="flex items-center space-x-4">
+        <div className="relative flex-1 max-w-md">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            {React.createElement(FiSearch as React.ComponentType<{ className?: string }>, { className: "w-4 h-4 text-gray-400" })}
+          </div>
+          <input
+            type="text"
+            placeholder={t('dashboard.searchPlaceholder')}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+          />
+        </div>
+        {searchTerm && (
+          <div className="text-sm text-gray-500">
+            {filteredUsers.length} di {users.length} utenti
+          </div>
+        )}
       </div>
 
       {/* Create User Modal */}
@@ -277,7 +313,7 @@ const UserManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {users.map((user) => (
+              {filteredUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div>
@@ -326,6 +362,17 @@ const UserManagement: React.FC = () => {
                   </td>
                 </tr>
               ))}
+
+              {filteredUsers.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                    {searchTerm
+                      ? `Nessun utente trovato per "${searchTerm}"`
+                      : 'Nessun utente disponibile'
+                    }
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
