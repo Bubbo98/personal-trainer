@@ -11,7 +11,11 @@ interface VideoPlayerProps {
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ video, onClose }) => {
   const { t } = useTranslation();
-  const videoSrc = `${window.location.origin}/videos/${video.filePath}`;
+  // Use backend URL for video serving
+  const backendUrl = process.env.NODE_ENV === 'production'
+    ? window.location.origin  // Same domain in production (Vercel)
+    : 'http://localhost:3002'; // Backend port in development
+  const videoSrc = `${backendUrl}/videos/${video.filePath}`;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
