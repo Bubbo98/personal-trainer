@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiDownload, FiFile, FiAlertCircle } from 'react-icons/fi';
+import { STORAGE_KEY } from '../../utils/dashboardUtils';
 
 interface PdfInfo {
   originalName: string;
@@ -29,7 +30,7 @@ const TrainingPlan: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem(STORAGE_KEY);
 
       const backendUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
@@ -57,7 +58,7 @@ const TrainingPlan: React.FC = () => {
   const handleDownload = async () => {
     try {
       setDownloading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem(STORAGE_KEY);
 
       const backendUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 

@@ -16,9 +16,10 @@ interface PdfInfo {
 interface Props {
   userId: number;
   userName: string;
+  onPdfChange?: (hasPdf: boolean) => void;
 }
 
-const PdfManagement: React.FC<Props> = ({ userId, userName }) => {
+const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
   const { t } = useTranslation();
   const [pdfInfo, setPdfInfo] = useState<PdfInfo | null>(null);
   const [loading, setLoading] = useState(false);
@@ -43,6 +44,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName }) => {
       const data = await response.json();
       if (data.success) {
         setPdfInfo(data.data);
+        onPdfChange?.(!!data.data);
       }
     } catch (error) {
       console.error('Failed to load PDF info:', error);
@@ -119,6 +121,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName }) => {
       if (data.success) {
         alert(t('admin.pdf.deleteSuccess') || 'Scheda eliminata con successo');
         setPdfInfo(null);
+        onPdfChange?.(false);
       } else {
         throw new Error(data.error || 'Delete failed');
       }
