@@ -7,7 +7,8 @@ import VideoPlayer from '../components/dashboard/VideoPlayer';
 import VideoCard from '../components/dashboard/VideoCard';
 import CategoryFilter from '../components/dashboard/CategoryFilter';
 import SearchBar from '../components/dashboard/SearchBar';
-import { FiGrid, FiLogOut, FiStar, FiEdit3, FiTrash2 } from 'react-icons/fi';
+import TrainingPlan from '../components/dashboard/TrainingPlan';
+import { FiGrid, FiLogOut, FiStar, FiEdit3, FiTrash2, FiVideo, FiFile } from 'react-icons/fi';
 
 import { Video, AuthState, VideoState, Review, ReviewFormData } from '../types/dashboard';
 import { STORAGE_KEY, formatDate, apiCall } from '../utils/dashboardUtils';
@@ -46,6 +47,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     title: '',
     comment: ''
   });
+  const [activeTab, setActiveTab] = useState<'videos' | 'training-plan'>('videos');
 
   // Authentication logic
   const authenticateWithToken = useCallback(async (authToken: string) => {
@@ -359,7 +361,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
       <main className={mainClassName}>
         <div className={containerClassName}>
           {/* User Welcome Section */}
-          <div className="flex items-center justify-between mb-12">
+          <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
                 {t('dashboard.welcome')}{authState.user?.firstName ? `, ${authState.user.firstName}` : ''}!
@@ -379,23 +381,54 @@ const Dashboard: React.FC<DashboardProps> = () => {
             </button>
           </div>
 
-          {/* Video Categories Filter */}
-          {videoState.categories.length > 0 && (
-            <CategoryFilter
-              categories={videoState.categories}
-              selectedCategory={videoState.selectedCategory}
-              onSelectCategory={(category) =>
-                setVideoState(prev => ({ ...prev, selectedCategory: category }))
-              }
-            />
-          )}
+          {/* Navigation Tabs */}
+          <div className="flex space-x-1 bg-gray-200 p-1 rounded-lg mb-8">
+            <button
+              onClick={() => setActiveTab('videos')}
+              className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-medium transition-all ${
+                activeTab === 'videos'
+                  ? 'bg-white text-gray-900 shadow'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {React.createElement(FiVideo as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+              <span>{t('dashboard.tabs.videos') || 'Video'}</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('training-plan')}
+              className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-medium transition-all ${
+                activeTab === 'training-plan'
+                  ? 'bg-white text-gray-900 shadow'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {React.createElement(FiFile as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+              <span>{t('dashboard.tabs.trainingPlan') || 'Scheda'}</span>
+            </button>
+          </div>
 
-          {/* Search Bar */}
-          <SearchBar
-            searchQuery={videoState.searchQuery}
-            onSearch={handleSearch}
-            onClear={clearSearch}
-          />
+          {/* Tab Content */}
+          {activeTab === 'training-plan' ? (
+            <TrainingPlan />
+          ) : (
+            <>
+              {/* Video Categories Filter */}
+              {videoState.categories.length > 0 && (
+                <CategoryFilter
+                  categories={videoState.categories}
+                  selectedCategory={videoState.selectedCategory}
+                  onSelectCategory={(category) =>
+                    setVideoState(prev => ({ ...prev, selectedCategory: category }))
+                  }
+                />
+              )}
+
+              {/* Search Bar */}
+              <SearchBar
+                searchQuery={videoState.searchQuery}
+                onSearch={handleSearch}
+                onClear={clearSearch}
+              />
 
           {/* Videos Grid */}
           {videoState.loading ? (
@@ -644,6 +677,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
               </div>
             )}
           </div>
+            </>
+          )}
         </div>
       </main>
 

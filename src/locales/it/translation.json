@@ -148,7 +148,24 @@
     "modifiedOn": "Modificata il",
     "cancel": "Annulla",
     "search": "Ricerca",
-    "closeVideo": "Chiudi video"
+    "closeVideo": "Chiudi video",
+    "tabs": {
+      "videos": "Video",
+      "trainingPlan": "Scheda"
+    },
+    "pdf": {
+      "myTrainingPlan": "La Mia Scheda di Allenamento",
+      "noPlanYet": "Nessuna scheda disponibile",
+      "noPlanMessage": "Il tuo personal trainer non ha ancora caricato una scheda di allenamento per te. Contattalo per maggiori informazioni.",
+      "fileSize": "Dimensione",
+      "uploadedAt": "Caricato il",
+      "updatedAt": "Aggiornato il",
+      "download": "Scarica Scheda",
+      "downloading": "Download in corso...",
+      "downloadFailed": "Download fallito. Riprova più tardi.",
+      "tip": "Consiglio",
+      "tipMessage": "Salva la scheda sul tuo dispositivo per consultarla anche offline durante gli allenamenti."
+    }
   },
   "pages": {
     "home": {
@@ -286,6 +303,27 @@
       "createVideoFailed": "Creazione fallita",
       "deleteVideoFailed": "Eliminazione fallita",
       "deleteConfirm": "Sei sicuro di voler eliminare il video \"{title}\"?\n\nQuesta azione rimuoverà anche tutti gli accessi degli utenti a questo video."
+    },
+    "pdf": {
+      "trainingPlan": "Scheda di Allenamento",
+      "noPdf": "Nessuna scheda caricata per questo utente",
+      "uploadPdf": "Carica scheda",
+      "replacePdf": "Sostituisci scheda",
+      "selectFile": "Seleziona file PDF (max 10MB)",
+      "upload": "Carica",
+      "replace": "Sostituisci",
+      "delete": "Elimina scheda",
+      "fileSize": "Dimensione",
+      "uploadedBy": "Caricato da",
+      "uploadedAt": "Data caricamento",
+      "updatedAt": "Ultimo aggiornamento",
+      "uploadSuccess": "Scheda caricata con successo",
+      "updateSuccess": "Scheda aggiornata con successo",
+      "deleteSuccess": "Scheda eliminata con successo",
+      "confirmDelete": "Sei sicuro di voler eliminare la scheda di",
+      "onlyPdfAllowed": "Solo file PDF sono consentiti",
+      "fileTooLarge": "Il file è troppo grande (max 10MB)",
+      "uploading": "Caricamento..."
     },
     "reviews": {
       "title": "Gestione Recensioni",

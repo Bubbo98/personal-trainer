@@ -75,6 +75,21 @@ CREATE TABLE IF NOT EXISTS reviews (
     UNIQUE(user_id) -- One review per user
 );
 
+-- User PDF Files - stores training plans/schedules for each user
+CREATE TABLE IF NOT EXISTS user_pdf_files (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    original_name VARCHAR(255) NOT NULL,
+    file_path VARCHAR(500) NOT NULL, -- path relative to public/pdf/
+    file_size INTEGER NOT NULL, -- in bytes
+    uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    uploaded_by VARCHAR(100) DEFAULT 'admin',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(user_id) -- One PDF per user
+);
+
 -- Indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -89,3 +104,4 @@ CREATE INDEX IF NOT EXISTS idx_reviews_user ON reviews(user_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_approved ON reviews(is_approved);
 CREATE INDEX IF NOT EXISTS idx_reviews_featured ON reviews(is_featured);
 CREATE INDEX IF NOT EXISTS idx_reviews_rating ON reviews(rating);
+CREATE INDEX IF NOT EXISTS idx_user_pdf_files_user ON user_pdf_files(user_id);

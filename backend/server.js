@@ -11,6 +11,7 @@ const adminRoutes = require('./routes/admin');
 const reviewRoutes = require('./routes/reviews');
 const debugRoutes = require('./routes/debug');
 const sitemapRoutes = require('./routes/sitemap');
+const pdfRoutes = require('./routes/pdf');
 const { authenticateToken } = require('./middleware/auth');
 
 const app = express();
@@ -60,9 +61,10 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Serve static files (videos, thumbnails, etc.)
+// Serve static files (videos, thumbnails, pdf, etc.)
 app.use('/videos', express.static(path.join(__dirname, '..', 'public', 'videos')));
 app.use('/thumbnails', express.static(path.join(__dirname, '..', 'public', 'thumbnails')));
+app.use('/pdf', express.static(path.join(__dirname, '..', 'public', 'pdf')));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -80,6 +82,7 @@ app.use('/api/videos', authenticateToken, videoRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/debug', debugRoutes);
+app.use('/api/pdf', pdfRoutes);
 
 // SEO Routes (sitemap.xml, robots.txt)
 app.use('/', sitemapRoutes);

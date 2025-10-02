@@ -79,7 +79,7 @@ function createTursoClient() {
         },
 
         runCallback: (query, params, callback) => {
-            console.log('⚡ Turso RUN:', query, params);
+            console.log('⚡ Turso RUN:', query.substring(0, 100));
             client.execute({ sql: query, args: params })
                 .then(result => {
                     console.log('✅ Turso RUN result:', result.rowsAffected, 'rows affected');
@@ -90,7 +90,7 @@ function createTursoClient() {
                     callback.call(context, null);
                 })
                 .catch(err => {
-                    console.error('❌ Turso RUN error:', err);
+                    console.error('❌ Turso RUN error:', err.message);
                     callback(err);
                 });
         }
