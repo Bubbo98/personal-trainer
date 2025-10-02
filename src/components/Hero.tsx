@@ -157,16 +157,6 @@ const Hero: React.FC = () => {
             </ActionButton>
           ))}
         </div>
-
-        {/* Admin Link - Only for development/testing */}
-        <div className="mt-8">
-          <a
-            href="/admin"
-            className="text-white/50 hover:text-white/80 text-sm underline transition-colors"
-          >
-            Admin CMS
-          </a>
-        </div>
       </div>
     </section>
   );
