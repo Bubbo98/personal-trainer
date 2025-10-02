@@ -160,6 +160,38 @@ Invia nuova recensione
 #### `GET /api/admin/reviews` (Admin only)
 Gestisci recensioni in moderazione
 
+### **📄 PDF** (`/api/pdf`) - Gestione Schede
+
+#### `POST /api/pdf/admin/upload/:userId` (Admin only)
+Upload scheda PDF con durata personalizzata
+```bash
+# Form-data upload
+pdf: <file>
+durationMonths: 2  # default
+durationDays: 0    # default
+```
+
+#### `GET /api/pdf/admin/user/:userId` (Admin only)
+Info PDF utente (include expirationDate, durationMonths, durationDays)
+
+#### `PUT /api/pdf/admin/extend/:userId` (Admin only)
+Estendi durata scheda PDF
+```json
+{
+  "additionalMonths": 1,
+  "additionalDays": 15
+}
+```
+
+#### `DELETE /api/pdf/admin/delete/:userId` (Admin only)
+Elimina scheda PDF utente
+
+#### `GET /api/pdf/my-pdf` (User)
+Info scheda PDF personale (include expirationDate)
+
+#### `GET /api/pdf/download` (User)
+Download scheda PDF personale
+
 ## 💾 **Database Schema**
 
 ### **Tabella Users**
@@ -214,6 +246,28 @@ CREATE TABLE reviews (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 ```
+
+### **Tabella User_PDF_Files** (Turso)
+```sql
+CREATE TABLE user_pdf_files (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    file_path TEXT NOT NULL,
+    original_name TEXT NOT NULL,
+    file_size INTEGER,
+    uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    duration_months INTEGER DEFAULT 2,
+    duration_days INTEGER DEFAULT 0,
+    expiration_date DATETIME,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+**Campi scadenza**:
+- `duration_months`: Durata in mesi (default: 2)
+- `duration_days`: Giorni aggiuntivi (default: 0)
+- `expiration_date`: Calcolata come `datetime('now', '+X months', '+Y days')`
 
 ## 🛠️ **Scripts Disponibili**
 
