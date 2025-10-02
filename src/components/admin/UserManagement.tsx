@@ -10,6 +10,7 @@ import {
 } from 'react-icons/fi';
 import { apiCall, formatDate, formatDuration } from '../../utils/adminUtils';
 import { User, Video, CreateUserForm } from '../../types/admin';
+import PdfManagement from './PdfManagement';
 
 const UserManagement: React.FC = () => {
   const { t } = useTranslation();
@@ -453,6 +454,17 @@ const UserManagement: React.FC = () => {
                   {t('admin.users.allVideosAssigned')}
                 </div>
               )}
+            </div>
+
+            {/* PDF Management Section */}
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <h5 className="font-medium text-sm text-gray-700 mb-3">
+                {t('admin.pdf.trainingPlan') || 'Scheda di Allenamento'}
+              </h5>
+              <PdfManagement
+                userId={selectedUser.id}
+                userName={`${selectedUser.firstName} ${selectedUser.lastName}`}
+              />
             </div>
           </div>
         )}
