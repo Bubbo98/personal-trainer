@@ -104,15 +104,17 @@ const ReviewManagement: React.FC = () => {
       ) : (
         <div className="grid gap-6">
           {reviews.map((review) => (
-            <div key={review.id} className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-start justify-between mb-4">
+            <div key={review.id} className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-3">
                 <div className="flex-1">
-                  <div className="flex items-center space-x-4 mb-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 gap-2 mb-2">
                     <h3 className="font-semibold text-gray-900">
                       {review.user.firstName} {review.user.lastName}
                     </h3>
-                    <StarRating rating={review.rating} />
-                    <span className="text-sm text-gray-600">({review.rating}/5)</span>
+                    <div className="flex items-center space-x-2">
+                      <StarRating rating={review.rating} />
+                      <span className="text-sm text-gray-600">({review.rating}/5)</span>
+                    </div>
                   </div>
 
                   {review.title && (
@@ -121,40 +123,38 @@ const ReviewManagement: React.FC = () => {
 
                   <p className="text-gray-700 mb-3 leading-relaxed">{review.comment}</p>
 
-                  <div className="flex items-center space-x-4 text-sm text-gray-500">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-gray-500">
                     <span>{t('admin.videos.createdAt')}: {formatDate(review.createdAt)}</span>
                     {review.updatedAt !== review.createdAt && (
-                      <span>{t('admin.reviews.modified')}: {formatDate(review.updatedAt)}</span>
+                      <span className="hidden sm:inline">{t('admin.reviews.modified')}: {formatDate(review.updatedAt)}</span>
                     )}
                     {review.approvedAt && (
-                      <span>{t('admin.reviews.approved')}: {formatDate(review.approvedAt)}</span>
+                      <span className="hidden sm:inline">{t('admin.reviews.approved')}: {formatDate(review.approvedAt)}</span>
                     )}
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2 ml-4">
-                  {/* Status badges */}
-                  <div className="flex flex-col space-y-1">
-                    <span className={`text-xs px-2 py-1 rounded-full ${review.isApproved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                      {review.isApproved ? t('admin.reviews.approved') : t('admin.reviews.pending')}
+                {/* Status badges */}
+                <div className="flex sm:flex-col gap-2 sm:space-y-1 sm:ml-4">
+                  <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${review.isApproved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                    {review.isApproved ? t('admin.reviews.approved') : t('admin.reviews.pending')}
+                  </span>
+                  {review.isFeatured && (
+                    <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800 whitespace-nowrap">
+                      {t('admin.reviews.featured')}
                     </span>
-                    {review.isFeatured && (
-                      <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                        {t('admin.reviews.featured')}
-                      </span>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
 
               {/* Action buttons */}
-              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                <div className="flex space-x-2">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-gray-100">
+                <div className="flex flex-wrap gap-2">
                   {/* Approve/Reject buttons */}
                   {!review.isApproved ? (
                     <button
                       onClick={() => handleApproveReview(review.id, true)}
-                      className="bg-green-600 text-white px-3 py-1 text-sm rounded-lg hover:bg-green-700 flex items-center space-x-1"
+                      className="bg-green-600 text-white px-3 py-2 text-sm rounded-lg hover:bg-green-700 flex items-center justify-center space-x-1 flex-1 sm:flex-initial"
                     >
                       {React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
                       <span>{t('admin.reviews.approve')}</span>
@@ -162,7 +162,7 @@ const ReviewManagement: React.FC = () => {
                   ) : (
                     <button
                       onClick={() => handleApproveReview(review.id, false)}
-                      className="bg-yellow-600 text-white px-3 py-1 text-sm rounded-lg hover:bg-yellow-700 flex items-center space-x-1"
+                      className="bg-yellow-600 text-white px-3 py-2 text-sm rounded-lg hover:bg-yellow-700 flex items-center justify-center space-x-1 flex-1 sm:flex-initial"
                     >
                       {React.createElement(FiX as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
                       <span>{t('admin.reviews.unapprove')}</span>
@@ -174,7 +174,7 @@ const ReviewManagement: React.FC = () => {
                     !review.isFeatured ? (
                       <button
                         onClick={() => handleFeatureReview(review.id, true)}
-                        className="bg-blue-600 text-white px-3 py-1 text-sm rounded-lg hover:bg-blue-700 flex items-center space-x-1"
+                        className="bg-blue-600 text-white px-3 py-2 text-sm rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-1 flex-1 sm:flex-initial"
                       >
                         {React.createElement(FiStar as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
                         <span>{t('admin.reviews.toggleFeatured')}</span>
@@ -182,7 +182,7 @@ const ReviewManagement: React.FC = () => {
                     ) : (
                       <button
                         onClick={() => handleFeatureReview(review.id, false)}
-                        className="bg-gray-600 text-white px-3 py-1 text-sm rounded-lg hover:bg-gray-700 flex items-center space-x-1"
+                        className="bg-gray-600 text-white px-3 py-2 text-sm rounded-lg hover:bg-gray-700 flex items-center justify-center space-x-1 flex-1 sm:flex-initial"
                       >
                         {React.createElement(FiStar as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
                         <span>{t('admin.reviews.toggleFeatured')}</span>
@@ -194,7 +194,7 @@ const ReviewManagement: React.FC = () => {
                 {/* Delete button */}
                 <button
                   onClick={() => handleDeleteReview(review.id, `${review.user.firstName} ${review.user.lastName}`)}
-                  className="bg-red-600 text-white px-3 py-1 text-sm rounded-lg hover:bg-red-700 flex items-center space-x-1"
+                  className="bg-red-600 text-white px-3 py-2 text-sm rounded-lg hover:bg-red-700 flex items-center justify-center space-x-1 w-full sm:w-auto"
                 >
                   {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
                   <span>{t('common.delete')}</span>

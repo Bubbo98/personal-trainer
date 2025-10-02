@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
 import Header from '../components/Header';
@@ -10,7 +9,6 @@ import ReviewManagement from '../components/admin/ReviewManagement';
 import {
   FiUsers,
   FiVideo,
-  FiEye,
   FiLogOut,
   FiMessageSquare
 } from 'react-icons/fi';
@@ -19,7 +17,6 @@ import { AdminState } from '../types/admin';
 
 
 const AdminCMS: React.FC = () => {
-  const navigate = useNavigate();
   const { t } = useTranslation();
   const [adminState, setAdminState] = useState<AdminState>({
     isAuthenticated: false,
@@ -114,61 +111,51 @@ const AdminCMS: React.FC = () => {
               <p className="text-gray-600">{t('admin.siteManagement')}</p>
             </div>
 
-            <div className="flex space-x-4">
-              <button
-                onClick={() => navigate('/')}
-                className="flex items-center space-x-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-300 transition-colors"
-              >
-                {React.createElement(FiEye as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-                <span>{t('admin.viewSite')}</span>
-              </button>
-
-              <button
-                onClick={handleLogout}
-                className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 transition-colors"
-              >
-                {React.createElement(FiLogOut as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-                <span>{t('admin.logout')}</span>
-              </button>
-            </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 transition-colors"
+            >
+              {React.createElement(FiLogOut as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+              <span>{t('admin.logout')}</span>
+            </button>
           </div>
 
           {/* Navigation Tabs */}
           <div className="flex space-x-1 mb-8 bg-gray-200 rounded-xl p-1">
             <button
               onClick={() => setActiveTab('users')}
-              className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+              className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors flex-1 sm:flex-initial ${
                 activeTab === 'users'
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               {React.createElement(FiUsers as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-              <span>{t('admin.users.tabTitle')}</span>
+              <span className="hidden sm:inline">{t('admin.users.tabTitle')}</span>
             </button>
 
             <button
               onClick={() => setActiveTab('videos')}
-              className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+              className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors flex-1 sm:flex-initial ${
                 activeTab === 'videos'
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               {React.createElement(FiVideo as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-              <span>{t('admin.videos.tabTitle')}</span>
+              <span className="hidden sm:inline">{t('admin.videos.tabTitle')}</span>
             </button>
 
             <button
               onClick={() => setActiveTab('reviews')}
-              className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+              className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors flex-1 sm:flex-initial ${
                 activeTab === 'reviews'
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-              <span>{t('admin.reviews.tabTitle')}</span>
+              <span className="hidden sm:inline">{t('admin.reviews.tabTitle')}</span>
             </button>
           </div>
 
