@@ -32,6 +32,7 @@ const upload = multer({
 router.post('/admin/upload/:userId', authenticateToken, requireAdmin, upload.single('pdf'), async (req, res) => {
     try {
         const { userId } = req.params;
+        const { durationMonths = 2, durationDays = 0 } = req.body;
 
         if (!req.file) {
             return res.status(400).json({
@@ -76,7 +77,7 @@ router.post('/admin/upload/:userId', authenticateToken, requireAdmin, upload.sin
                 const fileData = req.file.buffer.toString('base64');
 
                 if (existingPdf) {
-                    // Update existing record
+                    // Update existing record with new duration
                     db.runCallback(`
                         UPDATE user_pdf_files
                         SET original_name = ?,
@@ -84,6 +85,9 @@ router.post('/admin/upload/:userId', authenticateToken, requireAdmin, upload.sin
                             file_size = ?,
                             mime_type = ?,
                             uploaded_by = ?,
+                            duration_months = ?,
+                            duration_days = ?,
+                            expiration_date = datetime('now', '+' || ? || ' months', '+' || ? || ' days'),
                             updated_at = CURRENT_TIMESTAMP
                         WHERE user_id = ?
                     `, [
@@ -92,6 +96,10 @@ router.post('/admin/upload/:userId', authenticateToken, requireAdmin, upload.sin
                         req.file.size,
                         req.file.mimetype,
                         req.user.username,
+                        durationMonths,
+                        durationDays,
+                        durationMonths,
+                        durationDays,
                         userId
                     ], (err) => {
                         db.close();
@@ -116,17 +124,21 @@ router.post('/admin/upload/:userId', authenticateToken, requireAdmin, upload.sin
                         });
                     });
                 } else {
-                    // Insert new record
+                    // Insert new record with duration
                     db.runCallback(`
-                        INSERT INTO user_pdf_files (user_id, original_name, file_data, file_size, mime_type, uploaded_by)
-                        VALUES (?, ?, ?, ?, ?, ?)
+                        INSERT INTO user_pdf_files (user_id, original_name, file_data, file_size, mime_type, uploaded_by, duration_months, duration_days, expiration_date)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+' || ? || ' months', '+' || ? || ' days'))
                     `, [
                         userId,
                         req.file.originalname,
                         fileData,
                         req.file.size,
                         req.file.mimetype,
-                        req.user.username
+                        req.user.username,
+                        durationMonths,
+                        durationDays,
+                        durationMonths,
+                        durationDays
                     ], (err) => {
                         db.close();
 
@@ -223,7 +235,7 @@ router.get('/admin/user/:userId', authenticateToken, requireAdmin, async (req, r
         const { userId } = req.params;
         const db = createDatabase();
 
-        db.getCallback('SELECT id, user_id, original_name, file_size, mime_type, uploaded_at, uploaded_by, updated_at FROM user_pdf_files WHERE user_id = ?', [userId], (err, pdf) => {
+        db.getCallback('SELECT id, user_id, original_name, file_size, mime_type, uploaded_at, uploaded_by, updated_at, duration_months, duration_days, expiration_date FROM user_pdf_files WHERE user_id = ?', [userId], (err, pdf) => {
             db.close();
 
             if (err) {
@@ -251,7 +263,10 @@ router.get('/admin/user/:userId', authenticateToken, requireAdmin, async (req, r
                     mimeType: pdf.mime_type,
                     uploadedAt: pdf.uploaded_at,
                     uploadedBy: pdf.uploaded_by,
-                    updatedAt: pdf.updated_at
+                    updatedAt: pdf.updated_at,
+                    durationMonths: pdf.duration_months,
+                    durationDays: pdf.duration_days,
+                    expirationDate: pdf.expiration_date
                 }
             });
         });
@@ -260,6 +275,90 @@ router.get('/admin/user/:userId', authenticateToken, requireAdmin, async (req, r
         res.status(500).json({
             success: false,
             error: 'Failed to fetch PDF info'
+        });
+    }
+});
+
+// PUT /api/pdf/admin/extend/:userId
+// Extend PDF duration for a specific user (Admin only)
+router.put('/admin/extend/:userId', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { additionalMonths = 0, additionalDays = 0 } = req.body;
+
+        if (additionalMonths === 0 && additionalDays === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Must provide at least additionalMonths or additionalDays'
+            });
+        }
+
+        const db = createDatabase();
+
+        // Check if PDF exists
+        db.getCallback('SELECT id, expiration_date, duration_months, duration_days FROM user_pdf_files WHERE user_id = ?', [userId], (err, pdf) => {
+            if (err) {
+                db.close();
+                console.error('Database error:', err.message);
+                return res.status(500).json({
+                    success: false,
+                    error: 'Database error'
+                });
+            }
+
+            if (!pdf) {
+                db.close();
+                return res.status(404).json({
+                    success: false,
+                    error: 'No PDF found for this user'
+                });
+            }
+
+            // Update duration and expiration date
+            const newDurationMonths = pdf.duration_months + additionalMonths;
+            const newDurationDays = pdf.duration_days + additionalDays;
+
+            db.runCallback(`
+                UPDATE user_pdf_files
+                SET duration_months = ?,
+                    duration_days = ?,
+                    expiration_date = datetime(expiration_date, '+' || ? || ' months', '+' || ? || ' days'),
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = ?
+            `, [
+                newDurationMonths,
+                newDurationDays,
+                additionalMonths,
+                additionalDays,
+                userId
+            ], (err) => {
+                db.close();
+
+                if (err) {
+                    console.error('Database error:', err.message);
+                    return res.status(500).json({
+                        success: false,
+                        error: 'Failed to extend PDF duration'
+                    });
+                }
+
+                console.log(`Admin ${req.user.username} extended PDF duration for user ID ${userId} by ${additionalMonths} months and ${additionalDays} days`);
+
+                res.json({
+                    success: true,
+                    message: 'PDF duration extended successfully',
+                    data: {
+                        newDurationMonths,
+                        newDurationDays
+                    }
+                });
+            });
+        });
+    } catch (error) {
+        console.error('Extend error:', error.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to extend PDF duration'
         });
     }
 });
@@ -273,7 +372,7 @@ router.get('/my-pdf', authenticateToken, async (req, res) => {
         const userId = req.user.userId;
         const db = createDatabase();
 
-        db.getCallback('SELECT id, original_name, file_size, mime_type, uploaded_at, updated_at FROM user_pdf_files WHERE user_id = ?', [userId], (err, pdf) => {
+        db.getCallback('SELECT id, original_name, file_size, mime_type, uploaded_at, updated_at, expiration_date FROM user_pdf_files WHERE user_id = ?', [userId], (err, pdf) => {
             db.close();
 
             if (err) {
@@ -298,7 +397,8 @@ router.get('/my-pdf', authenticateToken, async (req, res) => {
                     originalName: pdf.original_name,
                     fileSize: pdf.file_size,
                     uploadedAt: pdf.uploaded_at,
-                    updatedAt: pdf.updated_at
+                    updatedAt: pdf.updated_at,
+                    expirationDate: pdf.expiration_date
                 }
             });
         });
