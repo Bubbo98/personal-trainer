@@ -73,13 +73,26 @@ vercel --prod
 ## 🔧 **Configurazione Iniziale Post-Deploy**
 
 ### **1. Inizializzazione Database**
-Il database SQLite verrà creato automaticamente al primo avvio del backend.
+Il database SQLite/Turso verrà creato automaticamente al primo avvio del backend.
+
+**⚠️ IMPORTANTE - Migrazione PDF Expiration**:
+Se stai aggiornando da una versione precedente, esegui lo script di migrazione:
+```bash
+node backend/scripts/add-pdf-expiration.js
+```
+
+Questo script aggiunge i campi di scadenza alla tabella `user_pdf_files`:
+- `duration_months` (default: 2)
+- `duration_days` (default: 0)
+- `expiration_date` (calcolata automaticamente)
 
 ### **2. Test Sistema**
 1. **Accedi al tuo sito**: `https://tuodominio.com`
 2. **Accedi all'Admin CMS**: `https://tuodominio.com/admin`
 3. **Login**: `joshua_admin` / `your-password`
 4. **Crea utente di test** e verifica funzionamento
+5. **Test upload PDF** con durata personalizzata
+6. **Verifica badge scadenza** in lista utenti
 
 ### **3. Upload Video**
 1. **Carica video** nella directory corretta su Vercel
@@ -252,6 +265,11 @@ curl https://tuodominio.com/api/health
 - [ ] ✅ Test accesso cliente
 - [ ] ✅ Video caricati e funzionanti
 - [ ] ✅ Sistema recensioni operativo
+- [ ] ✅ **Migrazione PDF expiration eseguita**
+- [ ] ✅ **Upload PDF con durata funzionante**
+- [ ] ✅ **Badge scadenza visibili in admin**
+- [ ] ✅ **Countdown visibile in user dashboard**
+- [ ] ✅ **Estensione durata scheda funzionante**
 - [ ] ✅ Email notifications (se implementate)
 
 ### **📊 Monitoring**

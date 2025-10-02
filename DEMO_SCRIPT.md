@@ -327,6 +327,123 @@ curl -X GET http://localhost:3001/api/admin/users \
 
 ---
 
+## 📄 **Step 9: Gestione Schede PDF**
+
+### **A. Upload Scheda PDF con Durata**
+
+```bash
+# Upload PDF per user ID 2 con durata 2 mesi + 15 giorni
+curl -X POST http://localhost:3001/api/pdf/admin/upload/2 \
+  -H "Authorization: Bearer ADMIN_TOKEN" \
+  -F "pdf=@/path/to/scheda-allenamento.pdf" \
+  -F "durationMonths=2" \
+  -F "durationDays=15"
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "PDF uploaded successfully",
+  "data": {
+    "userId": 2,
+    "fileName": "scheda-allenamento.pdf",
+    "fileSize": 524288,
+    "durationMonths": 2,
+    "durationDays": 15,
+    "expirationDate": "2025-12-17T10:30:00.000Z"
+  }
+}
+```
+
+### **B. Verificare Info PDF Utente**
+
+```bash
+# Ottieni informazioni PDF per user ID 2
+curl -X GET http://localhost:3001/api/pdf/admin/user/2 \
+  -H "Authorization: Bearer ADMIN_TOKEN"
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "originalName": "scheda-allenamento.pdf",
+    "fileSize": 524288,
+    "uploadedAt": "2025-10-02T10:30:00.000Z",
+    "expirationDate": "2025-12-17T10:30:00.000Z",
+    "durationMonths": 2,
+    "durationDays": 15
+  }
+}
+```
+
+### **C. Estendere Durata Scheda**
+
+```bash
+# Aggiungi 1 mese alla scheda esistente
+curl -X PUT http://localhost:3001/api/pdf/admin/extend/2 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ADMIN_TOKEN" \
+  -d '{
+    "additionalMonths": 1,
+    "additionalDays": 0
+  }'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "PDF duration extended successfully",
+  "data": {
+    "userId": 2,
+    "oldExpiration": "2025-12-17T10:30:00.000Z",
+    "newExpiration": "2026-01-17T10:30:00.000Z",
+    "totalDurationMonths": 3,
+    "totalDurationDays": 15
+  }
+}
+```
+
+### **D. Test Dashboard Utente con PDF**
+
+**Scenario Cliente**:
+1. Cliente accede alla dashboard con il suo link
+2. Va alla sezione "Training Plan"
+3. Visualizza scheda PDF con:
+   - Nome file
+   - Dimensione
+   - Data caricamento
+   - **Badge scadenza colorato**:
+     - 🟢 Verde: "Scade tra 76 giorni"
+     - 🟡 Giallo: "La scheda scade tra 5 giorni"
+     - 🔴 Rosso: "La scheda scade oggi"
+   - Pulsante download
+
+### **E. Admin Panel - Visualizzazione Badge**
+
+**Vista Admin nella lista utenti**:
+```
+User: Maria Ferrari
+Email: maria.ferrari@email.com
+Videos: 2 assegnati
+PDF Status: [🟢 76g] ← Badge verde, 76 giorni rimanenti
+```
+
+**Quando scadenza si avvicina**:
+```
+PDF Status: [🟡 5g] ← Badge giallo, 5 giorni rimanenti
+```
+
+**Quando scaduta**:
+```
+PDF Status: [🔴 Scaduta] ← Badge rosso
+```
+
+---
+
 ## ✅ **Checklist Successo**
 
 - [ ] ✅ Backend avviato correttamente
@@ -338,6 +455,11 @@ curl -X GET http://localhost:3001/api/admin/users \
 - [ ] ✅ Accesso dashboard dal link
 - [ ] ✅ Video visibili nella dashboard
 - [ ] ✅ Player video funzionante
+- [ ] ✅ **PDF upload funzionante con durata**
+- [ ] ✅ **Badge scadenza visibile in admin**
+- [ ] ✅ **Countdown visibile in user dashboard**
+- [ ] ✅ **Estensione durata PDF funzionante**
+- [ ] ✅ **Colori badge corretti (verde/giallo/rosso)**
 - [ ] ✅ Logout e re-accesso funzionanti
 - [ ] ✅ Log accessi registrati
 

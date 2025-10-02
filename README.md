@@ -8,12 +8,16 @@ Sistema completo per la gestione di video personalizzati per clienti personal tr
 - 🎛️ **Admin CMS completo** per gestire utenti e video
 - 👥 **Creazione utenti** con link di accesso automatici
 - 🎬 **Gestione video** con controllo accessi granulare
+- 📄 **Gestione schede PDF** con scadenza tracciabile e indicatori colorati
+- ⏱️ **Sistema scadenza schede** (verde/giallo/rosso) con estensione durata
 - 📊 **Dashboard statistiche** e monitoraggio accessi
 - 🔗 **Link personalizzati** per ogni cliente
 
 ### **Per i Clienti**
 - 🔐 **Accesso diretto** tramite link personalizzato
 - 🎬 **Dashboard video** con solo i contenuti assegnati
+- 📄 **Scheda PDF personalizzata** con countdown scadenza
+- ⏰ **Indicatore scadenza** colorato (verde/giallo/rosso)
 - 📱 **Interfaccia responsive** mobile-friendly
 - ⚡ **Player video integrato** con controlli completi
 - 📈 **Statistiche personali** di utilizzo
@@ -40,6 +44,10 @@ npm install
 cd backend
 npm install
 npm run init-db
+
+# Se aggiorni da versione precedente, esegui migrazione PDF:
+node scripts/add-pdf-expiration.js
+
 npm run dev
 ```
 
@@ -123,6 +131,14 @@ personal-trainer-app/
 - `POST /users/:id/generate-link` - Genera link
 - `POST /users/:userId/videos/:videoId` - Assegna video
 - `GET /videos` - Gestione catalogo video
+
+### **PDF** (`/api/pdf`) - Gestione schede
+- `POST /admin/upload/:userId` - Upload PDF con durata (mesi+giorni)
+- `GET /admin/user/:userId` - Info PDF (include expirationDate)
+- `PUT /admin/extend/:userId` - Estendi durata scheda
+- `DELETE /admin/delete/:userId` - Elimina PDF
+- `GET /my-pdf` - Info PDF utente (include countdown)
+- `GET /download` - Download PDF personale
 
 ## 🎬 **Gestione Video**
 

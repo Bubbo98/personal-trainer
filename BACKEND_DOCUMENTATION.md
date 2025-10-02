@@ -35,6 +35,16 @@ id (PK) | title | description | file_path | duration | thumbnail_path | category
 id (PK) | user_id (FK) | video_id (FK) | granted_at | granted_by | expires_at | is_active
 ```
 
+#### `user_pdf_files` - Schede PDF personalizzate (Turso)
+```sql
+id (PK) | user_id (FK) | file_path | original_name | file_size | uploaded_at | updated_at | duration_months | duration_days | expiration_date
+```
+
+**Nuovi campi per scadenza schede**:
+- `duration_months` (INTEGER, default: 2) - Durata in mesi
+- `duration_days` (INTEGER, default: 0) - Giorni aggiuntivi
+- `expiration_date` (DATETIME) - Data scadenza calcolata automaticamente
+
 #### `access_logs` - Log degli accessi
 ```sql
 id (PK) | user_id (FK) | video_id (FK) | access_time | ip_address | user_agent | session_duration
@@ -207,6 +217,58 @@ curl -X POST http://localhost:3001/api/admin/videos \
     "duration": 1200,
     "category": "bodyweight"
   }'
+```
+
+### **📄 PDF Routes** (`/api/pdf`) - Gestione Schede
+
+#### `POST /api/pdf/admin/upload/:userId`
+Upload scheda PDF per utente con durata personalizzata.
+```bash
+curl -X POST http://localhost:3001/api/pdf/admin/upload/7 \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN" \
+  -F "pdf=@scheda.pdf" \
+  -F "durationMonths=2" \
+  -F "durationDays=15"
+```
+
+#### `GET /api/pdf/admin/user/:userId`
+Ottieni info PDF utente (include expiration_date, duration_months, duration_days).
+```bash
+curl -X GET http://localhost:3001/api/pdf/admin/user/7 \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+```
+
+#### `PUT /api/pdf/admin/extend/:userId`
+Estendi durata scheda PDF esistente.
+```bash
+curl -X PUT http://localhost:3001/api/pdf/admin/extend/7 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN" \
+  -d '{
+    "additionalMonths": 1,
+    "additionalDays": 15
+  }'
+```
+
+#### `DELETE /api/pdf/admin/delete/:userId`
+Elimina scheda PDF utente.
+```bash
+curl -X DELETE http://localhost:3001/api/pdf/admin/delete/7 \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+```
+
+#### `GET /api/pdf/my-pdf` (User)
+Ottieni info scheda PDF personale (include expirationDate).
+```bash
+curl -X GET http://localhost:3001/api/pdf/my-pdf \
+  -H "Authorization: Bearer USER_JWT_TOKEN"
+```
+
+#### `GET /api/pdf/download` (User)
+Download scheda PDF personale.
+```bash
+curl -X GET http://localhost:3001/api/pdf/download \
+  -H "Authorization: Bearer USER_JWT_TOKEN"
 ```
 
 ## 🎬 **Gestione Video**

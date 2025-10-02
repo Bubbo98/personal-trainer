@@ -63,12 +63,50 @@ Il CMS è diviso in **2 sezioni principali**:
    - **"Assegna"** → Dà accesso al video
    - **"Revoca"** → Rimuove accesso al video
 
+### **📄 Gestione Schede PDF**
+
+Il sistema permette di caricare schede di allenamento PDF personalizzate per ogni utente con tracciamento scadenza.
+
+#### **Upload Scheda PDF**
+1. **Clicca "Gestisci PDF"** nella colonna Azioni
+2. **Seleziona file PDF** da caricare
+3. **Imposta durata scheda**:
+   - **Mesi**: Durata in mesi (default: 2)
+   - **Giorni**: Giorni aggiuntivi (default: 0)
+4. **Carica**: Il sistema calcola automaticamente la data di scadenza
+
+**Esempio**: 2 mesi + 15 giorni = Scheda valida per 75 giorni dalla data di caricamento
+
+#### **Visualizzazione Stato Scheda**
+Ogni utente mostra un **badge colorato** con lo stato della scheda:
+
+- 🟢 **Verde**: Più di 7 giorni rimanenti
+  - Formato: "61g", "15g", ecc.
+- 🟡 **Giallo**: Tra 1 e 7 giorni rimanenti
+  - Formato: "5g", "7g", ecc.
+- 🔴 **Rosso**: Scaduta o scade oggi
+  - Formato: "Oggi", "Scaduta"
+
+#### **Estendere Durata Scheda**
+1. **Apri pannello "Gestisci PDF"**
+2. **Clicca "Estendi Durata Scheda"**
+3. **Inserisci tempo da aggiungere**:
+   - Mesi da aggiungere
+   - Giorni da aggiungere
+4. **Conferma**: Il sistema aggiorna la data di scadenza
+
+**Esempio**: Scheda scade tra 5 giorni → aggiungi 1 mese → ora scade tra 35 giorni
+
+#### **Eliminare Scheda**
+- Click su **icona cestino** per eliminare la scheda PDF dell'utente
+
 ### **📊 Informazioni Utente**
 
 Ogni utente mostra:
 - **Nome completo** e contatti
 - **Data creazione** e ultimo accesso
 - **Numero video** assegnati
+- **Stato scheda PDF** con countdown scadenza
 - **Stato account** (attivo/inattivo)
 
 ---
@@ -132,6 +170,7 @@ Ogni video mostra:
 5. **Invii link al cliente** via email/WhatsApp
 6. **Cliente accede** automaticamente
 7. **Assegni video specifici** per il suo programma
+8. **Carica scheda PDF** con durata personalizzata (es. 2 mesi)
 
 ### **🎬 Scenario: Nuovo Video**
 
@@ -147,6 +186,14 @@ Ogni video mostra:
 2. **Trova cliente** nella lista
 3. **Clicca "Gestisci"** nella colonna Video
 4. **Assegna/Revoca** video secondo necessità
+
+### **📄 Scenario: Gestione Scheda PDF**
+
+1. **Cliente inizia programma** → Carica scheda PDF (2 mesi)
+2. **Dopo 1 mese e mezzo** → Badge diventa giallo (pochi giorni rimasti)
+3. **Cliente rinnova programma** → Estendi durata di 1-2 mesi
+4. **Badge aggiornato** → Torna verde con nuova scadenza
+5. **Cliente visualizza** → Countdown aggiornato nella sua dashboard
 
 ---
 
@@ -214,6 +261,14 @@ Ogni video mostra:
 2. Entry video creata nel CMS
 3. Permesso assegnato all'utente
 4. Client ha ricaricato la dashboard
+
+### **❌ Scheda PDF non visibile o scadenza errata**
+
+**Verifica**:
+1. PDF caricato correttamente (controllo dimensione file)
+2. Durata impostata durante upload
+3. Badge scadenza visibile in lista utenti
+4. Cliente ha ricaricato dashboard per vedere countdown
 
 ### **❌ CMS lento o non risponde**
 
