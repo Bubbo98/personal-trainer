@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiDownload, FiFile, FiAlertCircle } from 'react-icons/fi';
+import { FiDownload, FiFile, FiAlertCircle, FiClock } from 'react-icons/fi';
 import { STORAGE_KEY } from '../../utils/dashboardUtils';
 
 interface PdfInfo {
@@ -8,6 +8,7 @@ interface PdfInfo {
   fileSize: number;
   uploadedAt: string;
   updatedAt: string;
+  expirationDate?: string;
 }
 
 // Icon wrapper components
@@ -114,6 +115,20 @@ const TrainingPlan: React.FC = () => {
     });
   };
 
+  const getDaysUntilExpiration = (expirationDate: string): number => {
+    const now = new Date();
+    const expiry = new Date(expirationDate);
+    const diffTime = expiry.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const getExpirationColorClass = (daysLeft: number): string => {
+    if (daysLeft < 1) return 'bg-red-100 text-red-800 border-red-300';
+    if (daysLeft < 7) return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+    return 'bg-green-100 text-green-800 border-green-300';
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -186,6 +201,32 @@ const TrainingPlan: React.FC = () => {
                   </p>
                 )}
               </div>
+
+              {/* Expiration countdown */}
+              {pdfInfo.expirationDate && (() => {
+                const daysLeft = getDaysUntilExpiration(pdfInfo.expirationDate);
+                return (
+                  <div className="mt-3">
+                    <div className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium border ${getExpirationColorClass(daysLeft)}`}>
+                      {React.createElement(FiClock as React.ComponentType<{ className?: string }>, { className: "w-4 h-4 mr-2" })}
+                      {daysLeft < 0 ? (
+                        <span>Scheda scaduta {Math.abs(daysLeft)} giorni fa</span>
+                      ) : daysLeft === 0 ? (
+                        <span>La scheda scade oggi</span>
+                      ) : daysLeft === 1 ? (
+                        <span>La scheda scade domani</span>
+                      ) : daysLeft < 7 ? (
+                        <span>La scheda scade tra {daysLeft} giorni</span>
+                      ) : (
+                        <span>Scade tra {daysLeft} giorni</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Data scadenza: {formatDate(pdfInfo.expirationDate)}
+                    </p>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
