@@ -6,18 +6,25 @@ import {
   FiCheck,
   FiX,
   FiTrash2,
-  FiSearch
+  FiSearch,
+  FiClock
 } from 'react-icons/fi';
 import { apiCall, formatDate, formatDuration } from '../../utils/adminUtils';
 import { User, Video, CreateUserForm } from '../../types/admin';
 import PdfManagement from './PdfManagement';
+
+interface PdfInfo {
+  expirationDate?: string;
+  durationMonths?: number;
+  durationDays?: number;
+}
 
 const UserManagement: React.FC = () => {
   const { t } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
   const [userVideos, setUserVideos] = useState<Record<number, Video[]>>({});
-  const [userPdfs, setUserPdfs] = useState<Record<number, boolean>>({});
+  const [userPdfs, setUserPdfs] = useState<Record<number, PdfInfo | null>>({});
   const [loading, setLoading] = useState(false);
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -36,19 +43,27 @@ const UserManagement: React.FC = () => {
       const response = await apiCall('/admin/users');
       setUsers(response.data.users);
 
-      // Load PDF status for all users
-      const pdfStatuses: Record<number, boolean> = {};
+      // Load PDF data for all users
+      const pdfData: Record<number, PdfInfo | null> = {};
       await Promise.all(
         response.data.users.map(async (user: User) => {
           try {
             const pdfResponse = await apiCall(`/pdf/admin/user/${user.id}`);
-            pdfStatuses[user.id] = !!pdfResponse.data.data;
+            if (pdfResponse.data) {
+              pdfData[user.id] = {
+                expirationDate: pdfResponse.data.expirationDate,
+                durationMonths: pdfResponse.data.durationMonths,
+                durationDays: pdfResponse.data.durationDays
+              };
+            } else {
+              pdfData[user.id] = null;
+            }
           } catch {
-            pdfStatuses[user.id] = false;
+            pdfData[user.id] = null;
           }
         })
       );
-      setUserPdfs(pdfStatuses);
+      setUserPdfs(pdfData);
     } catch (error) {
       console.error('Failed to load users:', error);
     } finally {
@@ -76,6 +91,41 @@ const UserManagement: React.FC = () => {
       console.error('Failed to load user videos:', error);
     }
   }, []);
+
+  // Helper functions for PDF expiration
+  const getDaysUntilExpiration = (expirationDate: string): number => {
+    const now = new Date();
+    const expiry = new Date(expirationDate);
+    const diffTime = expiry.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const getExpirationColorClass = (daysLeft: number): string => {
+    if (daysLeft < 1) return 'bg-red-100 text-red-800 border-red-300';
+    if (daysLeft < 7) return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+    return 'bg-green-100 text-green-800 border-green-300';
+  };
+
+  const reloadUserPdf = async (userId: number) => {
+    try {
+      const pdfResponse = await apiCall(`/pdf/admin/user/${userId}`);
+      if (pdfResponse.data) {
+        setUserPdfs(prev => ({
+          ...prev,
+          [userId]: {
+            expirationDate: pdfResponse.data.expirationDate,
+            durationMonths: pdfResponse.data.durationMonths,
+            durationDays: pdfResponse.data.durationDays
+          }
+        }));
+      } else {
+        setUserPdfs(prev => ({ ...prev, [userId]: null }));
+      }
+    } catch {
+      setUserPdfs(prev => ({ ...prev, [userId]: null }));
+    }
+  };
 
   useEffect(() => {
     loadUsers();
@@ -112,9 +162,49 @@ const UserManagement: React.FC = () => {
       });
 
       const loginUrl = response.data.loginUrl;
-      await navigator.clipboard.writeText(loginUrl);
-      setCopiedLink(loginUrl);
-      setTimeout(() => setCopiedLink(null), 3000);
+
+      // Try modern clipboard API first, fallback to legacy method for mobile
+      try {
+        await navigator.clipboard.writeText(loginUrl);
+        setCopiedLink(loginUrl);
+        setTimeout(() => setCopiedLink(null), 3000);
+      } catch (clipboardError) {
+        // Fallback for iOS Safari and other restrictive browsers
+        const textarea = document.createElement('textarea');
+        textarea.value = loginUrl;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        textarea.style.top = '0';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+
+        // iOS requires specific handling
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        if (isIOS) {
+          const range = document.createRange();
+          range.selectNodeContents(textarea);
+          const selection = window.getSelection();
+          if (selection) {
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+          textarea.setSelectionRange(0, loginUrl.length);
+        } else {
+          textarea.select();
+        }
+
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textarea);
+
+        if (successful) {
+          setCopiedLink(loginUrl);
+          setTimeout(() => setCopiedLink(null), 3000);
+        } else {
+          // If copy still fails, show an alert with the link
+          alert(`${t('admin.users.accessLinkGenerated')}:\n\n${loginUrl}`);
+        }
+      }
     } catch (error) {
       alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.users.generateLinkFailed')}`);
     }
@@ -308,8 +398,8 @@ const UserManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Users Table */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+      {/* Users Table - Desktop */}
+      <div className="hidden lg:block bg-white rounded-xl shadow-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
@@ -349,12 +439,23 @@ const UserManagement: React.FC = () => {
                       <div className="text-sm font-medium text-gray-900">
                         {user.videoCount} {t('admin.videos.tabTitle').toLowerCase()}
                       </div>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
                         {userPdfs[user.id] ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                            {React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: "w-3 h-3 mr-1" })}
-                            Scheda
-                          </span>
+                          <>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                              {React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: "w-3 h-3 mr-1" })}
+                              Scheda
+                            </span>
+                            {userPdfs[user.id]?.expirationDate && (() => {
+                              const daysLeft = getDaysUntilExpiration(userPdfs[user.id]!.expirationDate!);
+                              return (
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getExpirationColorClass(daysLeft)}`}>
+                                  {React.createElement(FiClock as React.ComponentType<{ className?: string }>, { className: "w-3 h-3 mr-1" })}
+                                  {daysLeft < 0 ? `Scaduta` : daysLeft === 0 ? 'Oggi' : daysLeft === 1 ? '1g' : `${daysLeft}g`}
+                                </span>
+                              );
+                            })()}
+                          </>
                         ) : (
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
                             {React.createElement(FiX as React.ComponentType<{ className?: string }>, { className: "w-3 h-3 mr-1" })}
@@ -480,8 +581,8 @@ const UserManagement: React.FC = () => {
                             <PdfManagement
                               userId={user.id}
                               userName={`${user.firstName} ${user.lastName}`}
-                              onPdfChange={(hasPdf) => {
-                                setUserPdfs(prev => ({ ...prev, [user.id]: hasPdf }));
+                              onPdfChange={() => {
+                                reloadUserPdf(user.id);
                               }}
                             />
                           </div>
@@ -505,6 +606,200 @@ const UserManagement: React.FC = () => {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Users Cards - Mobile/Tablet */}
+      <div className="lg:hidden space-y-4">
+        {filteredUsers.map((user) => (
+          <div key={user.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
+            {/* User Card Header */}
+            <div className="p-4 space-y-3">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="text-base font-semibold text-gray-900">
+                    {user.firstName} {user.lastName}
+                  </div>
+                  <div className="text-sm text-gray-500 mt-1">
+                    {user.username}
+                  </div>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    {user.email}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex space-x-2 ml-2">
+                  <button
+                    onClick={() => handleGenerateLink(user.id)}
+                    className="text-blue-600 hover:text-blue-800 p-2 bg-blue-50 rounded-lg"
+                    title={t('admin.users.generateAccessLink')}
+                  >
+                    {React.createElement(FiLink as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+                  </button>
+                  <button
+                    onClick={() => handleDeleteUser(user.id, `${user.firstName} ${user.lastName}`)}
+                    className="text-red-600 hover:text-red-800 p-2 bg-red-50 rounded-lg"
+                    title={t('admin.users.deleteUser')}
+                  >
+                    {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+                  </button>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <div className="flex items-center gap-1.5 text-sm">
+                  <span className="font-medium text-gray-900">{user.videoCount}</span>
+                  <span className="text-gray-500">{t('admin.videos.tabTitle').toLowerCase()}</span>
+                </div>
+
+                {userPdfs[user.id] ? (
+                  <>
+                    <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                      {React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: "w-3 h-3 mr-1" })}
+                      Scheda
+                    </span>
+                    {userPdfs[user.id]?.expirationDate && (() => {
+                      const daysLeft = getDaysUntilExpiration(userPdfs[user.id]!.expirationDate!);
+                      return (
+                        <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium border ${getExpirationColorClass(daysLeft)}`}>
+                          {React.createElement(FiClock as React.ComponentType<{ className?: string }>, { className: "w-3 h-3 mr-1" })}
+                          {daysLeft < 0 ? `Scaduta` : daysLeft === 0 ? 'Oggi' : daysLeft === 1 ? '1g' : `${daysLeft}g`}
+                        </span>
+                      );
+                    })()}
+                  </>
+                ) : (
+                  <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                    {React.createElement(FiX as React.ComponentType<{ className?: string }>, { className: "w-3 h-3 mr-1" })}
+                    No scheda
+                  </span>
+                )}
+              </div>
+
+              {/* Last Login & Created */}
+              <div className="flex flex-col gap-1 text-xs text-gray-500 pt-1">
+                <div>
+                  <span className="font-medium">Ultimo accesso:</span> {user.lastLogin ? formatDate(user.lastLogin) : t('admin.users.never')}
+                </div>
+                <div>
+                  <span className="font-medium">Creato il:</span> {formatDate(user.createdAt)}
+                </div>
+              </div>
+
+              {/* Manage Button */}
+              <button
+                onClick={() => handleToggleUserDetails(user)}
+                className="w-full mt-2 bg-gray-900 text-white py-2.5 px-4 rounded-lg hover:bg-gray-800 text-sm font-medium"
+              >
+                {selectedUser?.id === user.id ? t('admin.users.hide') : t('admin.users.manage')}
+              </button>
+            </div>
+
+            {/* Management Panel - Mobile */}
+            {selectedUser?.id === user.id && (
+              <div className="border-t bg-gray-50 p-4">
+                <h4 className="font-medium text-gray-900 mb-4 text-sm">
+                  {t('admin.users.manageVideosFor')} {user.firstName} {user.lastName}
+                </h4>
+
+                {/* Currently Assigned Videos */}
+                {userVideos[user.id] && userVideos[user.id].length > 0 && (
+                  <div className="mb-6">
+                    <h5 className="font-medium text-sm text-gray-700 mb-3 flex items-center">
+                      {React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: "w-4 h-4 text-green-600 mr-2" })}
+                      {t('admin.users.assignVideo')} ({userVideos[user.id].length})
+                    </h5>
+                    <div className="space-y-2">
+                      {userVideos[user.id].map((video) => (
+                        <div key={video.id} className="bg-white p-3 rounded-lg border border-green-200 bg-green-50">
+                          <div className="mb-2">
+                            <div className="font-medium text-sm text-gray-900 flex items-center">
+                              {React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: "w-3 h-3 text-green-600 mr-1" })}
+                              {video.title}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {video.category} • {formatDuration(video.duration)}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleRevokeVideo(user.id, video.id)}
+                            className="w-full bg-red-600 text-white text-xs py-2 px-2 rounded hover:bg-red-700"
+                          >
+                            {t('admin.users.revokeVideo')}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Available Videos to Assign */}
+                <div>
+                  <h5 className="font-medium text-sm text-gray-700 mb-3">
+                    {t('admin.users.availableVideos')}
+                  </h5>
+                  <div className="space-y-2">
+                    {videos
+                      .filter(video => {
+                        const userHasVideo = userVideos[user.id]?.some(uv => uv.id === video.id);
+                        return !userHasVideo;
+                      })
+                      .map((video) => (
+                        <div key={video.id} className="bg-white p-3 rounded-lg border">
+                          <div className="mb-2">
+                            <div className="font-medium text-sm text-gray-900">{video.title}</div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {video.category} • {formatDuration(video.duration)}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleAssignVideo(user.id, video.id)}
+                            className="w-full bg-green-600 text-white text-xs py-2 px-2 rounded hover:bg-green-700"
+                          >
+                            {t('admin.users.assignVideo')}
+                          </button>
+                        </div>
+                      ))
+                    }
+                  </div>
+
+                  {videos.filter(video => {
+                    const userHasVideo = userVideos[user.id]?.some(uv => uv.id === video.id);
+                    return !userHasVideo;
+                  }).length === 0 && (
+                    <div className="text-center text-gray-500 text-sm py-8">
+                      {t('admin.users.allVideosAssigned')}
+                    </div>
+                  )}
+                </div>
+
+                {/* PDF Management Section */}
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <h5 className="font-medium text-sm text-gray-700 mb-3">
+                    {t('admin.pdf.trainingPlan') || 'Scheda di Allenamento'}
+                  </h5>
+                  <PdfManagement
+                    userId={user.id}
+                    userName={`${user.firstName} ${user.lastName}`}
+                    onPdfChange={() => {
+                      reloadUserPdf(user.id);
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {filteredUsers.length === 0 && (
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center text-gray-500">
+            {searchTerm
+              ? `Nessun utente trovato per "${searchTerm}"`
+              : 'Nessun utente disponibile'
+            }
+          </div>
+        )}
       </div>
     </div>
   );
