@@ -26,9 +26,16 @@ yarn-error.log*
 backend/node_modules/
 backend/.env
 backend/database/app.db
+backend/database/fitness.db
 backend/npm-debug.log*
 backend/yarn-debug.log*
 backend/yarn-error.log*
+
+# User uploaded PDFs (exclude from git)
+backend/uploads/
+backend/pdfs/
+*.pdf
+!public/**/*.pdf
 
 # IDE files
 .vscode/
