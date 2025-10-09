@@ -97,8 +97,18 @@ Ogni utente mostra un **badge colorato** con lo stato della scheda:
 
 **Esempio**: Scheda scade tra 5 giorni → aggiungi 1 mese → ora scade tra 35 giorni
 
+#### **Scaricare Scheda PDF**
+1. **Apri pannello "Gestisci PDF"**
+2. **Clicca icona download blu** (⬇️) accanto al nome del file
+3. **Il PDF viene scaricato** automaticamente sul tuo dispositivo
+
+**Utilità**: Permette all'admin di:
+- Verificare il contenuto della scheda assegnata
+- Scaricare una copia locale per backup
+- Controllare qual è la scheda corrente dell'utente
+
 #### **Eliminare Scheda**
-- Click su **icona cestino** per eliminare la scheda PDF dell'utente
+- Click su **icona cestino rossa** per eliminare la scheda PDF dell'utente
 
 ### **📊 Informazioni Utente**
 
@@ -116,14 +126,34 @@ Ogni utente mostra:
 ### **✨ Aggiungere Nuovo Video**
 
 1. **Carica fisicamente il file** video in `/public/videos/categoria/`
-2. **Nel CMS clicca "Nuovo Video"**
-3. **Compila il form**:
+2. **(Opzionale) Carica thumbnail** in `/public/thumbnails/`
+3. **Nel CMS clicca "Nuovo Video"**
+4. **Compila il form**:
    - **Titolo**: Nome video visualizzato
    - **Descrizione**: Testo descrittivo (opzionale)
    - **Percorso File**: `categoria/nome-file.mp4`
    - **Durata**: Secondi totali del video
    - **Categoria**: Seleziona da lista
-   - **Thumbnail**: Path immagine anteprima (opzionale)
+   - **Thumbnail**: Nome file immagine (es. `video-thumbnail.png`)
+
+#### **📸 Gestione Thumbnail**
+
+Le thumbnail sono immagini di anteprima che vengono mostrate nelle card video:
+
+- **Directory**: `/public/thumbnails/`
+- **Formato suggerito**: PNG o JPG, ratio 16:9
+- **Dimensione consigliata**: 1280x720px o 1920x1080px
+- **Naming**: Usa nomi descrittivi (es. `leg-press-orizzontale.png`)
+
+**Nel form video**:
+- Inserisci solo il nome del file: `leg-press-orizzontale.png`
+- **NON** inserire il percorso completo
+- Se lasci vuoto, verrà mostrato uno sfondo grigio con pulsante play
+
+**Visualizzazione**:
+- Gli utenti vedranno la thumbnail nella dashboard
+- Hover effect con overlay scuro e pulsante play animato
+- Fallback automatico a sfondo grigio se immagine non trovata
 
 ### **📂 Struttura Directory Video**
 

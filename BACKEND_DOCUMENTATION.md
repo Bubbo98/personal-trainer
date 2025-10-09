@@ -264,31 +264,73 @@ curl -X GET http://localhost:3001/api/pdf/my-pdf \
   -H "Authorization: Bearer USER_JWT_TOKEN"
 ```
 
-#### `GET /api/pdf/download` (User)
-Download scheda PDF personale.
+#### `GET /api/pdf/download` (User & Admin)
+Download scheda PDF personale (utente) o di un utente specifico (admin).
+
+**User - Download propria scheda**:
 ```bash
 curl -X GET http://localhost:3001/api/pdf/download \
   -H "Authorization: Bearer USER_JWT_TOKEN"
 ```
 
+**Admin - Download scheda di un utente specifico**:
+```bash
+curl -X GET "http://localhost:3001/api/pdf/download?userId=40" \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+```
+
+**Note di sicurezza**:
+- Gli utenti normali possono scaricare SOLO la propria scheda
+- Se un utente normale prova a passare `?userId=X`, riceve errore 403 (Access denied)
+- L'admin può scaricare la scheda di qualsiasi utente passando il parametro `userId`
+- Il controllo admin avviene tramite confronto username con `ADMIN_USERNAME` in .env
+
 ## 🎬 **Gestione Video**
 
-### **Struttura Directory Video**
+### **Struttura Directory Video e Thumbnails**
 ```
-public/videos/
-├── calisthenics/
-│   └── intro.mp4
-├── bodyweight/
-│   └── full-workout.mp4
-└── recovery/
-    └── post-workout-stretch.mp4
+public/
+├── videos/
+│   ├── palestra/
+│   │   └── legPressOrizzontale.mp4
+│   ├── calisthenics/
+│   │   └── intro.mp4
+│   ├── bodyweight/
+│   │   └── full-workout.mp4
+│   └── recovery/
+│       └── post-workout-stretch.mp4
+└── thumbnails/
+    ├── legPressOrizzontale.png
+    ├── intro-calisthenics.jpg
+    └── workout-preview.png
 ```
+
+**Directory thumbnails**:
+- Percorso: `/public/thumbnails/`
+- URL servito: `http://localhost:3001/thumbnails/nome-file.png`
+- Formato: PNG, JPG
+- Dimensioni consigliate: 1280x720px (16:9 ratio)
+- Configurazione server: `server.js:66` - `app.use('/thumbnails', express.static(...))`
 
 ### **Processo di Aggiunta Video**
 
-1. **Upload fisico** del file in `/public/videos/categoria/`
-2. **Creazione entry** nel database via `POST /api/admin/videos`
-3. **Assegnazione utenti** via `POST /api/admin/users/:userId/videos/:videoId`
+1. **Upload fisico** del file video in `/public/videos/categoria/`
+2. **(Opzionale) Upload thumbnail** in `/public/thumbnails/`
+3. **Creazione entry** nel database via `POST /api/admin/videos`
+   - Includi campo `thumbnailPath` con nome file (es. `video.png`)
+4. **Assegnazione utenti** via `POST /api/admin/users/:userId/videos/:videoId`
+
+### **Visualizzazione Thumbnails**
+
+**Frontend (VideoCard.tsx)**:
+- Le thumbnail vengono caricate automaticamente dal campo `thumbnailPath` del video
+- URL costruito: `${API_URL}/thumbnails/${video.thumbnailPath}`
+- Fallback automatico a sfondo grigio se immagine non esiste
+- Effetti hover: overlay scuro + pulsante play animato (scale 1.1x)
+
+**Gestione errori**:
+- Se thumbnail non caricabile → nascosta automaticamente
+- Pulsante play sempre visibile anche senza thumbnail
 
 ## 🔒 **Sicurezza**
 
