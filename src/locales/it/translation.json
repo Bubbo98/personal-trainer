@@ -153,6 +153,10 @@
       "videos": "Video",
       "trainingPlan": "Scheda"
     },
+    "referral": {
+      "title": "Porta un amico!",
+      "message": "Se si unirà al mio team, otterrai uno sconto di €10 sul prossimo acquisto."
+    },
     "pdf": {
       "myTrainingPlan": "La Mia Scheda di Allenamento",
       "noPlanYet": "Nessuna scheda disponibile",

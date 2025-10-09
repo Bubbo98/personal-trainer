@@ -12,13 +12,32 @@ interface VideoCardProps {
 const VideoCard: React.FC<VideoCardProps> = ({ video, onPlay }) => {
   const { t } = useTranslation();
 
+  // Construct thumbnail URL
+  const thumbnailUrl = video.thumbnailPath
+    ? `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:3001'}/thumbnails/${video.thumbnailPath}`
+    : null;
+
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
       <div className="relative aspect-video bg-gray-200">
-        <div className="absolute inset-0 flex items-center justify-center">
+        {/* Thumbnail Image */}
+        {thumbnailUrl && (
+          <img
+            src={thumbnailUrl}
+            alt={video.title}
+            className="absolute inset-0 w-full h-full object-cover"
+            onError={(e) => {
+              // Hide image if it fails to load
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        )}
+
+        {/* Play Button Overlay */}
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 hover:bg-opacity-30 transition-all">
           <button
             onClick={() => onPlay(video)}
-            className="bg-gray-900 text-white p-4 rounded-full hover:bg-gray-800 transition-colors shadow-lg"
+            className="bg-gray-900 text-white p-4 rounded-full hover:bg-gray-800 transition-colors shadow-lg hover:scale-110 transform"
             aria-label={`${t('dashboard.playVideo')} ${video.title}`}
           >
             {React.createElement(FiPlay as React.ComponentType<{ className?: string }>, { className: "w-8 h-8 ml-1" })}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiUpload, FiTrash2, FiFile } from 'react-icons/fi';
+import { FiUpload, FiTrash2, FiFile, FiDownload } from 'react-icons/fi';
 
 interface PdfInfo {
   id: number;
@@ -111,6 +111,38 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
       alert(`${t('admin.errors.error') || 'Errore'}: ${error instanceof Error ? error.message : 'Upload fallito'}`);
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      const token = localStorage.getItem('admin_auth_token');
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3002/api'}/pdf/download?userId=${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Download failed');
+      }
+
+      // Get the PDF blob
+      const blob = await response.blob();
+
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = pdfInfo?.originalName || 'scheda.pdf';
+      document.body.appendChild(a);
+      a.click();
+
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      alert(`${t('admin.errors.error') || 'Errore'}: ${error instanceof Error ? error.message : 'Download fallito'}`);
     }
   };
 
@@ -266,13 +298,22 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
                   )}
                 </div>
               </div>
-              <button
-                onClick={handleDelete}
-                className="text-red-600 hover:text-red-700 p-2"
-                title={t('admin.pdf.delete') || 'Elimina scheda'}
-              >
-                {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-              </button>
+              <div className="flex space-x-2">
+                <button
+                  onClick={handleDownload}
+                  className="text-blue-600 hover:text-blue-700 p-2"
+                  title={t('admin.pdf.download') || 'Scarica scheda'}
+                >
+                  {React.createElement(FiDownload as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="text-red-600 hover:text-red-700 p-2"
+                  title={t('admin.pdf.delete') || 'Elimina scheda'}
+                >
+                  {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+                </button>
+              </div>
             </div>
           </div>
 
