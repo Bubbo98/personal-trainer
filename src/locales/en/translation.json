@@ -148,6 +148,27 @@
     "modifiedOn": "Modified on",
     "cancel": "Cancel",
     "search": "Search",
-    "closeVideo": "Close video"
+    "closeVideo": "Close video",
+    "tabs": {
+      "videos": "Videos",
+      "trainingPlan": "Training Plan"
+    },
+    "referral": {
+      "title": "Bring a friend!",
+      "message": "If they join my team, you'll get a €10 discount on your next purchase."
+    },
+    "pdf": {
+      "myTrainingPlan": "My Training Plan",
+      "noPlanYet": "No plan available",
+      "noPlanMessage": "Your personal trainer hasn't uploaded a training plan for you yet. Contact them for more information.",
+      "fileSize": "File size",
+      "uploadedAt": "Uploaded on",
+      "updatedAt": "Updated on",
+      "download": "Download Plan",
+      "downloading": "Downloading...",
+      "downloadFailed": "Download failed. Please try again later.",
+      "tip": "Tip",
+      "tipMessage": "Save the plan on your device to access it offline during workouts."
+    }
   }
 }

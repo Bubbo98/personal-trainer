@@ -72,6 +72,9 @@ const requireAdmin = (req, res, next) => {
         });
     }
 
+    // Set role to admin for use in other routes
+    req.user.role = 'admin';
+
     next();
 };
 

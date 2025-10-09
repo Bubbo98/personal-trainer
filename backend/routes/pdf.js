@@ -412,13 +412,30 @@ router.get('/my-pdf', authenticateToken, async (req, res) => {
 });
 
 // GET /api/pdf/download
-// Download current user's PDF (User)
+// Download current user's PDF (User) or specific user's PDF (Admin with userId query param)
 router.get('/download', authenticateToken, async (req, res) => {
     try {
-        const userId = req.user.userId;
+        // Check if user is admin
+        const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+        const isAdmin = req.user.username === adminUsername;
+
+        // Determine target user ID
+        let targetUserId = req.user.userId;
+
+        // If admin and userId is provided, download that user's PDF
+        if (req.query.userId && isAdmin) {
+            targetUserId = parseInt(req.query.userId);
+        } else if (req.query.userId && !isAdmin) {
+            // Non-admin users can't download other users' PDFs
+            return res.status(403).json({
+                success: false,
+                error: 'Access denied'
+            });
+        }
+
         const db = createDatabase();
 
-        db.getCallback('SELECT file_data, original_name, mime_type FROM user_pdf_files WHERE user_id = ?', [userId], (err, pdf) => {
+        db.getCallback('SELECT file_data, original_name, mime_type FROM user_pdf_files WHERE user_id = ?', [targetUserId], (err, pdf) => {
             db.close();
 
             if (err) {
@@ -439,7 +456,11 @@ router.get('/download', authenticateToken, async (req, res) => {
             // Decode base64 string back to buffer
             const fileBuffer = Buffer.from(pdf.file_data, 'base64');
 
-            console.log(`User ${req.user.username} downloaded their PDF: ${pdf.original_name}`);
+            if (isAdmin && targetUserId !== req.user.userId) {
+                console.log(`Admin ${req.user.username} downloaded PDF for user ID ${targetUserId}: ${pdf.original_name}`);
+            } else {
+                console.log(`User ${req.user.username} downloaded their PDF: ${pdf.original_name}`);
+            }
 
             // Set headers for PDF download
             res.setHeader('Content-Type', pdf.mime_type || 'application/pdf');

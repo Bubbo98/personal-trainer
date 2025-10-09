@@ -8,7 +8,7 @@ import VideoCard from '../components/dashboard/VideoCard';
 import CategoryFilter from '../components/dashboard/CategoryFilter';
 import SearchBar from '../components/dashboard/SearchBar';
 import TrainingPlan from '../components/dashboard/TrainingPlan';
-import { FiGrid, FiLogOut, FiStar, FiEdit3, FiTrash2, FiVideo, FiFile } from 'react-icons/fi';
+import { FiGrid, FiLogOut, FiStar, FiEdit3, FiTrash2, FiVideo, FiFile, FiGift } from 'react-icons/fi';
 
 import { Video, AuthState, VideoState, Review, ReviewFormData } from '../types/dashboard';
 import { STORAGE_KEY, formatDate, apiCall } from '../utils/dashboardUtils';
@@ -48,6 +48,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     comment: ''
   });
   const [activeTab, setActiveTab] = useState<'videos' | 'training-plan'>('videos');
+  const [hasTrainingPlan, setHasTrainingPlan] = useState(false);
 
   // Authentication logic
   const authenticateWithToken = useCallback(async (authToken: string) => {
@@ -115,6 +116,19 @@ const Dashboard: React.FC<DashboardProps> = () => {
       setReview(response.data.review);
     } catch (error) {
       console.error('Failed to load review:', error);
+    }
+  }, []);
+
+  // Check if user has a training plan
+  const checkTrainingPlan = useCallback(async (authToken: string) => {
+    try {
+      const response = await apiCall('/pdf/my-pdf', {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      setHasTrainingPlan(response.success && response.data);
+    } catch (error) {
+      console.error('Failed to check training plan:', error);
+      setHasTrainingPlan(false);
     }
   }, []);
 
@@ -207,10 +221,11 @@ const Dashboard: React.FC<DashboardProps> = () => {
           authToken = await verifyStoredToken();
         }
 
-        // Load videos and review with the authenticated token
+        // Load videos, review, and check training plan with the authenticated token
         await Promise.all([
           loadVideos(authToken),
-          loadUserReview(authToken)
+          loadUserReview(authToken),
+          checkTrainingPlan(authToken)
         ]);
       } catch (error) {
         console.error('Dashboard initialization failed:', error);
@@ -223,7 +238,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     };
 
     initializeDashboard();
-  }, [token, navigate, authenticateWithToken, verifyStoredToken, loadVideos, loadUserReview]);
+  }, [token, navigate, authenticateWithToken, verifyStoredToken, loadVideos, loadUserReview, checkTrainingPlan]);
 
   // Filtered videos based on selected category and search query
   const filteredVideos = useMemo(() => {
@@ -380,6 +395,25 @@ const Dashboard: React.FC<DashboardProps> = () => {
               <span className="hidden sm:inline">{t('dashboard.logout')}</span>
             </button>
           </div>
+
+          {/* Referral Banner - Only shown when user has an active training plan */}
+          {hasTrainingPlan && (
+            <div className="mb-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 shadow-lg">
+              <div className="flex items-center space-x-4">
+                <div className="flex-shrink-0">
+                  {React.createElement(FiGift as React.ComponentType<{ className?: string }>, { className: "w-12 h-12 text-white" })}
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    {t('dashboard.referral.title')}
+                  </h3>
+                  <p className="text-blue-50 text-base">
+                    {t('dashboard.referral.message')}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Navigation Tabs */}
           <div className="flex space-x-1 bg-gray-200 p-1 rounded-lg mb-8">
