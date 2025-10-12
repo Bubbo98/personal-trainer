@@ -173,6 +173,8 @@
         "noPlanMessage": "The feedback form will be available one week after you receive your training plan.",
         "tooSoon": "It's still too early",
         "tooSoonMessage": "The feedback form will be available one week after your last training plan update.",
+        "tooSoonSinceLast": "It's still too early",
+        "tooSoonSinceLastMessage": "You can submit new feedback two weeks after your last feedback. Thank you for your participation!",
         "alreadySubmitted": "Feedback already submitted",
         "alreadySubmittedMessage": "You've already submitted your feedback for the current training plan. You can submit another one after the next plan update."
       },

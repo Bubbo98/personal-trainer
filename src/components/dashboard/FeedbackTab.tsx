@@ -172,37 +172,103 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user }) => {
       )}
 
       {/* Status message when form shouldn't be shown */}
-      {!feedbackStatus?.shouldShow && feedbackStatus?.reason && (
-        <div className="bg-gray-50 border border-gray-200 text-gray-700 px-4 py-3 rounded-lg flex items-start space-x-2">
-          {React.createElement(FiCheckCircle as React.ComponentType<{ className?: string }>, { className: "w-5 h-5 mt-0.5 text-gray-500" })}
-          <div>
-            {feedbackStatus.reason === 'no_pdf' && (
-              <>
-                <p className="font-medium">{t('dashboard.feedback.status.noPlan')}</p>
-                <p className="text-sm">
-                  {t('dashboard.feedback.status.noPlanMessage')}
-                </p>
-              </>
-            )}
-            {feedbackStatus.reason === 'too_soon' && (
-              <>
-                <p className="font-medium">{t('dashboard.feedback.status.tooSoon')}</p>
-                <p className="text-sm">
-                  {t('dashboard.feedback.status.tooSoonMessage')}
-                </p>
-              </>
-            )}
-            {feedbackStatus.reason === 'already_submitted' && (
-              <>
-                <p className="font-medium">{t('dashboard.feedback.status.alreadySubmitted')}</p>
-                <p className="text-sm">
-                  {t('dashboard.feedback.status.alreadySubmittedMessage')}
-                </p>
-              </>
-            )}
+      {!feedbackStatus?.shouldShow && feedbackStatus?.reason && (() => {
+        let daysRemaining = 0;
+        let totalDays = 0;
+        let progressPercentage = 0;
+        let targetDate = null;
+
+        if (feedbackStatus.reason === 'too_soon' && feedbackStatus.pdfUpdatedAt) {
+          const pdfDate = new Date(feedbackStatus.pdfUpdatedAt);
+          const now = new Date();
+          const oneWeekFromPdf = new Date(pdfDate.getTime() + (7 * 24 * 60 * 60 * 1000));
+          targetDate = oneWeekFromPdf;
+          daysRemaining = Math.ceil((oneWeekFromPdf.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          totalDays = 7;
+          progressPercentage = Math.min(100, Math.max(0, ((7 - daysRemaining) / 7) * 100));
+        } else if (feedbackStatus.reason === 'too_soon_since_last' && feedbackStatus.lastFeedbackAt) {
+          const lastFeedbackDate = new Date(feedbackStatus.lastFeedbackAt);
+          const now = new Date();
+          const twoWeeksFromLast = new Date(lastFeedbackDate.getTime() + (14 * 24 * 60 * 60 * 1000));
+          targetDate = twoWeeksFromLast;
+          daysRemaining = Math.ceil((twoWeeksFromLast.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          totalDays = 14;
+          progressPercentage = Math.min(100, Math.max(0, ((14 - daysRemaining) / 14) * 100));
+        }
+
+        return (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+            <div className="flex items-start space-x-3">
+              {React.createElement(FiCheckCircle as React.ComponentType<{ className?: string }>, { className: "w-6 h-6 mt-0.5 text-blue-600 flex-shrink-0" })}
+              <div className="flex-1">
+                {feedbackStatus.reason === 'no_pdf' && (
+                  <>
+                    <p className="font-semibold text-gray-900 mb-1">{t('dashboard.feedback.status.noPlan')}</p>
+                    <p className="text-sm text-gray-700">
+                      {t('dashboard.feedback.status.noPlanMessage')}
+                    </p>
+                  </>
+                )}
+                {(feedbackStatus.reason === 'too_soon' || feedbackStatus.reason === 'too_soon_since_last') && (
+                  <>
+                    <p className="font-semibold text-gray-900 mb-1">
+                      {feedbackStatus.reason === 'too_soon'
+                        ? t('dashboard.feedback.status.tooSoon')
+                        : t('dashboard.feedback.status.tooSoonSinceLast')}
+                    </p>
+                    <p className="text-sm text-gray-700 mb-4">
+                      {feedbackStatus.reason === 'too_soon'
+                        ? t('dashboard.feedback.status.tooSoonMessage')
+                        : t('dashboard.feedback.status.tooSoonSinceLastMessage')}
+                    </p>
+
+                    {/* Progress Bar */}
+                    <div className="mt-4 mb-3">
+                      <div className="flex items-center justify-between text-sm mb-2">
+                        <span className="text-gray-600 font-medium">
+                          {daysRemaining > 0
+                            ? `${daysRemaining} ${daysRemaining === 1 ? 'giorno' : 'giorni'} rimanenti`
+                            : 'Disponibile a breve'}
+                        </span>
+                        <span className="text-blue-600 font-semibold">{Math.round(progressPercentage)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                        <div
+                          className="bg-gradient-to-r from-blue-500 to-indigo-500 h-3 rounded-full transition-all duration-500 ease-out"
+                          style={{ width: `${progressPercentage}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    {/* Target Date */}
+                    {targetDate && (
+                      <div className="mt-3 bg-white bg-opacity-50 rounded-lg p-3 border border-blue-100">
+                        <p className="text-xs text-gray-600 mb-1">Prossimo feedback disponibile il:</p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {targetDate.toLocaleDateString('it-IT', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+                {feedbackStatus.reason === 'already_submitted' && (
+                  <>
+                    <p className="font-semibold text-gray-900 mb-1">{t('dashboard.feedback.status.alreadySubmitted')}</p>
+                    <p className="text-sm text-gray-700">
+                      {t('dashboard.feedback.status.alreadySubmittedMessage')}
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Previous Feedbacks */}
       {feedbacks.length > 0 && (
