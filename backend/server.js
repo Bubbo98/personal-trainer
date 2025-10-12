@@ -12,6 +12,7 @@ const reviewRoutes = require('./routes/reviews');
 const debugRoutes = require('./routes/debug');
 const sitemapRoutes = require('./routes/sitemap');
 const pdfRoutes = require('./routes/pdf');
+const feedbackRoutes = require('./routes/feedback');
 const { authenticateToken } = require('./middleware/auth');
 
 const app = express();
@@ -83,6 +84,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/debug', debugRoutes);
 app.use('/api/pdf', pdfRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 // SEO Routes (sitemap.xml, robots.txt)
 app.use('/', sitemapRoutes);
