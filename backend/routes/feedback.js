@@ -37,11 +37,15 @@ router.get('/should-show', authenticateToken, (req, res) => {
   const db = createDatabase();
   const userId = req.user.userId;
 
-  // Get the latest PDF change date and latest feedback date
+  // Get the latest PDF change date and latest feedback date for this PDF
   const query = `
     SELECT
-      (SELECT updated_at FROM user_pdf_files WHERE user_id = ? ORDER BY updated_at DESC LIMIT 1) as pdf_updated_at,
-      (SELECT created_at FROM user_feedbacks WHERE user_id = ? ORDER BY created_at DESC LIMIT 1) as last_feedback_at
+      upf.updated_at as pdf_updated_at,
+      (SELECT MAX(created_at) FROM user_feedbacks WHERE user_id = ? AND pdf_change_date = upf.updated_at) as last_feedback_at
+    FROM user_pdf_files upf
+    WHERE upf.user_id = ?
+    ORDER BY upf.updated_at DESC
+    LIMIT 1
   `;
 
   db.getCallback(query, [userId, userId], (err, row) => {
@@ -69,6 +73,7 @@ router.get('/should-show', authenticateToken, (req, res) => {
     const pdfUpdatedAt = new Date(row.pdf_updated_at);
     const now = new Date();
     const oneWeekAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+    const twoWeeksAgo = new Date(now.getTime() - (14 * 24 * 60 * 60 * 1000));
 
     // Check if PDF was changed less than 1 week ago
     if (pdfUpdatedAt > oneWeekAgo) {
@@ -82,29 +87,32 @@ router.get('/should-show', authenticateToken, (req, res) => {
       });
     }
 
-    // Check if user has already submitted feedback after this PDF change
+    // Check if user has submitted feedback for this PDF version
     if (row.last_feedback_at) {
       const lastFeedbackAt = new Date(row.last_feedback_at);
 
-      // If feedback was submitted after PDF change, don't show form
-      if (lastFeedbackAt > pdfUpdatedAt) {
+      // Check if less than 2 weeks have passed since last feedback
+      if (lastFeedbackAt > twoWeeksAgo) {
         return res.json({
           success: true,
           data: {
             shouldShow: false,
-            reason: 'already_submitted',
-            lastFeedbackAt: lastFeedbackAt.toISOString()
+            reason: 'too_soon_since_last',
+            lastFeedbackAt: lastFeedbackAt.toISOString(),
+            pdfUpdatedAt: pdfUpdatedAt.toISOString()
           }
         });
       }
     }
 
     // Show the feedback form
+    // Either: first feedback after 1 week from PDF, or 2+ weeks since last feedback
     res.json({
       success: true,
       data: {
         shouldShow: true,
-        pdfUpdatedAt: pdfUpdatedAt.toISOString()
+        pdfUpdatedAt: pdfUpdatedAt.toISOString(),
+        lastFeedbackAt: row.last_feedback_at
       }
     });
   });

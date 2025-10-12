@@ -173,6 +173,8 @@
         "noPlanMessage": "Il form di feedback sarà disponibile una settimana dopo che riceverai la tua scheda di allenamento.",
         "tooSoon": "È ancora troppo presto",
         "tooSoonMessage": "Il form di feedback sarà disponibile una settimana dopo l'ultimo aggiornamento della tua scheda.",
+        "tooSoonSinceLast": "È ancora troppo presto",
+        "tooSoonSinceLastMessage": "Potrai inviare un nuovo feedback tra due settimane dall'ultimo feedback inviato. Grazie per la tua partecipazione!",
         "alreadySubmitted": "Feedback già inviato",
         "alreadySubmittedMessage": "Hai già inviato il tuo feedback per l'attuale scheda di allenamento. Potrai inviarne un altro dopo il prossimo aggiornamento della scheda."
       },
