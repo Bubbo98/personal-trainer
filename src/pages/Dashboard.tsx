@@ -8,7 +8,8 @@ import VideoCard from '../components/dashboard/VideoCard';
 import CategoryFilter from '../components/dashboard/CategoryFilter';
 import SearchBar from '../components/dashboard/SearchBar';
 import TrainingPlan from '../components/dashboard/TrainingPlan';
-import { FiGrid, FiLogOut, FiStar, FiEdit3, FiTrash2, FiVideo, FiFile, FiGift } from 'react-icons/fi';
+import FeedbackTab from '../components/dashboard/FeedbackTab';
+import { FiGrid, FiLogOut, FiStar, FiEdit3, FiTrash2, FiVideo, FiFile, FiGift, FiMessageSquare } from 'react-icons/fi';
 
 import { Video, AuthState, VideoState, Review, ReviewFormData } from '../types/dashboard';
 import { STORAGE_KEY, formatDate, apiCall } from '../utils/dashboardUtils';
@@ -47,7 +48,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     title: '',
     comment: ''
   });
-  const [activeTab, setActiveTab] = useState<'videos' | 'training-plan'>('videos');
+  const [activeTab, setActiveTab] = useState<'videos' | 'training-plan' | 'feedback'>('training-plan');
   const [hasTrainingPlan, setHasTrainingPlan] = useState(false);
 
   // Authentication logic
@@ -418,6 +419,17 @@ const Dashboard: React.FC<DashboardProps> = () => {
           {/* Navigation Tabs */}
           <div className="flex space-x-1 bg-gray-200 p-1 rounded-lg mb-8">
             <button
+              onClick={() => setActiveTab('training-plan')}
+              className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-medium transition-all ${
+                activeTab === 'training-plan'
+                  ? 'bg-white text-gray-900 shadow'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {React.createElement(FiFile as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+              <span>{t('dashboard.tabs.trainingPlan') || 'Scheda'}</span>
+            </button>
+            <button
               onClick={() => setActiveTab('videos')}
               className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-medium transition-all ${
                 activeTab === 'videos'
@@ -429,21 +441,23 @@ const Dashboard: React.FC<DashboardProps> = () => {
               <span>{t('dashboard.tabs.videos') || 'Video'}</span>
             </button>
             <button
-              onClick={() => setActiveTab('training-plan')}
+              onClick={() => setActiveTab('feedback')}
               className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-medium transition-all ${
-                activeTab === 'training-plan'
+                activeTab === 'feedback'
                   ? 'bg-white text-gray-900 shadow'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              {React.createElement(FiFile as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-              <span>{t('dashboard.tabs.trainingPlan') || 'Scheda'}</span>
+              {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+              <span>Feedback</span>
             </button>
           </div>
 
           {/* Tab Content */}
           {activeTab === 'training-plan' ? (
             <TrainingPlan />
+          ) : activeTab === 'feedback' ? (
+            <FeedbackTab user={authState.user} />
           ) : (
             <>
               {/* Video Categories Filter */}
