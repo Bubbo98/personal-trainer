@@ -1,0 +1,9 @@
+# Exclude heavy video files from deployment
+public/videos/**
+public/videos/
+*.mp4
+*.mov
+*.avi
+
+# Keep thumbnails (usually smaller)
+!public/thumbnails/**

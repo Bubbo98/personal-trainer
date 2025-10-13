@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import Header from '../components/Header';
 import LoginForm from '../components/admin/LoginForm';
 import UserManagement from '../components/admin/UserManagement';
+import UserDetail from '../components/admin/UserDetail';
 import VideoManagement from '../components/admin/VideoManagement';
 import ReviewManagement from '../components/admin/ReviewManagement';
 import FeedbackManagement from '../components/admin/FeedbackManagement';
@@ -20,12 +22,24 @@ import { AdminState } from '../types/admin';
 
 const AdminCMS: React.FC = () => {
   const { t } = useTranslation();
+  const location = useLocation();
   const [adminState, setAdminState] = useState<AdminState>({
     isAuthenticated: false,
     loading: true,
     error: null
   });
   const [activeTab, setActiveTab] = useState<'users' | 'videos' | 'reviews' | 'feedback'>('users');
+
+  // Check if we're on a user detail page
+  const userDetailMatch = location.pathname.match(/^\/admin\/users\/(\d+)$/);
+  const isUserDetailPage = !!userDetailMatch;
+
+  // Update active tab based on URL when returning from user detail
+  useEffect(() => {
+    if (!isUserDetailPage && location.pathname === '/admin') {
+      setActiveTab('users');
+    }
+  }, [location.pathname, isUserDetailPage]);
 
   // Check authentication on mount
   useEffect(() => {
@@ -122,59 +136,63 @@ const AdminCMS: React.FC = () => {
             </button>
           </div>
 
-          {/* Navigation Tabs */}
-          <div className="flex space-x-1 mb-8 bg-gray-200 rounded-xl p-1">
-            <button
-              onClick={() => setActiveTab('users')}
-              className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors flex-1 sm:flex-initial ${
-                activeTab === 'users'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              {React.createElement(FiUsers as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-              <span className="hidden sm:inline">{t('admin.users.tabTitle')}</span>
-            </button>
+          {/* Navigation Tabs - Hide when on user detail page */}
+          {!isUserDetailPage && (
+            <div className="flex space-x-1 mb-8 bg-gray-200 rounded-xl p-1">
+              <button
+                onClick={() => setActiveTab('users')}
+                className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors flex-1 sm:flex-initial ${
+                  activeTab === 'users'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {React.createElement(FiUsers as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+                <span className="hidden sm:inline">{t('admin.users.tabTitle')}</span>
+              </button>
 
-            <button
-              onClick={() => setActiveTab('videos')}
-              className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors flex-1 sm:flex-initial ${
-                activeTab === 'videos'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              {React.createElement(FiVideo as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-              <span className="hidden sm:inline">{t('admin.videos.tabTitle')}</span>
-            </button>
+              <button
+                onClick={() => setActiveTab('videos')}
+                className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors flex-1 sm:flex-initial ${
+                  activeTab === 'videos'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {React.createElement(FiVideo as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+                <span className="hidden sm:inline">{t('admin.videos.tabTitle')}</span>
+              </button>
 
-            <button
-              onClick={() => setActiveTab('reviews')}
-              className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors flex-1 sm:flex-initial ${
-                activeTab === 'reviews'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              {React.createElement(FiStar as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-              <span className="hidden sm:inline">{t('admin.reviews.tabTitle')}</span>
-            </button>
+              <button
+                onClick={() => setActiveTab('reviews')}
+                className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors flex-1 sm:flex-initial ${
+                  activeTab === 'reviews'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {React.createElement(FiStar as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+                <span className="hidden sm:inline">{t('admin.reviews.tabTitle')}</span>
+              </button>
 
-            <button
-              onClick={() => setActiveTab('feedback')}
-              className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors flex-1 sm:flex-initial ${
-                activeTab === 'feedback'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-              <span className="hidden sm:inline">Feedback</span>
-            </button>
-          </div>
+              <button
+                onClick={() => setActiveTab('feedback')}
+                className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors flex-1 sm:flex-initial ${
+                  activeTab === 'feedback'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+                <span className="hidden sm:inline">Feedback</span>
+              </button>
+            </div>
+          )}
 
           {/* Tab Content */}
-          {activeTab === 'users' ? (
+          {isUserDetailPage ? (
+            <UserDetail />
+          ) : activeTab === 'users' ? (
             <UserManagement />
           ) : activeTab === 'videos' ? (
             <VideoManagement />

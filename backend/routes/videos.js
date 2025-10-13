@@ -3,6 +3,7 @@ const { createDatabase } = require('../utils/database');
 const path = require('path');
 const fs = require('fs');
 const { verifyActiveUser } = require('../middleware/auth');
+const { getSignedVideoUrl } = require('../utils/r2');
 require('dotenv').config();
 
 const router = express.Router();
@@ -38,7 +39,7 @@ router.get('/', (req, res) => {
         ORDER BY v.created_at DESC
     `;
 
-    db.allCallback(query, [userId], (err, videos) => {
+    db.allCallback(query, [userId], async (err, videos) => {
         db.close();
 
         if (err) {
@@ -52,21 +53,45 @@ router.get('/', (req, res) => {
         // Log access for analytics
         console.log(`User ${req.user.username} accessed video list (${videos.length} videos)`);
 
-        res.json({
-            success: true,
-            data: {
-                videos: videos.map(video => ({
+        // Generate signed URLs for all videos
+        const videosWithUrls = await Promise.all(videos.map(async (video) => {
+            try {
+                const signedUrl = await getSignedVideoUrl(video.file_path, 3600); // 1 hour expiry
+                return {
                     id: video.id,
                     title: video.title,
                     description: video.description,
                     filePath: video.file_path,
+                    signedUrl: signedUrl, // Add signed URL
                     duration: video.duration,
                     thumbnailPath: video.thumbnail_path,
                     category: video.category,
                     createdAt: video.created_at,
                     grantedAt: video.granted_at,
                     expiresAt: video.expires_at
-                })),
+                };
+            } catch (error) {
+                console.error(`Failed to generate signed URL for video ${video.id}:`, error.message);
+                return {
+                    id: video.id,
+                    title: video.title,
+                    description: video.description,
+                    filePath: video.file_path,
+                    signedUrl: null,
+                    duration: video.duration,
+                    thumbnailPath: video.thumbnail_path,
+                    category: video.category,
+                    createdAt: video.created_at,
+                    grantedAt: video.granted_at,
+                    expiresAt: video.expires_at
+                };
+            }
+        }));
+
+        res.json({
+            success: true,
+            data: {
+                videos: videosWithUrls,
                 totalCount: videos.length
             }
         });
@@ -152,7 +177,7 @@ router.get('/:id', (req, res) => {
         AND (uvp.expires_at IS NULL OR uvp.expires_at > CURRENT_TIMESTAMP)
     `;
 
-    db.getCallback(query, [userId, videoId], (err, video) => {
+    db.getCallback(query, [userId, videoId], async (err, video) => {
         if (err) {
             db.close();
             console.error('Database error:', err.message);
@@ -189,6 +214,14 @@ router.get('/:id', (req, res) => {
 
         console.log(`User ${req.user.username} accessed video: ${video.title}`);
 
+        // Generate signed URL
+        let signedUrl = null;
+        try {
+            signedUrl = await getSignedVideoUrl(video.file_path, 3600);
+        } catch (error) {
+            console.error(`Failed to generate signed URL for video ${video.id}:`, error.message);
+        }
+
         res.json({
             success: true,
             data: {
@@ -197,6 +230,7 @@ router.get('/:id', (req, res) => {
                     title: video.title,
                     description: video.description,
                     filePath: video.file_path,
+                    signedUrl: signedUrl,
                     duration: video.duration,
                     thumbnailPath: video.thumbnail_path,
                     category: video.category,
@@ -239,7 +273,7 @@ router.get('/category/:category', (req, res) => {
         ORDER BY v.created_at DESC
     `;
 
-    db.allCallback(query, [userId, category], (err, videos) => {
+    db.allCallback(query, [userId, category], async (err, videos) => {
         db.close();
 
         if (err) {
@@ -250,22 +284,46 @@ router.get('/category/:category', (req, res) => {
             });
         }
 
-        res.json({
-            success: true,
-            data: {
-                category,
-                videos: videos.map(video => ({
+        // Generate signed URLs for all videos
+        const videosWithUrls = await Promise.all(videos.map(async (video) => {
+            try {
+                const signedUrl = await getSignedVideoUrl(video.file_path, 3600);
+                return {
                     id: video.id,
                     title: video.title,
                     description: video.description,
                     filePath: video.file_path,
+                    signedUrl: signedUrl,
                     duration: video.duration,
                     thumbnailPath: video.thumbnail_path,
                     category: video.category,
                     createdAt: video.created_at,
                     grantedAt: video.granted_at,
                     expiresAt: video.expires_at
-                })),
+                };
+            } catch (error) {
+                console.error(`Failed to generate signed URL for video ${video.id}:`, error.message);
+                return {
+                    id: video.id,
+                    title: video.title,
+                    description: video.description,
+                    filePath: video.file_path,
+                    signedUrl: null,
+                    duration: video.duration,
+                    thumbnailPath: video.thumbnail_path,
+                    category: video.category,
+                    createdAt: video.created_at,
+                    grantedAt: video.granted_at,
+                    expiresAt: video.expires_at
+                };
+            }
+        }));
+
+        res.json({
+            success: true,
+            data: {
+                category,
+                videos: videosWithUrls,
                 totalCount: videos.length
             }
         });

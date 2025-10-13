@@ -11,14 +11,21 @@ interface VideoPlayerProps {
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ video, onClose }) => {
   const { t } = useTranslation();
-  // Use backend URL for video serving
-  const backendUrl = process.env.NODE_ENV === 'production'
-    ? window.location.origin  // Same domain in production (Vercel)
-    : 'http://localhost:3002'; // Backend port in development
-  const videoSrc = `${backendUrl}/videos/${video.filePath}`;
+  // Use signed URL from R2 if available, otherwise fallback to old path
+  const videoSrc = video.signedUrl || `/videos/${video.filePath}`;
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Close only if clicking on the backdrop (not on the video container)
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
+      onClick={handleBackdropClick}
+    >
       <div className="relative w-full max-w-4xl mx-4">
         <button
           onClick={onClose}
@@ -28,11 +35,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video, onClose }) => {
           ✕
         </button>
 
-        <div className="bg-white rounded-lg overflow-hidden">
+        <div className="bg-white rounded-lg overflow-hidden max-h-[90vh] flex flex-col">
           <video
             controls
             autoPlay
-            className="w-full h-auto max-h-[70vh]"
+            className="w-full h-auto max-h-[60vh]"
             src={videoSrc}
             onError={() => console.error('Video loading failed:', videoSrc)}
           >
@@ -40,10 +47,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video, onClose }) => {
             Il tuo browser non supporta la riproduzione video.
           </video>
 
-          <div className="p-4">
+          <div className="p-4 overflow-y-auto">
             <h3 className="text-xl font-bold text-gray-900 mb-2">{video.title}</h3>
             {video.description && (
-              <p className="text-gray-700 mb-2">{video.description}</p>
+              <p className="text-gray-700 mb-2 whitespace-pre-wrap">{video.description}</p>
             )}
             <div className="flex items-center text-sm text-gray-500 space-x-4">
               <span className="flex items-center space-x-1">

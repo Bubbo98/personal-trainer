@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   FiPlus,
@@ -9,9 +10,8 @@ import {
   FiSearch,
   FiClock
 } from 'react-icons/fi';
-import { apiCall, formatDate, formatDuration } from '../../utils/adminUtils';
-import { User, Video, CreateUserForm } from '../../types/admin';
-import PdfManagement from './PdfManagement';
+import { apiCall, formatDate } from '../../utils/adminUtils';
+import { User, CreateUserForm } from '../../types/admin';
 
 interface PdfInfo {
   expirationDate?: string;
@@ -21,13 +21,11 @@ interface PdfInfo {
 
 const UserManagement: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
-  const [videos, setVideos] = useState<Video[]>([]);
-  const [userVideos, setUserVideos] = useState<Record<number, Video[]>>({});
   const [userPdfs, setUserPdfs] = useState<Record<number, PdfInfo | null>>({});
   const [loading, setLoading] = useState(false);
   const [showCreateUser, setShowCreateUser] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -71,26 +69,6 @@ const UserManagement: React.FC = () => {
     }
   }, []);
 
-  const loadVideos = useCallback(async () => {
-    try {
-      const response = await apiCall('/admin/videos');
-      setVideos(response.data.videos);
-    } catch (error) {
-      console.error('Failed to load videos:', error);
-    }
-  }, []);
-
-  const loadUserVideos = useCallback(async (userId: number) => {
-    try {
-      const response = await apiCall(`/admin/users/${userId}/videos`);
-      setUserVideos(prev => ({
-        ...prev,
-        [userId]: response.data.videos
-      }));
-    } catch (error) {
-      console.error('Failed to load user videos:', error);
-    }
-  }, []);
 
   // Helper functions for PDF expiration
   const getDaysUntilExpiration = (expirationDate: string): number => {
@@ -107,30 +85,9 @@ const UserManagement: React.FC = () => {
     return 'bg-green-100 text-green-800 border-green-300';
   };
 
-  const reloadUserPdf = async (userId: number) => {
-    try {
-      const pdfResponse = await apiCall(`/pdf/admin/user/${userId}`);
-      if (pdfResponse.data) {
-        setUserPdfs(prev => ({
-          ...prev,
-          [userId]: {
-            expirationDate: pdfResponse.data.expirationDate,
-            durationMonths: pdfResponse.data.durationMonths,
-            durationDays: pdfResponse.data.durationDays
-          }
-        }));
-      } else {
-        setUserPdfs(prev => ({ ...prev, [userId]: null }));
-      }
-    } catch {
-      setUserPdfs(prev => ({ ...prev, [userId]: null }));
-    }
-  };
-
   useEffect(() => {
     loadUsers();
-    loadVideos();
-  }, [loadUsers, loadVideos]);
+  }, [loadUsers]);
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,41 +167,8 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const handleToggleUserDetails = (user: User) => {
-    if (selectedUser?.id === user.id) {
-      setSelectedUser(null);
-    } else {
-      setSelectedUser(user);
-      loadUserVideos(user.id);
-    }
-  };
-
-  const handleAssignVideo = async (userId: number, videoId: number) => {
-    try {
-      await apiCall(`/admin/users/${userId}/videos/${videoId}`, {
-        method: 'POST'
-      });
-
-      loadUsers(); // Refresh user data
-      loadUserVideos(userId); // Refresh user's videos
-      alert(t('admin.users.videoAssignedSuccess'));
-    } catch (error) {
-      alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.users.assignVideoFailed')}`);
-    }
-  };
-
-  const handleRevokeVideo = async (userId: number, videoId: number) => {
-    try {
-      await apiCall(`/admin/users/${userId}/videos/${videoId}`, {
-        method: 'DELETE'
-      });
-
-      loadUsers(); // Refresh user data
-      loadUserVideos(userId); // Refresh user's videos
-      alert(t('admin.users.videoRevokedSuccess'));
-    } catch (error) {
-      alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.users.revokeVideoFailed')}`);
-    }
+  const handleUserClick = (userId: number) => {
+    navigate(`/admin/users/${userId}`);
   };
 
   const handleDeleteUser = async (userId: number, userName: string) => {
@@ -258,7 +182,6 @@ const UserManagement: React.FC = () => {
       });
 
       loadUsers(); // Refresh user data
-      setSelectedUser(null); // Clear selected user if it was deleted
       alert(t('admin.users.userDeletedSuccess'));
     } catch (error) {
       alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.users.deleteUserFailed')}`);
@@ -421,7 +344,10 @@ const UserManagement: React.FC = () => {
             <tbody className="divide-y divide-gray-200">
               {filteredUsers.map((user) => (
                 <React.Fragment key={user.id}>
-                  <tr className="hover:bg-gray-50">
+                  <tr
+                    className="hover:bg-gray-50 cursor-pointer"
+                    onClick={() => handleUserClick(user.id)}
+                  >
                     <td className="px-6 py-4">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
@@ -463,18 +389,12 @@ const UserManagement: React.FC = () => {
                           </span>
                         )}
                       </div>
-                      <button
-                        onClick={() => handleToggleUserDetails(user)}
-                        className="text-sm text-blue-600 hover:text-blue-800 mt-1"
-                      >
-                        {selectedUser?.id === user.id ? t('admin.users.hide') : t('admin.users.manage')}
-                      </button>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       {user.lastLogin ? formatDate(user.lastLogin) : t('admin.users.never')}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex space-x-2">
+                      <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => handleGenerateLink(user.id)}
                           className="text-blue-600 hover:text-blue-800 p-1"
@@ -492,104 +412,6 @@ const UserManagement: React.FC = () => {
                       </div>
                     </td>
                   </tr>
-
-                  {/* Management Panel - shown directly below the user row */}
-                  {selectedUser?.id === user.id && (
-                    <tr>
-                      <td colSpan={4} className="px-0 py-0">
-                        <div className="border-t bg-gray-50 p-6">
-                          <h4 className="font-medium text-gray-900 mb-4">
-                            {t('admin.users.manageVideosFor')} {user.firstName} {user.lastName}
-                          </h4>
-
-                          {/* Currently Assigned Videos */}
-                          {userVideos[user.id] && userVideos[user.id].length > 0 && (
-                            <div className="mb-6">
-                              <h5 className="font-medium text-sm text-gray-700 mb-3 flex items-center">
-                                {React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: "w-4 h-4 text-green-600 mr-2" })}
-                                {t('admin.users.assignVideo')} ({userVideos[user.id].length})
-                              </h5>
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {userVideos[user.id].map((video) => (
-                                  <div key={video.id} className="bg-white p-3 rounded-lg border border-green-200 bg-green-50">
-                                    <div className="mb-2">
-                                      <div className="font-medium text-sm text-gray-900 flex items-center">
-                                        {React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: "w-3 h-3 text-green-600 mr-1" })}
-                                        {video.title}
-                                      </div>
-                                      <div className="text-xs text-gray-500">
-                                        {video.category} • {formatDuration(video.duration)}
-                                      </div>
-                                    </div>
-                                    <button
-                                      onClick={() => handleRevokeVideo(user.id, video.id)}
-                                      className="w-full bg-red-600 text-white text-xs py-1 px-2 rounded hover:bg-red-700"
-                                    >
-                                      {t('admin.users.revokeVideo')}
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Available Videos to Assign */}
-                          <div>
-                            <h5 className="font-medium text-sm text-gray-700 mb-3">
-                              {t('admin.users.availableVideos')}
-                            </h5>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                              {videos
-                                .filter(video => {
-                                  const userHasVideo = userVideos[user.id]?.some(uv => uv.id === video.id);
-                                  return !userHasVideo;
-                                })
-                                .map((video) => (
-                                  <div key={video.id} className="bg-white p-3 rounded-lg border">
-                                    <div className="mb-2">
-                                      <div className="font-medium text-sm text-gray-900">{video.title}</div>
-                                      <div className="text-xs text-gray-500">
-                                        {video.category} • {formatDuration(video.duration)}
-                                      </div>
-                                    </div>
-                                    <button
-                                      onClick={() => handleAssignVideo(user.id, video.id)}
-                                      className="w-full bg-green-600 text-white text-xs py-1 px-2 rounded hover:bg-green-700"
-                                    >
-                                      {t('admin.users.assignVideo')}
-                                    </button>
-                                  </div>
-                                ))
-                              }
-                            </div>
-
-                            {videos.filter(video => {
-                              const userHasVideo = userVideos[user.id]?.some(uv => uv.id === video.id);
-                              return !userHasVideo;
-                            }).length === 0 && (
-                              <div className="text-center text-gray-500 text-sm py-8">
-                                {t('admin.users.allVideosAssigned')}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* PDF Management Section */}
-                          <div className="mt-6 pt-6 border-t border-gray-200">
-                            <h5 className="font-medium text-sm text-gray-700 mb-3">
-                              {t('admin.pdf.trainingPlan') || 'Scheda di Allenamento'}
-                            </h5>
-                            <PdfManagement
-                              userId={user.id}
-                              userName={`${user.firstName} ${user.lastName}`}
-                              onPdfChange={() => {
-                                reloadUserPdf(user.id);
-                              }}
-                            />
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
                 </React.Fragment>
               ))}
 
@@ -689,106 +511,12 @@ const UserManagement: React.FC = () => {
 
               {/* Manage Button */}
               <button
-                onClick={() => handleToggleUserDetails(user)}
+                onClick={() => handleUserClick(user.id)}
                 className="w-full mt-2 bg-gray-900 text-white py-2.5 px-4 rounded-lg hover:bg-gray-800 text-sm font-medium"
               >
-                {selectedUser?.id === user.id ? t('admin.users.hide') : t('admin.users.manage')}
+                {t('admin.users.manage')}
               </button>
             </div>
-
-            {/* Management Panel - Mobile */}
-            {selectedUser?.id === user.id && (
-              <div className="border-t bg-gray-50 p-4">
-                <h4 className="font-medium text-gray-900 mb-4 text-sm">
-                  {t('admin.users.manageVideosFor')} {user.firstName} {user.lastName}
-                </h4>
-
-                {/* Currently Assigned Videos */}
-                {userVideos[user.id] && userVideos[user.id].length > 0 && (
-                  <div className="mb-6">
-                    <h5 className="font-medium text-sm text-gray-700 mb-3 flex items-center">
-                      {React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: "w-4 h-4 text-green-600 mr-2" })}
-                      {t('admin.users.assignVideo')} ({userVideos[user.id].length})
-                    </h5>
-                    <div className="space-y-2">
-                      {userVideos[user.id].map((video) => (
-                        <div key={video.id} className="bg-white p-3 rounded-lg border border-green-200 bg-green-50">
-                          <div className="mb-2">
-                            <div className="font-medium text-sm text-gray-900 flex items-center">
-                              {React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: "w-3 h-3 text-green-600 mr-1" })}
-                              {video.title}
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {video.category} • {formatDuration(video.duration)}
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => handleRevokeVideo(user.id, video.id)}
-                            className="w-full bg-red-600 text-white text-xs py-2 px-2 rounded hover:bg-red-700"
-                          >
-                            {t('admin.users.revokeVideo')}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Available Videos to Assign */}
-                <div>
-                  <h5 className="font-medium text-sm text-gray-700 mb-3">
-                    {t('admin.users.availableVideos')}
-                  </h5>
-                  <div className="space-y-2">
-                    {videos
-                      .filter(video => {
-                        const userHasVideo = userVideos[user.id]?.some(uv => uv.id === video.id);
-                        return !userHasVideo;
-                      })
-                      .map((video) => (
-                        <div key={video.id} className="bg-white p-3 rounded-lg border">
-                          <div className="mb-2">
-                            <div className="font-medium text-sm text-gray-900">{video.title}</div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {video.category} • {formatDuration(video.duration)}
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => handleAssignVideo(user.id, video.id)}
-                            className="w-full bg-green-600 text-white text-xs py-2 px-2 rounded hover:bg-green-700"
-                          >
-                            {t('admin.users.assignVideo')}
-                          </button>
-                        </div>
-                      ))
-                    }
-                  </div>
-
-                  {videos.filter(video => {
-                    const userHasVideo = userVideos[user.id]?.some(uv => uv.id === video.id);
-                    return !userHasVideo;
-                  }).length === 0 && (
-                    <div className="text-center text-gray-500 text-sm py-8">
-                      {t('admin.users.allVideosAssigned')}
-                    </div>
-                  )}
-                </div>
-
-                {/* PDF Management Section */}
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <h5 className="font-medium text-sm text-gray-700 mb-3">
-                    {t('admin.pdf.trainingPlan') || 'Scheda di Allenamento'}
-                  </h5>
-                  <PdfManagement
-                    userId={user.id}
-                    userName={`${user.firstName} ${user.lastName}`}
-                    onPdfChange={() => {
-                      reloadUserPdf(user.id);
-                    }}
-                  />
-                </div>
-              </div>
-            )}
           </div>
         ))}
 

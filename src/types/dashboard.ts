@@ -12,6 +12,7 @@ export interface Video {
   title: string;
   description: string;
   filePath: string;
+  signedUrl?: string;
   duration: number;
   thumbnailPath?: string;
   category: string;

@@ -16,12 +16,15 @@ export interface Video {
   title: string;
   description: string;
   filePath: string;
+  signedUrl?: string;
   duration: number;
   thumbnailPath?: string;
   category: string;
   createdAt: string;
   updatedAt: string;
   userCount: number;
+  grantedAt?: string;
+  expiresAt?: string;
 }
 
 export interface CreateUserForm {
