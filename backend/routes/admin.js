@@ -3,9 +3,21 @@ const bcrypt = require('bcryptjs');
 const { createDatabase } = require('../utils/database');
 const jwt = require('jsonwebtoken');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 require('dotenv').config();
 
 const router = express.Router();
+
+// R2 client configuration
+const r2Client = new S3Client({
+    region: 'auto',
+    endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    credentials: {
+        accessKeyId: process.env.R2_ACCESS_KEY_ID,
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+    },
+});
 
 // Apply authentication and admin check to all routes
 router.use(authenticateToken);
@@ -411,6 +423,83 @@ router.delete('/users/:userId/videos/:videoId', (req, res) => {
     );
 });
 
+// GET /api/admin/videos/:id/preview
+// Get video with signed URL for admin preview (no permission check)
+router.get('/videos/:id/preview', async (req, res) => {
+    const videoId = req.params.id;
+
+    if (!videoId || isNaN(videoId)) {
+        return res.status(400).json({
+            success: false,
+            error: 'Valid video ID is required'
+        });
+    }
+
+    const db = createDatabase();
+
+    const query = `
+        SELECT
+            v.id,
+            v.title,
+            v.description,
+            v.file_path,
+            v.duration,
+            v.thumbnail_path,
+            v.category,
+            v.created_at
+        FROM videos v
+        WHERE v.id = ?
+        AND v.is_active = 1
+    `;
+
+    db.getCallback(query, [videoId], async (err, video) => {
+        db.close();
+
+        if (err) {
+            console.error('Database error:', err.message);
+            return res.status(500).json({
+                success: false,
+                error: 'Database error'
+            });
+        }
+
+        if (!video) {
+            return res.status(404).json({
+                success: false,
+                error: 'Video not found'
+            });
+        }
+
+        console.log(`Admin ${req.user.username} previewing video: ${video.title}`);
+
+        // Generate signed URL
+        let signedUrl = null;
+        try {
+            const { getSignedVideoUrl } = require('../utils/r2');
+            signedUrl = await getSignedVideoUrl(video.file_path, 3600);
+        } catch (error) {
+            console.error(`Failed to generate signed URL for video ${video.id}:`, error.message);
+        }
+
+        res.json({
+            success: true,
+            data: {
+                video: {
+                    id: video.id,
+                    title: video.title,
+                    description: video.description,
+                    filePath: video.file_path,
+                    signedUrl: signedUrl,
+                    duration: video.duration,
+                    thumbnailPath: video.thumbnail_path,
+                    category: video.category,
+                    createdAt: video.created_at
+                }
+            }
+        });
+    });
+});
+
 // GET /api/admin/videos
 // Get all videos (admin view)
 router.get('/videos', (req, res) => {
@@ -455,6 +544,59 @@ router.get('/videos', (req, res) => {
             }
         });
     });
+});
+
+// POST /api/admin/videos/upload-url
+// Generate presigned URL for direct upload to R2 from frontend
+router.post('/videos/upload-url', async (req, res) => {
+    try {
+        const { fileName, fileType, category } = req.body;
+
+        if (!fileName || !category) {
+            return res.status(400).json({
+                success: false,
+                error: 'fileName and category are required'
+            });
+        }
+
+        // Sanitize filename and create R2 key
+        const fileExtension = fileName.substring(fileName.lastIndexOf('.'));
+        const baseName = fileName.substring(0, fileName.lastIndexOf('.'));
+        const timestamp = Date.now();
+        const r2Key = `${category}/${baseName}${fileExtension}`;
+
+        // Determine content type
+        const contentType = fileType || 'video/mp4';
+
+        console.log(`Generating presigned URL for: ${r2Key}`);
+
+        // Create presigned URL for PUT operation (30 minutes expiry)
+        const command = new PutObjectCommand({
+            Bucket: process.env.R2_BUCKET_NAME,
+            Key: r2Key,
+            ContentType: contentType,
+        });
+
+        const presignedUrl = await getSignedUrl(r2Client, command, { expiresIn: 1800 }); // 30 min
+
+        console.log(`Admin ${req.user.username} generated upload URL for: ${r2Key}`);
+
+        res.json({
+            success: true,
+            data: {
+                uploadUrl: presignedUrl,
+                filePath: r2Key,
+                expiresIn: 1800
+            }
+        });
+
+    } catch (error) {
+        console.error('Presigned URL generation error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to generate upload URL: ' + error.message
+        });
+    }
 });
 
 // POST /api/admin/videos
@@ -505,6 +647,68 @@ router.post('/videos', (req, res) => {
                 duration,
                 thumbnailPath,
                 category
+            }
+        });
+    });
+});
+
+// PUT /api/admin/videos/:id
+// Update video metadata (title, description, thumbnail)
+router.put('/videos/:id', (req, res) => {
+    const videoId = req.params.id;
+    const { title, description, thumbnailPath } = req.body;
+
+    if (!videoId || isNaN(videoId)) {
+        return res.status(400).json({
+            success: false,
+            error: 'Valid video ID is required'
+        });
+    }
+
+    if (!title) {
+        return res.status(400).json({
+            success: false,
+            error: 'Title is required'
+        });
+    }
+
+    const db = createDatabase();
+
+    db.runCallback(`
+        UPDATE videos
+        SET title = ?,
+            description = ?,
+            thumbnail_path = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND is_active = 1
+    `, [title, description || null, thumbnailPath || null, videoId], function(err) {
+        db.close();
+
+        if (err) {
+            console.error('Database error:', err.message);
+            return res.status(500).json({
+                success: false,
+                error: 'Database error'
+            });
+        }
+
+        if (this.changes === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Video not found'
+            });
+        }
+
+        console.log(`Admin ${req.user.username} updated video ${videoId}: ${title}`);
+
+        res.json({
+            success: true,
+            message: 'Video updated successfully',
+            data: {
+                id: parseInt(videoId),
+                title,
+                description,
+                thumbnailPath
             }
         });
     });

@@ -54,7 +54,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onPlay }) => {
           {video.title}
         </h3>
         {video.description && (
-          <p className="text-gray-600 text-sm mb-3 line-clamp-3">
+          <p className="text-gray-600 text-sm mb-3 line-clamp-3 whitespace-pre-wrap">
             {video.description}
           </p>
         )}

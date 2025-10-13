@@ -57,11 +57,15 @@ Il CMS è diviso in **2 sezioni principali**:
 
 ### **🎬 Assegnare Video a Utente**
 
-1. **Clicca "Gestisci"** nella colonna Video
-2. **Si espande pannello** con tutti i video disponibili
-3. **Per ogni video**:
-   - **"Assegna"** → Dà accesso al video
-   - **"Revoca"** → Rimuove accesso al video
+1. **Clicca sull'utente** nella lista (riga cliccabile)
+2. **Si apre pagina dettaglio** con tab Video e PDF
+3. **Tab Video**:
+   - **Searchbar** per cercare video specifici
+   - **Video Assegnati** (con badge verde): Click "Revoca Accesso" per rimuovere
+   - **Video Disponibili**: Click "Assegna Video" per dare accesso
+4. **Pulsante "Indietro"** per tornare alla lista utenti
+
+**Nota**: Non ci sono più pannelli espandibili! Ogni utente ha la sua pagina dedicata.
 
 ### **📄 Gestione Schede PDF**
 
@@ -123,6 +127,14 @@ Ogni utente mostra:
 
 ## 🎬 **Gestione Video**
 
+### **🔍 Ricerca Video**
+
+Il CMS include una **searchbar** per trovare velocemente i video:
+- Cerca per **titolo**
+- Cerca per **categoria**
+- Cerca per **descrizione**
+- Il contatore mostra: "X di Y video" durante la ricerca
+
 ### **✨ Aggiungere Nuovo Video**
 
 1. **Carica fisicamente il file** video in `/public/videos/categoria/`
@@ -130,11 +142,13 @@ Ogni utente mostra:
 3. **Nel CMS clicca "Nuovo Video"**
 4. **Compila il form**:
    - **Titolo**: Nome video visualizzato
-   - **Descrizione**: Testo descrittivo (opzionale)
+   - **Descrizione**: Testo descrittivo con **supporto a capo** (premi Invio per andare a capo)
    - **Percorso File**: `categoria/nome-file.mp4`
    - **Durata**: Secondi totali del video
    - **Categoria**: Seleziona da lista
    - **Thumbnail**: Nome file immagine (es. `video-thumbnail.png`)
+
+**💡 Novità Descrizioni**: Le descrizioni ora preservano gli a capo! Scrivi normalmente premendo Invio per andare a capo, e il testo verrà visualizzato correttamente sia nel CMS che nel player video.
 
 #### **📸 Gestione Thumbnail**
 
@@ -241,6 +255,8 @@ Ogni video mostra:
 
 - **Semplicità**: Un solo link per accedere
 - **Personalizzato**: Solo i loro video visibili
+- **Organizzato**: Dashboard con 4 tab (Scheda, Video, Recensioni, Feedback)
+- **Mobile-friendly**: Tab ottimizzate per schermi piccoli (sotto 400px solo icone)
 - **Professionale**: Dashboard moderna e pulita
 - **Sempre accessibile**: Link valido 30 giorni
 

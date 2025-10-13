@@ -18,8 +18,10 @@ Sistema completo per la gestione di video personalizzati per clienti personal tr
 - 🎬 **Dashboard video** con solo i contenuti assegnati
 - 📄 **Scheda PDF personalizzata** con countdown scadenza
 - ⏰ **Indicatore scadenza** colorato (verde/giallo/rosso)
-- 📱 **Interfaccia responsive** mobile-friendly
-- ⚡ **Player video integrato** con controlli completi
+- ⭐ **Sistema recensioni** separato in tab dedicata
+- 💬 **Feedback system** per comunicare con il trainer
+- 📱 **Interfaccia responsive** mobile-friendly con tab ottimizzate
+- ⚡ **Player video integrato** con descrizioni complete multilinea
 - 📈 **Statistiche personali** di utilizzo
 
 ## 🏗️ **Architettura Ultra-Budget**
@@ -88,12 +90,16 @@ personal-trainer-app/
 ### **Gestione Utenti**
 - ✅ Crea nuovi clienti con form semplice
 - ✅ Genera link di accesso automatici (30 giorni validità)
-- ✅ Assegna/revoca video specifici per utente
+- ✅ Assegna/revoca video specifici per utente (con ricerca)
+- ✅ Pagina dettaglio utente con tab Video e PDF
+- ✅ Interfaccia semplificata senza espansioni confuse
 - ✅ Monitora accessi e statistiche
 
 ### **Gestione Video**
 - ✅ Aggiungi video al catalogo
 - ✅ Organizza per categorie (Calisthenics, Bodyweight, Recovery, etc.)
+- ✅ Ricerca video per titolo, categoria o descrizione
+- ✅ Descrizioni multilinea con preservazione a capo
 - ✅ Controlla statistiche utilizzo
 - ✅ Gestisci metadati (titolo, descrizione, durata)
 
@@ -206,6 +212,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 - [`ADMIN_CMS_GUIDE.md`](./ADMIN_CMS_GUIDE.md) - Guida completa utilizzo CMS
 - [`BACKEND_DOCUMENTATION.md`](./BACKEND_DOCUMENTATION.md) - Documentazione API tecnica
 - [`DEMO_SCRIPT.md`](./DEMO_SCRIPT.md) - Script demo passo-passo
+- [`CHANGELOG.md`](./CHANGELOG.md) - Storia modifiche e aggiornamenti
 
 ## 🛠️ **Sviluppo**
 

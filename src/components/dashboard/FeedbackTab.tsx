@@ -174,7 +174,6 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user }) => {
       {/* Status message when form shouldn't be shown */}
       {!feedbackStatus?.shouldShow && feedbackStatus?.reason && (() => {
         let daysRemaining = 0;
-        let totalDays = 0;
         let progressPercentage = 0;
         let targetDate = null;
 
@@ -184,7 +183,6 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user }) => {
           const oneWeekFromPdf = new Date(pdfDate.getTime() + (7 * 24 * 60 * 60 * 1000));
           targetDate = oneWeekFromPdf;
           daysRemaining = Math.ceil((oneWeekFromPdf.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-          totalDays = 7;
           progressPercentage = Math.min(100, Math.max(0, ((7 - daysRemaining) / 7) * 100));
         } else if (feedbackStatus.reason === 'too_soon_since_last' && feedbackStatus.lastFeedbackAt) {
           const lastFeedbackDate = new Date(feedbackStatus.lastFeedbackAt);
@@ -192,7 +190,6 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user }) => {
           const twoWeeksFromLast = new Date(lastFeedbackDate.getTime() + (14 * 24 * 60 * 60 * 1000));
           targetDate = twoWeeksFromLast;
           daysRemaining = Math.ceil((twoWeeksFromLast.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-          totalDays = 14;
           progressPercentage = Math.min(100, Math.max(0, ((14 - daysRemaining) / 14) * 100));
         }
 

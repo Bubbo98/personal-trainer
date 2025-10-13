@@ -379,7 +379,18 @@
       "videoDeletedSuccess": "Video eliminato con successo!",
       "createVideoFailed": "Creazione fallita",
       "deleteVideoFailed": "Eliminazione fallita",
-      "deleteConfirm": "Sei sicuro di voler eliminare il video \"{title}\"?\n\nQuesta azione rimuoverà anche tutti gli accessi degli utenti a questo video."
+      "deleteConfirm": "Sei sicuro di voler eliminare il video \"{title}\"?\n\nQuesta azione rimuoverà anche tutti gli accessi degli utenti a questo video.",
+      "videoFile": "File Video",
+      "upload": "Carica",
+      "uploading": "Caricamento in corso...",
+      "uploadSuccess": "Video caricato con successo!",
+      "uploadFailed": "Caricamento fallito",
+      "selectedFile": "File selezionato",
+      "selectVideoFile": "Seleziona un file video",
+      "selectCategoryFirst": "Seleziona prima la categoria",
+      "onlyVideoFiles": "Solo file video sono consentiti",
+      "uploadedPath": "Percorso R2",
+      "autoDetected": "Auto-rilevato dal file"
     },
     "pdf": {
       "trainingPlan": "Scheda di Allenamento",

@@ -411,8 +411,13 @@ curl -X PUT http://localhost:3001/api/pdf/admin/extend/2 \
 
 **Scenario Cliente**:
 1. Cliente accede alla dashboard con il suo link
-2. Va alla sezione "Training Plan"
-3. Visualizza scheda PDF con:
+2. Dashboard mostra 4 tab organizzate:
+   - 📄 **Scheda** (Training Plan con PDF)
+   - 🎬 **Video** (video assegnati)
+   - ⭐ **Recensioni** (lascia recensione)
+   - 💬 **Feedback** (contatta trainer)
+3. Va alla tab "Scheda"
+4. Visualizza scheda PDF con:
    - Nome file
    - Dimensione
    - Data caricamento

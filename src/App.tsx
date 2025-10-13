@@ -39,6 +39,7 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/dashboard/:token" element={<Dashboard />} />
             <Route path="/admin" element={<AdminCMS />} />
+            <Route path="/admin/users/:userId" element={<AdminCMS />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms-of-service" element={<TermsOfService />} />
             <Route path="/cookie-policy" element={<CookiePolicy />} />
