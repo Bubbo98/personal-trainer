@@ -314,22 +314,62 @@ router.put('/admin/extend/:userId', authenticateToken, requireAdmin, async (req,
                 });
             }
 
-            // Update duration and expiration date
-            const newDurationMonths = pdf.duration_months + additionalMonths;
-            const newDurationDays = pdf.duration_days + additionalDays;
+            // Calculate new duration
+            let newDurationMonths = pdf.duration_months + additionalMonths;
+            let newDurationDays = pdf.duration_days + additionalDays;
 
-            db.runCallback(`
-                UPDATE user_pdf_files
-                SET duration_months = ?,
-                    duration_days = ?,
-                    expiration_date = datetime(expiration_date, '+' || ? || ' months', '+' || ? || ' days'),
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE user_id = ?
-            `, [
+            // Normalize: if days are negative, subtract from months
+            while (newDurationDays < 0 && newDurationMonths > 0) {
+                newDurationMonths -= 1;
+                newDurationDays += 30; // Approximate month as 30 days
+            }
+
+            // Prevent negative durations
+            if (newDurationMonths < 0 || (newDurationMonths === 0 && newDurationDays < 0)) {
+                db.close();
+                return res.status(400).json({
+                    success: false,
+                    error: 'La durata non può essere negativa. Durata attuale: ' +
+                           pdf.duration_months + ' mesi e ' + pdf.duration_days + ' giorni.'
+                });
+            }
+
+            // If expiration_date is null, calculate from now
+            // Otherwise, modify the existing date
+            let updateQuery;
+            if (!pdf.expiration_date) {
+                // Calculate new expiration from current time with total duration
+                updateQuery = `
+                    UPDATE user_pdf_files
+                    SET duration_months = ?,
+                        duration_days = ?,
+                        expiration_date = datetime('now', '+' || ? || ' months', '+' || ? || ' days'),
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE user_id = ?
+                `;
+            } else {
+                // Build the datetime modifiers correctly for positive and negative values
+                const monthsModifier = additionalMonths >= 0
+                    ? `'+${additionalMonths} months'`
+                    : `'-${Math.abs(additionalMonths)} months'`;
+                const daysModifier = additionalDays >= 0
+                    ? `'+${additionalDays} days'`
+                    : `'-${Math.abs(additionalDays)} days'`;
+
+                updateQuery = `
+                    UPDATE user_pdf_files
+                    SET duration_months = ?,
+                        duration_days = ?,
+                        expiration_date = datetime(expiration_date, ${monthsModifier}, ${daysModifier}),
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE user_id = ?
+                `;
+            }
+
+            db.runCallback(updateQuery, [
                 newDurationMonths,
                 newDurationDays,
-                additionalMonths,
-                additionalDays,
+                ...(pdf.expiration_date ? [] : [newDurationMonths, newDurationDays]),
                 userId
             ], (err) => {
                 db.close();

@@ -6,6 +6,7 @@ export interface User {
   firstName?: string;
   lastName?: string;
   isActive: boolean;
+  isPaying: boolean;
   createdAt: string;
   lastLogin?: string;
   videoCount: number;
@@ -31,6 +32,14 @@ export interface CreateUserForm {
   username: string;
   firstName: string;
   lastName: string;
+  isPaying: boolean;
+}
+
+export interface UpdateUserForm {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  isPaying?: boolean;
 }
 
 export interface CreateVideoForm {

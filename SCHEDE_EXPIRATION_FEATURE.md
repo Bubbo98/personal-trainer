@@ -206,6 +206,70 @@ const getDaysUntilExpiration = (expirationDate: string): number => {
 **Problema**: `onPdfChange(hasPdf: boolean)` incompatibile con `PdfInfo | null`
 **Fix**: Cambiato signature a `onPdfChange?: () => void`
 
+### 4. N+1 Query Problem (2025-10-22)
+**Problema**: La pagina admin/users faceva 1 chiamata per la lista utenti + N chiamate (1 per utente) per ottenere i dati PDF
+**Causa**: `loadUsers()` chiamava `/api/pdf/admin/user/:userId` per ogni utente in un `Promise.all`
+**Impatto**: Lentezza di caricamento, possibili problemi con rate limiting
+**Fix**:
+- Backend: Modificata query SQL in `/api/admin/users` per includere tutti i campi PDF con LEFT JOIN
+- Frontend: Estratti dati PDF direttamente dalla risposta di `/api/admin/users`, rimosso `Promise.all`
+- Risultato: Da N+1 chiamate a 1 sola chiamata API
+
+### 5. Durata Negativa e Null Expiration Date (2025-10-22)
+**Problema**: Record PDF con `durationDays` negativi e `expirationDate` null causavano errori
+**Esempio**: `{durationMonths: 3, durationDays: -3, expirationDate: null}`
+**Causa**:
+- SQLite `datetime(null, ...)` ritorna sempre `null`
+- Modifiche ripetute accumulavano valori negativi senza normalizzazione
+**Fix**:
+- Aggiunta logica di normalizzazione in `/api/pdf/admin/extend/:userId`
+- Se giorni negativi: converte in mesi (30 giorni/mese)
+- Se `expirationDate` è null: ricalcola da `now` con durata totale
+- Validazione: blocca durate totali negative con errore 400
+- Script di fix: `backend/scripts/fix_corrupted_pdfs.js` per correggere record esistenti
+
+## 🛠️ Script Manutenzione
+
+### Fix Record Corrotti
+**File**: `backend/scripts/fix_corrupted_pdfs.js`
+
+Corregge record PDF con dati invalidi:
+- `expirationDate` null
+- `durationDays` negativi
+- `durationMonths` negativi
+
+**Esecuzione**:
+```bash
+cd backend
+node scripts/fix_corrupted_pdfs.js
+```
+
+**Funzionalità**:
+1. Trova tutti i record corrotti
+2. Normalizza i giorni negativi convertendoli in mesi
+3. Ricalcola `expirationDate` da data corrente
+4. Mostra riepilogo delle operazioni
+
+**Output Esempio**:
+```
+🔧 Starting PDF records fix...
+📋 Finding corrupted records...
+⚠️  Found 1 corrupted record(s):
+
+  User ID: 40
+  File: scheda-allenamento.pdf
+  Duration: 3 months, -3 days
+  Expiration: NULL
+
+🔨 Fixing records...
+  ✅ Fixed record ID 7 (User 40): 2 months, 27 days
+
+📊 Summary:
+  ✅ Fixed: 1
+
+🎉 Done!
+```
+
 ## 📝 Commits Creati
 
 ```

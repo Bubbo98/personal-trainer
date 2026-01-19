@@ -141,6 +141,121 @@ router.get('/categories', (req, res) => {
     });
 });
 
+// GET /api/videos/training-days
+// Get user's training days with videos organized by day
+router.get('/training-days', async (req, res) => {
+    const userId = req.user.userId;
+
+    const db = createDatabase();
+
+    try {
+        // Get all training days for the user
+        const days = await new Promise((resolve, reject) => {
+            db.allCallback(`
+                SELECT id, user_id, day_number, day_name, created_at, updated_at
+                FROM user_training_days
+                WHERE user_id = ? AND is_active = 1
+                ORDER BY day_number ASC
+            `, [userId], (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
+        });
+
+        // For each day, get its videos with signed URLs
+        const daysWithVideos = await Promise.all(
+            days.map(async (day) => {
+                const videos = await new Promise((resolve, reject) => {
+                    db.allCallback(`
+                        SELECT
+                            tdv.id as assignment_id,
+                            tdv.order_index,
+                            tdv.added_at,
+                            v.id,
+                            v.title,
+                            v.description,
+                            v.file_path,
+                            v.duration,
+                            v.thumbnail_path,
+                            v.category
+                        FROM training_day_videos tdv
+                        INNER JOIN videos v ON tdv.video_id = v.id
+                        WHERE tdv.training_day_id = ? AND v.is_active = 1
+                        ORDER BY tdv.order_index ASC
+                    `, [day.id], (err, rows) => {
+                        if (err) reject(err);
+                        else resolve(rows);
+                    });
+                });
+
+                // Generate signed URLs for all videos
+                const videosWithUrls = await Promise.all(videos.map(async (video) => {
+                    try {
+                        const signedUrl = await getSignedVideoUrl(video.file_path, 3600);
+                        return {
+                            assignmentId: video.assignment_id,
+                            orderIndex: video.order_index,
+                            addedAt: video.added_at,
+                            id: video.id,
+                            title: video.title,
+                            description: video.description,
+                            filePath: video.file_path,
+                            signedUrl: signedUrl,
+                            duration: video.duration,
+                            thumbnailPath: video.thumbnail_path,
+                            category: video.category
+                        };
+                    } catch (error) {
+                        console.error(`Failed to generate signed URL for video ${video.id}:`, error.message);
+                        return {
+                            assignmentId: video.assignment_id,
+                            orderIndex: video.order_index,
+                            addedAt: video.added_at,
+                            id: video.id,
+                            title: video.title,
+                            description: video.description,
+                            filePath: video.file_path,
+                            signedUrl: null,
+                            duration: video.duration,
+                            thumbnailPath: video.thumbnail_path,
+                            category: video.category
+                        };
+                    }
+                }));
+
+                return {
+                    id: day.id,
+                    userId: day.user_id,
+                    dayNumber: day.day_number,
+                    dayName: day.day_name,
+                    createdAt: day.created_at,
+                    updatedAt: day.updated_at,
+                    videos: videosWithUrls
+                };
+            })
+        );
+
+        db.close();
+
+        console.log(`User ${req.user.username} accessed training days (${daysWithVideos.length} days)`);
+
+        res.json({
+            success: true,
+            data: {
+                trainingDays: daysWithVideos,
+                totalDays: daysWithVideos.length
+            }
+        });
+    } catch (error) {
+        db.close();
+        console.error('Get training days error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Database error'
+        });
+    }
+});
+
 // GET /api/videos/:id
 // Get specific video details and verify access
 router.get('/:id', (req, res) => {

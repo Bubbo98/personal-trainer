@@ -175,7 +175,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
 
   const handleExtend = async () => {
     if (extendMonths === 0 && extendDays === 0) {
-      alert('Devi specificare almeno mesi o giorni da aggiungere');
+      alert('Devi specificare almeno mesi o giorni da modificare');
       return;
     }
 
@@ -196,7 +196,8 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
 
       const data = await response.json();
       if (data.success) {
-        alert('Durata scheda estesa con successo');
+        const action = (extendMonths < 0 || extendDays < 0) ? 'ridotta' : 'estesa';
+        alert(`Durata scheda ${action} con successo`);
         setShowExtendForm(false);
         setExtendMonths(0);
         setExtendDays(0);
@@ -205,7 +206,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
         throw new Error(data.error || 'Extend failed');
       }
     } catch (error) {
-      alert(`${t('admin.errors.error') || 'Errore'}: ${error instanceof Error ? error.message : 'Estensione fallita'}`);
+      alert(`${t('admin.errors.error') || 'Errore'}: ${error instanceof Error ? error.message : 'Modifica fallita'}`);
     } finally {
       setExtending(false);
     }
@@ -323,30 +324,33 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
               onClick={() => setShowExtendForm(!showExtendForm)}
               className="w-full text-left font-semibold text-gray-900 mb-2"
             >
-              {showExtendForm ? '▼' : '▶'} Estendi Durata Scheda
+              {showExtendForm ? '▼' : '▶'} Modifica Durata Scheda
             </button>
 
             {showExtendForm && (
               <div className="space-y-3 mt-3">
+                <p className="text-sm text-gray-600 mb-2">
+                  Usa valori positivi per estendere, negativi per ridurre la durata
+                </p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Mesi da aggiungere</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Mesi (+/-)</label>
                     <input
                       type="number"
-                      min="0"
                       value={extendMonths}
                       onChange={(e) => setExtendMonths(parseInt(e.target.value) || 0)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      placeholder="0"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Giorni da aggiungere</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Giorni (+/-)</label>
                     <input
                       type="number"
-                      min="0"
                       value={extendDays}
                       onChange={(e) => setExtendDays(parseInt(e.target.value) || 0)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      placeholder="0"
                     />
                   </div>
                 </div>
@@ -356,10 +360,10 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
                   className={`w-full px-4 py-2 rounded-lg font-medium ${
                     extending || (extendMonths === 0 && extendDays === 0)
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-green-600 text-white hover:bg-green-700'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
                   }`}
                 >
-                  {extending ? 'Estensione in corso...' : 'Estendi Durata'}
+                  {extending ? 'Modifica in corso...' : 'Applica Modifica'}
                 </button>
               </div>
             )}
