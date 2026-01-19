@@ -17,7 +17,8 @@ export interface Video {
   thumbnailPath?: string;
   category: string;
   createdAt: string;
-  grantedAt: string;
+  grantedAt?: string;
+  addedAt?: string;
   expiresAt?: string;
 }
 

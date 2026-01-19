@@ -8,10 +8,12 @@ import {
   FiX,
   FiTrash2,
   FiSearch,
-  FiClock
+  FiClock,
+  FiStar,
+  FiEdit3
 } from 'react-icons/fi';
 import { apiCall, formatDate } from '../../utils/adminUtils';
-import { User, CreateUserForm } from '../../types/admin';
+import { User, CreateUserForm, UpdateUserForm } from '../../types/admin';
 
 interface PdfInfo {
   expirationDate?: string;
@@ -28,11 +30,21 @@ const UserManagement: React.FC = () => {
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<'paying' | 'nonPaying'>('paying');
+  const [editingUser, setEditingUser] = useState<User | null>(null);
 
   const [createUserForm, setCreateUserForm] = useState<CreateUserForm>({
     username: '',
     firstName: '',
-    lastName: ''
+    lastName: '',
+    isPaying: true
+  });
+
+  const [updateUserForm, setUpdateUserForm] = useState<UpdateUserForm>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    isPaying: false
   });
 
   const loadUsers = useCallback(async () => {
@@ -41,26 +53,19 @@ const UserManagement: React.FC = () => {
       const response = await apiCall('/admin/users');
       setUsers(response.data.users);
 
-      // Load PDF data for all users
+      // Extract PDF data from users response (no separate API calls needed)
       const pdfData: Record<number, PdfInfo | null> = {};
-      await Promise.all(
-        response.data.users.map(async (user: User) => {
-          try {
-            const pdfResponse = await apiCall(`/pdf/admin/user/${user.id}`);
-            if (pdfResponse.data) {
-              pdfData[user.id] = {
-                expirationDate: pdfResponse.data.expirationDate,
-                durationMonths: pdfResponse.data.durationMonths,
-                durationDays: pdfResponse.data.durationDays
-              };
-            } else {
-              pdfData[user.id] = null;
-            }
-          } catch {
-            pdfData[user.id] = null;
-          }
-        })
-      );
+      response.data.users.forEach((user: any) => {
+        if (user.pdf) {
+          pdfData[user.id] = {
+            expirationDate: user.pdf.expirationDate,
+            durationMonths: user.pdf.durationMonths,
+            durationDays: user.pdf.durationDays
+          };
+        } else {
+          pdfData[user.id] = null;
+        }
+      });
       setUserPdfs(pdfData);
     } catch (error) {
       console.error('Failed to load users:', error);
@@ -101,7 +106,8 @@ const UserManagement: React.FC = () => {
       setCreateUserForm({
         username: '',
         firstName: '',
-        lastName: ''
+        lastName: '',
+        isPaying: true
       });
       setShowCreateUser(false);
 
@@ -112,6 +118,51 @@ const UserManagement: React.FC = () => {
     }
   };
 
+  const copyToClipboard = async (url: string) => {
+    // Try modern clipboard API first, fallback to legacy method for mobile
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedLink(url);
+      setTimeout(() => setCopiedLink(null), 3000);
+    } catch (clipboardError) {
+      // Fallback for iOS Safari and other restrictive browsers
+      const textarea = document.createElement('textarea');
+      textarea.value = url;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'absolute';
+      textarea.style.left = '-9999px';
+      textarea.style.top = '0';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+
+      // iOS requires specific handling
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (isIOS) {
+        const range = document.createRange();
+        range.selectNodeContents(textarea);
+        const selection = window.getSelection();
+        if (selection) {
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+        textarea.setSelectionRange(0, url.length);
+      } else {
+        textarea.select();
+      }
+
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textarea);
+
+      if (successful) {
+        setCopiedLink(url);
+        setTimeout(() => setCopiedLink(null), 3000);
+      } else {
+        // If copy still fails, show an alert with the link
+        alert(`Link copiato:\n\n${url}`);
+      }
+    }
+  };
+
   const handleGenerateLink = async (userId: number) => {
     try {
       const response = await apiCall(`/admin/users/${userId}/generate-link`, {
@@ -119,49 +170,21 @@ const UserManagement: React.FC = () => {
       });
 
       const loginUrl = response.data.loginUrl;
+      await copyToClipboard(loginUrl);
+    } catch (error) {
+      alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.users.generateLinkFailed')}`);
+    }
+  };
 
-      // Try modern clipboard API first, fallback to legacy method for mobile
-      try {
-        await navigator.clipboard.writeText(loginUrl);
-        setCopiedLink(loginUrl);
-        setTimeout(() => setCopiedLink(null), 3000);
-      } catch (clipboardError) {
-        // Fallback for iOS Safari and other restrictive browsers
-        const textarea = document.createElement('textarea');
-        textarea.value = loginUrl;
-        textarea.setAttribute('readonly', '');
-        textarea.style.position = 'absolute';
-        textarea.style.left = '-9999px';
-        textarea.style.top = '0';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
+  const handleGenerateReviewLink = async (userId: number) => {
+    try {
+      const response = await apiCall(`/admin/users/${userId}/generate-link`, {
+        method: 'POST'
+      });
 
-        // iOS requires specific handling
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        if (isIOS) {
-          const range = document.createRange();
-          range.selectNodeContents(textarea);
-          const selection = window.getSelection();
-          if (selection) {
-            selection.removeAllRanges();
-            selection.addRange(range);
-          }
-          textarea.setSelectionRange(0, loginUrl.length);
-        } else {
-          textarea.select();
-        }
-
-        const successful = document.execCommand('copy');
-        document.body.removeChild(textarea);
-
-        if (successful) {
-          setCopiedLink(loginUrl);
-          setTimeout(() => setCopiedLink(null), 3000);
-        } else {
-          // If copy still fails, show an alert with the link
-          alert(`${t('admin.users.accessLinkGenerated')}:\n\n${loginUrl}`);
-        }
-      }
+      const loginUrl = response.data.loginUrl;
+      const reviewUrl = `${loginUrl}?tab=reviews`;
+      await copyToClipboard(reviewUrl);
     } catch (error) {
       alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.users.generateLinkFailed')}`);
     }
@@ -169,6 +192,35 @@ const UserManagement: React.FC = () => {
 
   const handleUserClick = (userId: number) => {
     navigate(`/admin/users/${userId}`);
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setUpdateUserForm({
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      email: user.email || '',
+      isPaying: user.isPaying
+    });
+  };
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+
+    try {
+      const response = await apiCall(`/admin/users/${editingUser.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updateUserForm)
+      });
+
+      // Update user in the list
+      setUsers(prev => prev.map(u => u.id === editingUser.id ? response.data.user : u));
+      setEditingUser(null);
+      alert('Utente aggiornato con successo');
+    } catch (error) {
+      alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : 'Aggiornamento utente fallito'}`);
+    }
   };
 
   const handleDeleteUser = async (userId: number, userName: string) => {
@@ -188,8 +240,13 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  // Filter users based on search term
+  // Filter users based on search term and payment status
   const filteredUsers = users.filter(user => {
+    // Filter by payment status
+    if (activeTab === 'paying' && !user.isPaying) return false;
+    if (activeTab === 'nonPaying' && user.isPaying) return false;
+
+    // Filter by search term
     if (!searchTerm) return true;
 
     const searchLower = searchTerm.toLowerCase();
@@ -220,6 +277,30 @@ const UserManagement: React.FC = () => {
         >
           {React.createElement(FiPlus as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
           <span>{t('admin.users.newUser')}</span>
+        </button>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex space-x-1 bg-gray-200 p-1 rounded-lg">
+        <button
+          onClick={() => setActiveTab('paying')}
+          className={`flex-1 py-3 rounded-lg font-medium transition-all ${
+            activeTab === 'paying'
+              ? 'bg-white text-gray-900 shadow'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Utenti Paganti ({users.filter(u => u.isPaying).length})
+        </button>
+        <button
+          onClick={() => setActiveTab('nonPaying')}
+          className={`flex-1 py-3 rounded-lg font-medium transition-all ${
+            activeTab === 'nonPaying'
+              ? 'bg-white text-gray-900 shadow'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Utenti Non Paganti ({users.filter(u => !u.isPaying).length})
         </button>
       </div>
 
@@ -293,6 +374,19 @@ const UserManagement: React.FC = () => {
                 />
               </div>
 
+              <div className="flex items-center space-x-2 py-3">
+                <input
+                  type="checkbox"
+                  id="isPaying"
+                  checked={createUserForm.isPaying}
+                  onChange={(e) => setCreateUserForm(prev => ({ ...prev, isPaying: e.target.checked }))}
+                  className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-2 focus:ring-gray-800"
+                />
+                <label htmlFor="isPaying" className="text-sm font-medium text-gray-700">
+                  Utente pagante
+                </label>
+              </div>
+
               <div className="flex space-x-3">
                 <button
                   type="button"
@@ -306,6 +400,89 @@ const UserManagement: React.FC = () => {
                   className="flex-1 bg-gray-900 text-white py-2 px-4 rounded-lg hover:bg-gray-800"
                 >
                   {t('admin.users.newUser')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {editingUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900">Modifica Utente</h3>
+              <button
+                onClick={() => setEditingUser(null)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                {React.createElement(FiX as React.ComponentType<{ className?: string }>, { className: "w-6 h-6" })}
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateUser} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+                  <input
+                    type="text"
+                    value={updateUserForm.firstName}
+                    onChange={(e) => setUpdateUserForm(prev => ({ ...prev, firstName: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cognome</label>
+                  <input
+                    type="text"
+                    value={updateUserForm.lastName}
+                    onChange={(e) => setUpdateUserForm(prev => ({ ...prev, lastName: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={updateUserForm.email}
+                  onChange={(e) => setUpdateUserForm(prev => ({ ...prev, email: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                />
+              </div>
+
+              <div className="flex items-center space-x-2 py-3">
+                <input
+                  type="checkbox"
+                  id="isPayingEdit"
+                  checked={updateUserForm.isPaying}
+                  onChange={(e) => setUpdateUserForm(prev => ({ ...prev, isPaying: e.target.checked }))}
+                  className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-2 focus:ring-gray-800"
+                />
+                <label htmlFor="isPayingEdit" className="text-sm font-medium text-gray-700">
+                  Utente pagante
+                </label>
+              </div>
+
+              <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-600">
+                <strong>Username:</strong> {editingUser.username}
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300"
+                >
+                  Annulla
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-gray-900 text-white py-2 px-4 rounded-lg hover:bg-gray-800"
+                >
+                  Salva Modifiche
                 </button>
               </div>
             </form>
@@ -398,9 +575,23 @@ const UserManagement: React.FC = () => {
                         <button
                           onClick={() => handleGenerateLink(user.id)}
                           className="text-blue-600 hover:text-blue-800 p-1"
-                          title={t('admin.users.generateAccessLink')}
+                          title="Copia link dashboard"
                         >
                           {React.createElement(FiLink as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+                        </button>
+                        <button
+                          onClick={() => handleGenerateReviewLink(user.id)}
+                          className="text-yellow-600 hover:text-yellow-800 p-1"
+                          title="Copia link recensioni"
+                        >
+                          {React.createElement(FiStar as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+                        </button>
+                        <button
+                          onClick={() => handleEditUser(user)}
+                          className="text-green-600 hover:text-green-800 p-1"
+                          title="Modifica utente"
+                        >
+                          {React.createElement(FiEdit3 as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
                         </button>
                         <button
                           onClick={() => handleDeleteUser(user.id, `${user.firstName} ${user.lastName}`)}
@@ -454,9 +645,23 @@ const UserManagement: React.FC = () => {
                   <button
                     onClick={() => handleGenerateLink(user.id)}
                     className="text-blue-600 hover:text-blue-800 p-2 bg-blue-50 rounded-lg"
-                    title={t('admin.users.generateAccessLink')}
+                    title="Copia link dashboard"
                   >
                     {React.createElement(FiLink as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+                  </button>
+                  <button
+                    onClick={() => handleGenerateReviewLink(user.id)}
+                    className="text-yellow-600 hover:text-yellow-800 p-2 bg-yellow-50 rounded-lg"
+                    title="Copia link recensioni"
+                  >
+                    {React.createElement(FiStar as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+                  </button>
+                  <button
+                    onClick={() => handleEditUser(user)}
+                    className="text-green-600 hover:text-green-800 p-2 bg-green-50 rounded-lg"
+                    title="Modifica utente"
+                  >
+                    {React.createElement(FiEdit3 as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
                   </button>
                   <button
                     onClick={() => handleDeleteUser(user.id, `${user.firstName} ${user.lastName}`)}

@@ -7,11 +7,13 @@ import {
   FiFileText,
   FiCheck,
   FiSearch,
-  FiTrash2
+  FiTrash2,
+  FiCalendar
 } from 'react-icons/fi';
 import { apiCall, formatDuration } from '../../utils/adminUtils';
 import { Video } from '../../types/admin';
 import PdfManagement from './PdfManagement';
+import TrainingDaysManager from './TrainingDaysManager';
 
 interface User {
   id: number;
@@ -22,14 +24,14 @@ interface User {
   createdAt: string;
 }
 
-type TabType = 'videos' | 'pdf';
+type TabType = 'videos' | 'trainingDays' | 'pdf';
 
 const UserDetail: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const [activeTab, setActiveTab] = useState<TabType>('videos');
+  const [activeTab, setActiveTab] = useState<TabType>('trainingDays');
   const [user, setUser] = useState<User | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
   const [userVideos, setUserVideos] = useState<Video[]>([]);
@@ -78,6 +80,13 @@ const UserDetail: React.FC = () => {
     loadVideos();
     loadUserVideos();
   }, [loadUser, loadVideos, loadUserVideos]);
+
+  // Reload user videos when switching to videos tab
+  useEffect(() => {
+    if (activeTab === 'videos') {
+      loadUserVideos();
+    }
+  }, [activeTab, loadUserVideos]);
 
   const handleAssignVideo = async (videoId: number) => {
     if (!userId) return;
@@ -169,6 +178,19 @@ const UserDetail: React.FC = () => {
       <div className="border-b border-gray-200">
         <nav className="flex space-x-8">
           <button
+            onClick={() => setActiveTab('trainingDays')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'trainingDays'
+                ? 'border-gray-900 text-gray-900'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center space-x-2">
+              {React.createElement(FiCalendar as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+              <span>Giorni Allenamento</span>
+            </div>
+          </button>
+          <button
             onClick={() => setActiveTab('videos')}
             className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'videos'
@@ -178,7 +200,7 @@ const UserDetail: React.FC = () => {
           >
             <div className="flex items-center space-x-2">
               {React.createElement(FiVideo as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
-              <span>Video</span>
+              <span>Video Singoli</span>
             </div>
           </button>
           <button
@@ -198,6 +220,16 @@ const UserDetail: React.FC = () => {
       </div>
 
       {/* Tab Content */}
+      {activeTab === 'trainingDays' && (
+        <TrainingDaysManager
+          userId={user.id}
+          onUpdate={() => {
+            // Reload user videos when training days are updated
+            loadUserVideos();
+          }}
+        />
+      )}
+
       {activeTab === 'videos' && (
         <div className="space-y-6">
           {/* Search Bar */}

@@ -13,6 +13,8 @@ const debugRoutes = require('./routes/debug');
 const sitemapRoutes = require('./routes/sitemap');
 const pdfRoutes = require('./routes/pdf');
 const feedbackRoutes = require('./routes/feedback');
+const analyticsRoutes = require('./routes/analytics');
+const trainingDaysRoutes = require('./routes/training-days');
 const { authenticateToken } = require('./middleware/auth');
 
 const app = express();
@@ -50,13 +52,13 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: process.env.NODE_ENV === 'production' ? 100 : 1000, // Higher limit for development
-    message: 'Too many requests from this IP, please try again later.'
-});
-app.use(limiter);
+// Rate limiting - Disabled
+// const limiter = rateLimit({
+//     windowMs: 15 * 60 * 1000, // 15 minutes
+//     max: process.env.NODE_ENV === 'production' ? 100 : 1000, // Higher limit for development
+//     message: 'Too many requests from this IP, please try again later.'
+// });
+// app.use(limiter);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -81,10 +83,12 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/videos', authenticateToken, videoRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/training-days', trainingDaysRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/debug', debugRoutes);
 app.use('/api/pdf', pdfRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // SEO Routes (sitemap.xml, robots.txt)
 app.use('/', sitemapRoutes);

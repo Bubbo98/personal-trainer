@@ -242,6 +242,15 @@
       "downloadFailed": "Download fallito. Riprova più tardi.",
       "tip": "Consiglio",
       "tipMessage": "Salva la scheda sul tuo dispositivo per consultarla anche offline durante gli allenamenti."
+    },
+    "trainingDays": {
+      "title": "I tuoi giorni di allenamento",
+      "dayTitle": "Giorno {{number}}",
+      "videoCount": "{{count}} video",
+      "noVideos": "Nessun video per oggi",
+      "noDays": "Nessun giorno di allenamento",
+      "noDaysMessage": "Il tuo personal trainer non ha ancora organizzato i video in giorni di allenamento.",
+      "viewAllVideos": "Visualizza tutti i video"
     }
   },
   "pages": {
@@ -492,6 +501,39 @@
         "da_migliorare": "Da migliorare",
         "difficolta": "Ho faticato a seguirla"
       }
+    },
+    "trainingDays": {
+      "title": "Giorni di Allenamento",
+      "tabTitle": "Giorni Allenamento",
+      "subtitle": "Organizza i video in giorni customizzabili",
+      "addDay": "Aggiungi Giorno",
+      "noDays": "Nessun giorno di allenamento creato",
+      "createFirstDay": "Crea il primo giorno",
+      "dayNumber": "Giorno {{number}}",
+      "dayName": "Nome giorno",
+      "videoCount": "{{count}} video",
+      "editDayName": "Modifica nome",
+      "deleteDay": "Elimina giorno",
+      "confirmDeleteDay": "Sei sicuro di voler eliminare questo giorno di allenamento?",
+      "addVideo": "Aggiungi Video",
+      "removeVideo": "Rimuovi video",
+      "searchVideos": "Cerca video...",
+      "noVideosFound": "Nessun video trovato",
+      "allVideosAssigned": "Tutti i video sono già assegnati",
+      "reorderVideos": "Riordina video",
+      "dragToReorder": "Trascina per riordinare",
+      "dayCreatedSuccess": "Giorno creato con successo",
+      "dayDeletedSuccess": "Giorno eliminato con successo",
+      "dayUpdatedSuccess": "Giorno aggiornato con successo",
+      "videoAssignedSuccess": "Video assegnato con successo",
+      "videoRemovedSuccess": "Video rimosso con successo",
+      "videosReorderedSuccess": "Video riordinati con successo",
+      "createDayFailed": "Creazione giorno fallita",
+      "deleteDayFailed": "Eliminazione giorno fallita",
+      "updateDayFailed": "Aggiornamento giorno fallito",
+      "assignVideoFailed": "Assegnazione video fallita",
+      "removeVideoFailed": "Rimozione video fallita",
+      "reorderVideosFailed": "Riordino video fallito"
     }
   }
 }

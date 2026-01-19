@@ -84,7 +84,7 @@ function createTursoClient() {
                 .then(result => {
                     console.log('✅ Turso RUN result:', result.rowsAffected, 'rows affected');
                     const context = {
-                        lastID: result.lastInsertRowid,
+                        lastID: result.lastInsertRowid ? Number(result.lastInsertRowid) : undefined,
                         changes: result.rowsAffected
                     };
                     callback.call(context, null);

@@ -15,6 +15,16 @@ import { FiGrid, FiLogOut, FiStar, FiVideo, FiFile, FiGift, FiMessageSquare } fr
 import { Video, AuthState, VideoState } from '../types/dashboard';
 import { STORAGE_KEY, apiCall } from '../utils/dashboardUtils';
 
+interface TrainingDay {
+  id: number;
+  userId: number;
+  dayNumber: number;
+  dayName: string | null;
+  createdAt: string;
+  updatedAt: string;
+  videos: Video[];
+}
+
 interface DashboardProps {}
 
 
@@ -43,6 +53,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [activeTab, setActiveTab] = useState<'videos' | 'training-plan' | 'reviews' | 'feedback'>('training-plan');
   const [hasTrainingPlan, setHasTrainingPlan] = useState(false);
+  const [trainingDays, setTrainingDays] = useState<TrainingDay[]>([]);
 
   // Authentication logic
   const authenticateWithToken = useCallback(async (authToken: string) => {
@@ -148,6 +159,21 @@ const Dashboard: React.FC<DashboardProps> = () => {
     }
   }, []);
 
+  // Load training days
+  const loadTrainingDays = useCallback(async (authToken: string) => {
+    try {
+      const response = await apiCall('/videos/training-days', {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+
+      setTrainingDays(response.data.trainingDays);
+    } catch (error) {
+      console.error('Failed to load training days:', error);
+      // Don't show error, just fallback to regular videos
+      setTrainingDays([]);
+    }
+  }, []);
+
   // Initialize authentication and data loading
   useEffect(() => {
     const initializeDashboard = async () => {
@@ -157,16 +183,27 @@ const Dashboard: React.FC<DashboardProps> = () => {
         // If we have a token in the URL, use it for authentication
         if (token) {
           authToken = await authenticateWithToken(token);
+
+          // Check if there's a tab parameter in the URL
+          const urlParams = new URLSearchParams(window.location.search);
+          const tabParam = urlParams.get('tab');
+
           // Clean up URL
           navigate('/dashboard', { replace: true });
+
+          // Set the active tab if specified in URL
+          if (tabParam === 'reviews') {
+            setActiveTab('reviews');
+          }
         } else {
           // Try to use stored token
           authToken = await verifyStoredToken();
         }
 
-        // Load videos and check training plan with the authenticated token
+        // Load videos, training days, and check training plan with the authenticated token
         await Promise.all([
           loadVideos(authToken),
+          loadTrainingDays(authToken),
           checkTrainingPlan(authToken)
         ]);
       } catch (error) {
@@ -180,14 +217,14 @@ const Dashboard: React.FC<DashboardProps> = () => {
     };
 
     initializeDashboard();
-  }, [token, navigate, authenticateWithToken, verifyStoredToken, loadVideos, checkTrainingPlan]);
+  }, [token, navigate, authenticateWithToken, verifyStoredToken, loadVideos, loadTrainingDays, checkTrainingPlan]);
 
   // Filtered videos based on selected category and search query
   const filteredVideos = useMemo(() => {
     let videos = videoState.videos;
 
-    // Filter by category
-    if (videoState.selectedCategory) {
+    // Filter by category (skip if 'all' or null)
+    if (videoState.selectedCategory && videoState.selectedCategory !== 'all') {
       videos = videos.filter(video => video.category === videoState.selectedCategory);
     }
 
@@ -230,6 +267,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
   const handleVideoClose = useCallback(() => {
     setSelectedVideo(null);
   }, []);
+
+  useEffect(() => console.log(trainingDays), [trainingDays]);
 
   // Component styles
   const pageClassName = 'min-h-screen bg-gray-50';
@@ -389,8 +428,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
             <FeedbackTab user={authState.user} />
           ) : (
             <>
-              {/* Video Categories Filter */}
-              {videoState.categories.length > 0 && (
+              {/* Video Categories Filter - Hidden when viewing training days */}
+              {videoState.categories.length > 0 && (trainingDays.length === 0 || videoState.searchQuery.trim() || videoState.selectedCategory) && (
                 <CategoryFilter
                   categories={videoState.categories}
                   selectedCategory={videoState.selectedCategory}
@@ -400,12 +439,14 @@ const Dashboard: React.FC<DashboardProps> = () => {
                 />
               )}
 
-              {/* Search Bar */}
-              <SearchBar
-                searchQuery={videoState.searchQuery}
-                onSearch={handleSearch}
-                onClear={clearSearch}
-              />
+              {/* Search Bar - Hidden when viewing training days */}
+              {(trainingDays.length === 0 || videoState.searchQuery.trim() || videoState.selectedCategory) && (
+                <SearchBar
+                  searchQuery={videoState.searchQuery}
+                  onSearch={handleSearch}
+                  onClear={clearSearch}
+                />
+              )}
 
           {/* Videos Grid */}
           {videoState.loading ? (
@@ -455,24 +496,84 @@ const Dashboard: React.FC<DashboardProps> = () => {
             </div>
           ) : (
             <>
-              {/* Results count */}
-              {(videoState.searchQuery.trim() || videoState.selectedCategory) && (
-                <div className="mb-4 text-sm text-gray-600">
-                  {filteredVideos.length} video
-                  {videoState.searchQuery.trim() && ` trovati per "${videoState.searchQuery}"`}
-                  {videoState.selectedCategory && ` nella categoria "${videoState.selectedCategory}"`}
-                </div>
-              )}
+              {/* Show training days if available and no search/filter is active */}
+              {trainingDays.length > 0 && !videoState.searchQuery.trim() && !videoState.selectedCategory ? (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold text-gray-900">{t('dashboard.trainingDays.title')}</h3>
+                    {videoState.videos.length > 0 && (
+                      <button
+                        onClick={() => setVideoState(prev => ({ ...prev, selectedCategory: 'all' }))}
+                        className="text-sm text-gray-600 hover:text-gray-900"
+                      >
+                        {t('dashboard.trainingDays.viewAllVideos')}
+                      </button>
+                    )}
+                  </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredVideos.map((video) => (
-                  <VideoCard
-                    key={video.id}
-                    video={video}
-                    onPlay={handleVideoPlay}
-                  />
-                ))}
-              </div>
+                  {trainingDays.map((day) => (
+                    <div key={day.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                      <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-6 py-4">
+                        <h4 className="text-xl font-bold text-white">
+                          {day.dayName || t('dashboard.trainingDays.dayTitle', { number: day.dayNumber })}
+                        </h4>
+                        <p className="text-sm text-gray-300 mt-1">
+                          {t('dashboard.trainingDays.videoCount', { count: day.videos.length })}
+                        </p>
+                      </div>
+
+                      {day.videos.length > 0 ? (
+                        <div className="p-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {day.videos.map((video) => (
+                              <VideoCard
+                                key={video.id}
+                                video={video}
+                                onPlay={handleVideoPlay}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-8 text-center text-gray-500">
+                          {t('dashboard.trainingDays.noVideos')}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  {/* Results count and back to training days button */}
+                  {(videoState.searchQuery.trim() || videoState.selectedCategory) && (
+                    <div className="mb-4 flex items-center justify-between">
+                      <div className="text-sm text-gray-600">
+                        {filteredVideos.length} video
+                        {videoState.searchQuery.trim() && ` trovati per "${videoState.searchQuery}"`}
+                        {videoState.selectedCategory && videoState.selectedCategory !== 'all' && ` nella categoria "${videoState.selectedCategory}"`}
+                      </div>
+                      {trainingDays.length > 0 && (
+                        <button
+                          onClick={() => setVideoState(prev => ({ ...prev, searchQuery: '', selectedCategory: null }))}
+                          className="text-sm text-gray-600 hover:text-gray-900 font-medium"
+                        >
+                          ← Torna alla vista per giorni
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredVideos.map((video) => (
+                      <VideoCard
+                        key={video.id}
+                        video={video}
+                        onPlay={handleVideoPlay}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
             </>
           )}
 
