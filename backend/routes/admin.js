@@ -70,16 +70,24 @@ router.post('/users', async (req, res) => {
         `, [username, email || null, passwordHash, firstName, lastName, isPayingValue], function(err) {
             if (err) {
                 db.close();
-                if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+                // Handle UNIQUE constraint errors for both SQLite and Turso
+                const isUniqueConstraint =
+                    err.code === 'SQLITE_CONSTRAINT_UNIQUE' ||
+                    err.code === 'SQLITE_CONSTRAINT' ||
+                    (err.message && err.message.toLowerCase().includes('unique')) ||
+                    (err.message && err.message.toLowerCase().includes('constraint'));
+
+                if (isUniqueConstraint) {
+                    const isEmailError = err.message && err.message.toLowerCase().includes('email');
                     return res.status(409).json({
                         success: false,
-                        error: 'Username already exists'
+                        error: isEmailError ? 'Email already exists' : 'Username already exists'
                     });
                 }
                 console.error('Database error:', err.message);
                 return res.status(500).json({
                     success: false,
-                    error: 'Database error'
+                    error: 'Database error: ' + (err.message || 'Unknown error')
                 });
             }
 
@@ -116,7 +124,7 @@ router.post('/users', async (req, res) => {
                                 email: user.email,
                                 firstName: user.first_name,
                                 lastName: user.last_name,
-                                isPaying: user.is_paying === 1,
+                                isPaying: Number(user.is_paying) === 1,
                                 createdAt: user.created_at
                             },
                             loginToken,
@@ -194,8 +202,8 @@ router.get('/users', (req, res) => {
                     email: user.email,
                     firstName: user.first_name,
                     lastName: user.last_name,
-                    isActive: user.is_active,
-                    isPaying: user.is_paying === 1,
+                    isActive: Number(user.is_active) === 1,
+                    isPaying: Number(user.is_paying) === 1,
                     createdAt: user.created_at,
                     lastLogin: user.last_login,
                     videoCount: user.video_count,
@@ -393,7 +401,7 @@ router.post('/users/:userId/videos/:videoId', (req, res) => {
 
                             if (existingPermission) {
                                 // Permission exists, update it if needed
-                                if (existingPermission.is_active === 0) {
+                                if (Number(existingPermission.is_active) === 0) {
                                     db.runCallback(
                                         'UPDATE user_video_permissions SET is_active = 1, granted_by = ?, expires_at = ? WHERE user_id = ? AND video_id = ?',
                                         [req.user.username, expiresAt || null, userId, videoId],
@@ -1216,8 +1224,8 @@ router.put('/users/:id', async (req, res) => {
                             email: user.email,
                             firstName: user.first_name,
                             lastName: user.last_name,
-                            isPaying: user.is_paying === 1,
-                            isActive: user.is_active === 1,
+                            isPaying: Number(user.is_paying) === 1,
+                            isActive: Number(user.is_active) === 1,
                             createdAt: user.created_at,
                             updatedAt: user.updated_at
                         }

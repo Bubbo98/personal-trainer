@@ -463,7 +463,7 @@ router.post('/users/:userId/training-days/:dayId/videos/:videoId', (req, res) =>
 
                                         if (permission) {
                                             // Permission exists, activate it if needed
-                                            if (permission.is_active === 0) {
+                                            if (Number(permission.is_active) === 0) {
                                                 db.runCallback(
                                                     'UPDATE user_video_permissions SET is_active = 1 WHERE user_id = ? AND video_id = ?',
                                                     [userId, videoId],

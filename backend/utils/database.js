@@ -82,9 +82,13 @@ function createTursoClient() {
             console.log('⚡ Turso RUN:', query.substring(0, 100));
             client.execute({ sql: query, args: params })
                 .then(result => {
-                    console.log('✅ Turso RUN result:', result.rowsAffected, 'rows affected');
+                    console.log('✅ Turso RUN result:', result.rowsAffected, 'rows affected, lastInsertRowid:', result.lastInsertRowid);
+                    // Handle BigInt properly - lastInsertRowid can be 0n which is falsy but valid
+                    const lastID = result.lastInsertRowid !== null && result.lastInsertRowid !== undefined
+                        ? Number(result.lastInsertRowid)
+                        : undefined;
                     const context = {
-                        lastID: result.lastInsertRowid ? Number(result.lastInsertRowid) : undefined,
+                        lastID: lastID,
                         changes: result.rowsAffected
                     };
                     callback.call(context, null);
