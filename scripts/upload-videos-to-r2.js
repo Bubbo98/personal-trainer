@@ -1,12 +1,18 @@
 const { S3Client, PutObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../backend/.env') });
 
-// R2 Configuration
-const R2_ACCOUNT_ID = 'REMOVED_ACCOUNT_ID';
-const R2_ACCESS_KEY_ID = 'REMOVED_ACCESS_KEY';
-const R2_SECRET_ACCESS_KEY = 'REMOVED_SECRET';
-const R2_BUCKET_NAME = 'personal-trainer-videos';
+// R2 Configuration - Set these in environment variables
+const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
+const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
+const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
+const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME;
+
+if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET_NAME) {
+  console.error('Error: R2 credentials not configured. Set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME in environment variables.');
+  process.exit(1);
+}
 
 // Create S3 client for R2
 const r2Client = new S3Client({

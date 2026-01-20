@@ -1,11 +1,15 @@
 const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
-// R2 Configuration
-const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID || 'REMOVED_ACCOUNT_ID';
-const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID || 'REMOVED_ACCESS_KEY';
-const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY || 'REMOVED_SECRET';
-const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || 'personal-trainer-videos';
+// R2 Configuration - Set these in environment variables
+const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
+const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
+const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
+const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME;
+
+if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET_NAME) {
+  console.warn('Warning: R2 credentials not fully configured. Video streaming may not work.');
+}
 
 // Create S3 client for R2
 const r2Client = new S3Client({
