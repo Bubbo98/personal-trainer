@@ -22,6 +22,14 @@
   ],
   "rewrites": [
     {
+      "source": "/sitemap.xml",
+      "destination": "/backend/server.js"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "/backend/server.js"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/backend/server.js"
     },
