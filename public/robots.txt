@@ -1,3 +1,8 @@
-# https://www.robotstxt.org/robotstxt.html
+# Robots.txt for esercizifacili.com
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /api
+
+Sitemap: https://esercizifacili.com/sitemap.xml
