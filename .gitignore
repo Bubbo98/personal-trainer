@@ -35,8 +35,13 @@ yarn-error.log*
 # Backend
 backend/node_modules/
 backend/.env
-backend/database/app.db
-backend/database/fitness.db
+backend/database/
+
+# All database files
+*.db
+*.sqlite
+*.sqlite3
+public/database/
 backend/npm-debug.log*
 backend/yarn-debug.log*
 backend/yarn-error.log*
