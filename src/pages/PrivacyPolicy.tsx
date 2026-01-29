@@ -11,6 +11,8 @@ const PrivacyPolicy: React.FC = () => {
     <div className="min-h-screen bg-white">
       <Helmet>
         <title>{t('pages.privacy.title')}</title>
+        <link rel="canonical" href="https://esercizifacili.com/privacy-policy" />
+        <meta property="og:url" content="https://esercizifacili.com/privacy-policy" />
       </Helmet>
       <Header />
 

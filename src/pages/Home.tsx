@@ -17,6 +17,8 @@ const Home: React.FC<HomePageProps> = () => {
     <div className={pageClassName}>
       <Helmet>
         <title>{t('pages.home.title')}</title>
+        <link rel="canonical" href="https://esercizifacili.com/" />
+        <meta property="og:url" content="https://esercizifacili.com/" />
       </Helmet>
       <Header />
       <Hero />

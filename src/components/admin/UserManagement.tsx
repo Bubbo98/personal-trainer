@@ -200,7 +200,7 @@ const UserManagement: React.FC = () => {
       firstName: user.firstName || '',
       lastName: user.lastName || '',
       email: user.email || '',
-      isPaying: user.isPaying
+      isPaying: Boolean(user.isPaying)
     });
   };
 

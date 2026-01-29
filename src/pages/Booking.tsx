@@ -101,6 +101,9 @@ const Booking: React.FC<BookingPageProps> = () => {
     <div className={pageClassName}>
       <Helmet>
         <title>{t('pages.booking.title')}</title>
+        <link rel="canonical" href="https://esercizifacili.com/booking" />
+        <meta property="og:url" content="https://esercizifacili.com/booking" />
+        <meta name="description" content="Prenota una consulenza gratuita con Joshua, Personal Trainer a Milano. Scegli data e orario direttamente dal calendario online." />
       </Helmet>
       <Header />
 
