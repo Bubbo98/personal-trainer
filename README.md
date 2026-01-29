@@ -208,9 +208,6 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 
 > **🗺️ INIZIA QUI**: [`DOC_INDEX.md`](./DOC_INDEX.md) - Mappa completa della documentazione
 
-### **Quick Reference**
-- [`CLAUDE.local.md`](./CLAUDE.local.md) - 🎯 Quick reference per Claude AI (pattern, troubleshooting, API)
-
 ### **Guide Tecniche**
 - [`DEVELOPMENT_PATTERNS.md`](./DEVELOPMENT_PATTERNS.md) - 💡 Pattern tecnici riusabili (25+ patterns)
 - [`TROUBLESHOOTING.md`](./TROUBLESHOOTING.md) - 🔧 Risoluzione problemi comuni (25+ issues)
