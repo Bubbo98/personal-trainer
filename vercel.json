@@ -15,7 +15,8 @@
           "backend/database/**",
           "backend/middleware/**",
           "backend/routes/**",
-          "backend/scripts/**"
+          "backend/scripts/**",
+          "backend/services/**"
         ]
       }
     }
