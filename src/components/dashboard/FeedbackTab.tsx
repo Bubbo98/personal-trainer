@@ -36,9 +36,10 @@ interface FeedbackTabProps {
     lastName?: string;
     email?: string;
   } | null;
+  onCheckInCompleted?: () => void;
 }
 
-const FeedbackTab: React.FC<FeedbackTabProps> = ({ user }) => {
+const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) => {
   const { t } = useTranslation();
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [feedbackStatus, setFeedbackStatus] = useState<FeedbackStatus | null>(null);
@@ -104,6 +105,11 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user }) => {
       // Reload feedback status and list
       await loadFeedbackStatus();
       await loadFeedbacks();
+
+      // Notify parent that check-in is completed
+      if (onCheckInCompleted) {
+        onCheckInCompleted();
+      }
     } catch (err) {
       console.error('Error submitting feedback:', err);
       setError(t('dashboard.feedback.error'));

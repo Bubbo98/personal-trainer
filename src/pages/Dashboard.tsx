@@ -54,6 +54,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
   const [activeTab, setActiveTab] = useState<'videos' | 'training-plan' | 'reviews' | 'feedback'>('training-plan');
   const [hasTrainingPlan, setHasTrainingPlan] = useState(false);
   const [trainingDays, setTrainingDays] = useState<TrainingDay[]>([]);
+  const [checkInRequired, setCheckInRequired] = useState(false);
 
   // Authentication logic
   const authenticateWithToken = useCallback(async (authToken: string) => {
@@ -123,6 +124,23 @@ const Dashboard: React.FC<DashboardProps> = () => {
     } catch (error) {
       console.error('Failed to check training plan:', error);
       setHasTrainingPlan(false);
+    }
+  }, []);
+
+  // Check if check-in is required
+  const checkIfCheckInRequired = useCallback(async (authToken: string) => {
+    try {
+      const response = await apiCall('/feedback/should-show', {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      const shouldShow = response.data?.shouldShow || false;
+      setCheckInRequired(shouldShow);
+      if (shouldShow) {
+        setActiveTab('feedback');
+      }
+    } catch (error) {
+      console.error('Failed to check check-in status:', error);
+      setCheckInRequired(false);
     }
   }, []);
 
@@ -200,11 +218,12 @@ const Dashboard: React.FC<DashboardProps> = () => {
           authToken = await verifyStoredToken();
         }
 
-        // Load videos, training days, and check training plan with the authenticated token
+        // Load videos, training days, check training plan and check-in status with the authenticated token
         await Promise.all([
           loadVideos(authToken),
           loadTrainingDays(authToken),
-          checkTrainingPlan(authToken)
+          checkTrainingPlan(authToken),
+          checkIfCheckInRequired(authToken)
         ]);
       } catch (error) {
         console.error('Dashboard initialization failed:', error);
@@ -217,7 +236,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     };
 
     initializeDashboard();
-  }, [token, navigate, authenticateWithToken, verifyStoredToken, loadVideos, loadTrainingDays, checkTrainingPlan]);
+  }, [token, navigate, authenticateWithToken, verifyStoredToken, loadVideos, loadTrainingDays, checkTrainingPlan, checkIfCheckInRequired]);
 
   // Filtered videos based on selected category and search query
   const filteredVideos = useMemo(() => {
@@ -367,14 +386,32 @@ const Dashboard: React.FC<DashboardProps> = () => {
             </div>
           )}
 
+          {/* Check-in Required Banner */}
+          {checkInRequired && (
+            <div className="mb-6 bg-orange-50 border-2 border-orange-400 rounded-xl p-4">
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-8 h-8 text-orange-500" })}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-orange-800">Check-in settimanale richiesto</h3>
+                  <p className="text-orange-700 text-sm">Compila il check-in per continuare ad accedere alla tua dashboard.</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Navigation Tabs */}
           <div className="flex space-x-1 bg-gray-200 p-1 rounded-lg mb-8">
             <button
-              onClick={() => setActiveTab('training-plan')}
+              onClick={() => !checkInRequired && setActiveTab('training-plan')}
+              disabled={checkInRequired}
               className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-3 rounded-lg font-medium transition-all ${
                 activeTab === 'training-plan'
                   ? 'bg-white text-gray-900 shadow'
-                  : 'text-gray-600 hover:text-gray-900'
+                  : checkInRequired
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:text-gray-900'
               }`}
               title={t('dashboard.tabs.trainingPlan') || 'Scheda'}
             >
@@ -382,11 +419,14 @@ const Dashboard: React.FC<DashboardProps> = () => {
               <span className="max-[399px]:hidden text-xs sm:text-base">{t('dashboard.tabs.trainingPlan') || 'Scheda'}</span>
             </button>
             <button
-              onClick={() => setActiveTab('videos')}
+              onClick={() => !checkInRequired && setActiveTab('videos')}
+              disabled={checkInRequired}
               className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-3 rounded-lg font-medium transition-all ${
                 activeTab === 'videos'
                   ? 'bg-white text-gray-900 shadow'
-                  : 'text-gray-600 hover:text-gray-900'
+                  : checkInRequired
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:text-gray-900'
               }`}
               title={t('dashboard.tabs.videos') || 'Video'}
             >
@@ -394,11 +434,14 @@ const Dashboard: React.FC<DashboardProps> = () => {
               <span className="max-[399px]:hidden text-xs sm:text-base">{t('dashboard.tabs.videos') || 'Video'}</span>
             </button>
             <button
-              onClick={() => setActiveTab('reviews')}
+              onClick={() => !checkInRequired && setActiveTab('reviews')}
+              disabled={checkInRequired}
               className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-3 rounded-lg font-medium transition-all ${
                 activeTab === 'reviews'
                   ? 'bg-white text-gray-900 shadow'
-                  : 'text-gray-600 hover:text-gray-900'
+                  : checkInRequired
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:text-gray-900'
               }`}
               title="Recensioni"
             >
@@ -411,11 +454,11 @@ const Dashboard: React.FC<DashboardProps> = () => {
                 activeTab === 'feedback'
                   ? 'bg-white text-gray-900 shadow'
                   : 'text-gray-600 hover:text-gray-900'
-              }`}
-              title="Feedback"
+              } ${checkInRequired ? 'ring-2 ring-orange-400' : ''}`}
+              title="Check-in"
             >
               {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-              <span className="max-[399px]:hidden text-xs sm:text-base">Feedback</span>
+              <span className="max-[399px]:hidden text-xs sm:text-base">{t('dashboard.tabs.feedback')}</span>
             </button>
           </div>
 
@@ -425,7 +468,13 @@ const Dashboard: React.FC<DashboardProps> = () => {
           ) : activeTab === 'reviews' ? (
             <ReviewTab />
           ) : activeTab === 'feedback' ? (
-            <FeedbackTab user={authState.user} />
+            <FeedbackTab
+              user={authState.user}
+              onCheckInCompleted={() => {
+                setCheckInRequired(false);
+                setActiveTab('training-plan');
+              }}
+            />
           ) : (
             <>
               {/* Video Categories Filter - Hidden when viewing training days */}
