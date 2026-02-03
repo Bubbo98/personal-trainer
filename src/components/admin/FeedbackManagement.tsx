@@ -13,14 +13,14 @@ interface Feedback {
   last_name: string;
   email: string;
   feedback_date: string;
-  training_satisfaction: number;
-  motivation_level: number;
-  difficulties: string | null;
-  nutrition_quality: string;
-  sleep_hours: number;
-  recovery_improved: boolean;
-  feels_supported: boolean;
-  support_improvement: string | null;
+  energy_level: string;
+  workouts_completed: string;
+  meal_plan_followed: string;
+  sleep_quality: string;
+  physical_discomfort: string;
+  motivation_level: string;
+  weekly_highlights: string | null;
+  current_weight: number | null;
   created_at: string;
   pdf_change_date: string | null;
 }
@@ -32,8 +32,6 @@ interface UserFeedbackGroup {
   lastName: string;
   email: string;
   feedbacks: Feedback[];
-  avgSatisfaction: number;
-  avgMotivation: number;
   totalFeedbacks: number;
   lastFeedback: Feedback;
 }
@@ -46,7 +44,7 @@ const FeedbackManagement: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
-  const [filterSupport, setFilterSupport] = useState<'all' | 'supported' | 'needs_help'>('all');
+  const [filterDiscomfort, setFilterDiscomfort] = useState<'all' | 'none' | 'has_issues'>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('timeline');
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedUsers, setExpandedUsers] = useState<Set<number>>(new Set());
@@ -86,30 +84,102 @@ const FeedbackManagement: React.FC = () => {
     }
   };
 
-  const getNutritionLabel = (quality: string): string => {
-    return t(`admin.feedback.nutritionQuality.${quality}`, quality);
-  };
-
-  const getNutritionColor = (quality: string): string => {
-    const colors: Record<string, string> = {
-      'ottima': 'bg-green-100 text-green-800',
-      'buona': 'bg-blue-100 text-blue-800',
-      'da_migliorare': 'bg-yellow-100 text-yellow-800',
-      'difficolta': 'bg-red-100 text-red-800'
+  // Label getters for the new fields
+  const getEnergyLabel = (level: string): string => {
+    const labels: Record<string, string> = {
+      high: 'Alta',
+      medium: 'Media',
+      low: 'Bassa'
     };
-    return colors[quality] || 'bg-gray-100 text-gray-800';
+    return labels[level] || level;
   };
 
-  const getScoreColor = (score: number): string => {
-    if (score >= 8) return 'text-green-600';
-    if (score >= 5) return 'text-yellow-600';
-    return 'text-red-600';
+  const getWorkoutsLabel = (status: string): string => {
+    const labels: Record<string, string> = {
+      all: 'Tutti',
+      almost_all: 'Quasi tutti',
+      few_or_none: 'Pochi/nessuno'
+    };
+    return labels[status] || status;
   };
 
-  const getScoreBgColor = (score: number): string => {
-    if (score >= 8) return 'bg-green-50';
-    if (score >= 5) return 'bg-yellow-50';
-    return 'bg-red-50';
+  const getMealPlanLabel = (status: string): string => {
+    const labels: Record<string, string> = {
+      completely: 'Completamente',
+      mostly: 'In gran parte',
+      sometimes: 'A volte',
+      no: 'No'
+    };
+    return labels[status] || status;
+  };
+
+  const getSleepLabel = (quality: string): string => {
+    const labels: Record<string, string> = {
+      excellent: 'Ottima',
+      good: 'Buona',
+      fair: 'Così così',
+      poor: 'Scarsa'
+    };
+    return labels[quality] || quality;
+  };
+
+  const getDiscomfortLabel = (status: string): string => {
+    const labels: Record<string, string> = {
+      none: 'Nessuno',
+      minor: 'Lieve',
+      significant: 'Rilevante'
+    };
+    return labels[status] || status;
+  };
+
+  const getMotivationLabel = (level: string): string => {
+    const labels: Record<string, string> = {
+      very_high: 'Molto alta',
+      good: 'Buona',
+      medium: 'Media',
+      low: 'Bassa'
+    };
+    return labels[level] || level;
+  };
+
+  // Color helpers
+  const getStatusColor = (value: string, type: 'energy' | 'workouts' | 'meal' | 'sleep' | 'discomfort' | 'motivation'): string => {
+    const colorMap: Record<string, Record<string, string>> = {
+      energy: {
+        high: 'bg-green-100 text-green-800',
+        medium: 'bg-yellow-100 text-yellow-800',
+        low: 'bg-red-100 text-red-800'
+      },
+      workouts: {
+        all: 'bg-green-100 text-green-800',
+        almost_all: 'bg-yellow-100 text-yellow-800',
+        few_or_none: 'bg-red-100 text-red-800'
+      },
+      meal: {
+        completely: 'bg-green-100 text-green-800',
+        mostly: 'bg-blue-100 text-blue-800',
+        sometimes: 'bg-yellow-100 text-yellow-800',
+        no: 'bg-red-100 text-red-800'
+      },
+      sleep: {
+        excellent: 'bg-green-100 text-green-800',
+        good: 'bg-blue-100 text-blue-800',
+        fair: 'bg-yellow-100 text-yellow-800',
+        poor: 'bg-red-100 text-red-800'
+      },
+      discomfort: {
+        none: 'bg-green-100 text-green-800',
+        minor: 'bg-yellow-100 text-yellow-800',
+        significant: 'bg-red-100 text-red-800'
+      },
+      motivation: {
+        very_high: 'bg-green-100 text-green-800',
+        good: 'bg-blue-100 text-blue-800',
+        medium: 'bg-yellow-100 text-yellow-800',
+        low: 'bg-red-100 text-red-800'
+      }
+    };
+    return colorMap[type]?.[value] || 'bg-gray-100 text-gray-800';
   };
 
   // Filter feedbacks
@@ -118,17 +188,17 @@ const FeedbackManagement: React.FC = () => {
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       const matchesSearch = (
-        feedback.user_first_name.toLowerCase().includes(searchLower) ||
-        feedback.user_last_name.toLowerCase().includes(searchLower) ||
-        feedback.username.toLowerCase().includes(searchLower) ||
-        feedback.email.toLowerCase().includes(searchLower)
+        feedback.user_first_name?.toLowerCase().includes(searchLower) ||
+        feedback.user_last_name?.toLowerCase().includes(searchLower) ||
+        feedback.username?.toLowerCase().includes(searchLower) ||
+        feedback.email?.toLowerCase().includes(searchLower)
       );
       if (!matchesSearch) return false;
     }
 
-    // Support filter
-    if (filterSupport === 'supported' && !feedback.feels_supported) return false;
-    if (filterSupport === 'needs_help' && feedback.feels_supported) return false;
+    // Discomfort filter
+    if (filterDiscomfort === 'none' && feedback.physical_discomfort !== 'none') return false;
+    if (filterDiscomfort === 'has_issues' && feedback.physical_discomfort === 'none') return false;
 
     return true;
   });
@@ -146,8 +216,6 @@ const FeedbackManagement: React.FC = () => {
           lastName: feedback.user_last_name,
           email: feedback.email,
           feedbacks: [],
-          avgSatisfaction: 0,
-          avgMotivation: 0,
           totalFeedbacks: 0,
           lastFeedback: feedback
         });
@@ -157,12 +225,10 @@ const FeedbackManagement: React.FC = () => {
       group.feedbacks.push(feedback);
     });
 
-    // Calculate averages and sort feedbacks
+    // Calculate totals and sort feedbacks
     const groups = Array.from(userMap.values()).map(group => {
       group.feedbacks.sort((a, b) => new Date(b.feedback_date).getTime() - new Date(a.feedback_date).getTime());
       group.totalFeedbacks = group.feedbacks.length;
-      group.avgSatisfaction = group.feedbacks.reduce((sum, f) => sum + f.training_satisfaction, 0) / group.totalFeedbacks;
-      group.avgMotivation = group.feedbacks.reduce((sum, f) => sum + f.motivation_level, 0) / group.totalFeedbacks;
       group.lastFeedback = group.feedbacks[0];
       return group;
     });
@@ -183,13 +249,9 @@ const FeedbackManagement: React.FC = () => {
   // Statistics
   const stats = {
     total: feedbacks.length,
-    avgSatisfaction: feedbacks.length > 0
-      ? (feedbacks.reduce((sum, f) => sum + f.training_satisfaction, 0) / feedbacks.length).toFixed(1)
-      : '0',
-    avgMotivation: feedbacks.length > 0
-      ? (feedbacks.reduce((sum, f) => sum + f.motivation_level, 0) / feedbacks.length).toFixed(1)
-      : '0',
-    needsHelp: feedbacks.filter(f => !f.feels_supported).length
+    withDiscomfort: feedbacks.filter(f => f.physical_discomfort !== 'none').length,
+    lowMotivation: feedbacks.filter(f => f.motivation_level === 'low').length,
+    missedWorkouts: feedbacks.filter(f => f.workouts_completed === 'few_or_none').length
   };
 
   const toggleUserExpand = (userId: number) => {
@@ -217,27 +279,27 @@ const FeedbackManagement: React.FC = () => {
         <h2 className="text-2xl font-bold text-gray-900">{t('admin.feedback.title')}</h2>
         <div className="flex items-center space-x-2">
           {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-6 h-6 text-gray-600" })}
-          <span className="text-gray-600 font-medium">{filteredFeedbacks.length} {t('admin.feedback.tabTitle').toLowerCase()}</span>
+          <span className="text-gray-600 font-medium">{filteredFeedbacks.length} check-in</span>
         </div>
       </div>
 
       {/* Statistics */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">{t('admin.feedback.totalFeedbacks')}</div>
+          <div className="text-sm text-gray-600">Totale Check-in</div>
           <div className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">{t('admin.feedback.avgSatisfaction')}</div>
-          <div className="text-2xl font-bold text-gray-900 mt-1">{stats.avgSatisfaction}/10</div>
+          <div className="text-sm text-gray-600">Con Dolori/Fastidi</div>
+          <div className="text-2xl font-bold text-orange-600 mt-1">{stats.withDiscomfort}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">{t('admin.feedback.avgMotivation')}</div>
-          <div className="text-2xl font-bold text-gray-900 mt-1">{stats.avgMotivation}/10</div>
+          <div className="text-sm text-gray-600">Motivazione Bassa</div>
+          <div className="text-2xl font-bold text-red-600 mt-1">{stats.lowMotivation}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">{t('admin.feedback.needsSupport')}</div>
-          <div className="text-2xl font-bold text-red-600 mt-1">{stats.needsHelp}</div>
+          <div className="text-sm text-gray-600">Allenamenti Saltati</div>
+          <div className="text-2xl font-bold text-red-600 mt-1">{stats.missedWorkouts}</div>
         </div>
       </div>
 
@@ -290,13 +352,13 @@ const FeedbackManagement: React.FC = () => {
         <div className="flex items-center space-x-2">
           {React.createElement(FiFilter as React.ComponentType<{ className?: string }>, { className: "w-4 h-4 text-gray-500" })}
           <select
-            value={filterSupport}
-            onChange={(e) => setFilterSupport(e.target.value as any)}
+            value={filterDiscomfort}
+            onChange={(e) => setFilterDiscomfort(e.target.value as any)}
             className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
           >
-            <option value="all">{t('admin.feedback.filterAll')}</option>
-            <option value="supported">{t('admin.feedback.filterSupported')}</option>
-            <option value="needs_help">{t('admin.feedback.filterNeedsHelp')}</option>
+            <option value="all">Tutti</option>
+            <option value="none">Senza dolori</option>
+            <option value="has_issues">Con dolori/fastidi</option>
           </select>
         </div>
       </div>
@@ -321,16 +383,19 @@ const FeedbackManagement: React.FC = () => {
                         Utente
                       </th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Soddisfazione
+                        Energia
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Allenamenti
                       </th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Motivazione
                       </th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Alimentazione
+                        Dolori
                       </th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Supporto
+                        Peso
                       </th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Azioni
@@ -341,7 +406,7 @@ const FeedbackManagement: React.FC = () => {
                     {paginatedFeedbacks.map((feedback) => (
                       <tr
                         key={feedback.id}
-                        className={`hover:bg-gray-50 cursor-pointer transition-colors ${!feedback.feels_supported ? 'bg-red-50' : ''}`}
+                        className={`hover:bg-gray-50 cursor-pointer transition-colors ${feedback.physical_discomfort === 'significant' ? 'bg-red-50' : ''}`}
                         onClick={() => setSelectedFeedback(feedback)}
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -354,30 +419,27 @@ const FeedbackManagement: React.FC = () => {
                           <div className="text-xs text-gray-500">{feedback.email}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
-                          <span className={`text-lg font-bold ${getScoreColor(feedback.training_satisfaction)}`}>
-                            {feedback.training_satisfaction}
-                          </span>
-                          <span className="text-xs text-gray-500">/10</span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                          <span className={`text-lg font-bold ${getScoreColor(feedback.motivation_level)}`}>
-                            {feedback.motivation_level}
-                          </span>
-                          <span className="text-xs text-gray-500">/10</span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${getNutritionColor(feedback.nutrition_quality)}`}>
-                            {getNutritionLabel(feedback.nutrition_quality)}
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(feedback.energy_level, 'energy')}`}>
+                            {getEnergyLabel(feedback.energy_level)}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
-                          {feedback.feels_supported ? (
-                            <span className="text-green-600 text-xl">✓</span>
-                          ) : (
-                            <span className="px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
-                              Aiuto
-                            </span>
-                          )}
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(feedback.workouts_completed, 'workouts')}`}>
+                            {getWorkoutsLabel(feedback.workouts_completed)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(feedback.motivation_level, 'motivation')}`}>
+                            {getMotivationLabel(feedback.motivation_level)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(feedback.physical_discomfort, 'discomfort')}`}>
+                            {getDiscomfortLabel(feedback.physical_discomfort)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-gray-900">
+                          {feedback.current_weight ? `${feedback.current_weight} kg` : '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <button
@@ -475,7 +537,7 @@ const FeedbackManagement: React.FC = () => {
               <div key={userGroup.userId} className="bg-white rounded-xl shadow-lg overflow-hidden">
                 {/* User Header */}
                 <div
-                  className={`p-6 cursor-pointer hover:bg-gray-50 transition-colors ${!userGroup.lastFeedback.feels_supported ? 'bg-red-50' : ''}`}
+                  className={`p-6 cursor-pointer hover:bg-gray-50 transition-colors ${userGroup.lastFeedback.physical_discomfort === 'significant' ? 'bg-red-50' : ''}`}
                   onClick={() => toggleUserExpand(userGroup.userId)}
                 >
                   <div className="flex items-center justify-between">
@@ -484,37 +546,45 @@ const FeedbackManagement: React.FC = () => {
                         <h3 className="text-xl font-bold text-gray-900">
                           {userGroup.firstName} {userGroup.lastName}
                         </h3>
-                        {!userGroup.lastFeedback.feels_supported && (
-                          <span className="px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
-                            {t('admin.feedback.needsSupportBadge')}
+                        {userGroup.lastFeedback.physical_discomfort !== 'none' && (
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(userGroup.lastFeedback.physical_discomfort, 'discomfort')}`}>
+                            {getDiscomfortLabel(userGroup.lastFeedback.physical_discomfort)}
                           </span>
                         )}
                         <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                          {userGroup.totalFeedbacks} feedback
+                          {userGroup.totalFeedbacks} check-in
                         </span>
                       </div>
                       <div className="text-sm text-gray-600 mb-3">
                         {userGroup.username} • {userGroup.email}
                       </div>
                       <div className="flex flex-wrap gap-4">
-                        <div className={`px-4 py-2 rounded-lg ${getScoreBgColor(userGroup.avgSatisfaction)}`}>
-                          <div className="text-xs text-gray-600">Media Soddisfazione</div>
-                          <div className={`text-lg font-bold ${getScoreColor(userGroup.avgSatisfaction)}`}>
-                            {userGroup.avgSatisfaction.toFixed(1)}/10
+                        <div className={`px-4 py-2 rounded-lg ${getStatusColor(userGroup.lastFeedback.energy_level, 'energy').replace('text-', 'bg-').split(' ')[0]}`}>
+                          <div className="text-xs text-gray-600">Ultima Energia</div>
+                          <div className="text-sm font-bold">
+                            {getEnergyLabel(userGroup.lastFeedback.energy_level)}
                           </div>
                         </div>
-                        <div className={`px-4 py-2 rounded-lg ${getScoreBgColor(userGroup.avgMotivation)}`}>
-                          <div className="text-xs text-gray-600">Media Motivazione</div>
-                          <div className={`text-lg font-bold ${getScoreColor(userGroup.avgMotivation)}`}>
-                            {userGroup.avgMotivation.toFixed(1)}/10
+                        <div className={`px-4 py-2 rounded-lg ${getStatusColor(userGroup.lastFeedback.motivation_level, 'motivation').replace('text-', 'bg-').split(' ')[0]}`}>
+                          <div className="text-xs text-gray-600">Ultima Motivazione</div>
+                          <div className="text-sm font-bold">
+                            {getMotivationLabel(userGroup.lastFeedback.motivation_level)}
                           </div>
                         </div>
                         <div className="px-4 py-2 rounded-lg bg-gray-50">
-                          <div className="text-xs text-gray-600">Ultimo Feedback</div>
+                          <div className="text-xs text-gray-600">Ultimo Check-in</div>
                           <div className="text-sm font-medium text-gray-900">
                             {formatDate(userGroup.lastFeedback.feedback_date)}
                           </div>
                         </div>
+                        {userGroup.lastFeedback.current_weight && (
+                          <div className="px-4 py-2 rounded-lg bg-blue-50">
+                            <div className="text-xs text-gray-600">Ultimo Peso</div>
+                            <div className="text-sm font-bold text-blue-800">
+                              {userGroup.lastFeedback.current_weight} kg
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="ml-4">
@@ -546,34 +616,37 @@ const FeedbackManagement: React.FC = () => {
                                 <span className="text-sm font-medium text-gray-900">
                                   {formatDate(feedback.feedback_date)}
                                 </span>
-                                {!feedback.feels_supported && (
-                                  <span className="px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
-                                    Needs Support
+                                {feedback.physical_discomfort !== 'none' && (
+                                  <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(feedback.physical_discomfort, 'discomfort')}`}>
+                                    {getDiscomfortLabel(feedback.physical_discomfort)}
                                   </span>
                                 )}
                               </div>
                               <div className="flex flex-wrap gap-4 text-sm">
                                 <div>
-                                  <span className="text-gray-600">Soddisfazione: </span>
-                                  <span className={`font-bold ${getScoreColor(feedback.training_satisfaction)}`}>
-                                    {feedback.training_satisfaction}/10
+                                  <span className="text-gray-600">Energia: </span>
+                                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(feedback.energy_level, 'energy')}`}>
+                                    {getEnergyLabel(feedback.energy_level)}
                                   </span>
                                 </div>
                                 <div>
-                                  <span className="text-gray-600">Motivazione: </span>
-                                  <span className={`font-bold ${getScoreColor(feedback.motivation_level)}`}>
-                                    {feedback.motivation_level}/10
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${getNutritionColor(feedback.nutrition_quality)}`}>
-                                    {getNutritionLabel(feedback.nutrition_quality)}
+                                  <span className="text-gray-600">Allenamenti: </span>
+                                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(feedback.workouts_completed, 'workouts')}`}>
+                                    {getWorkoutsLabel(feedback.workouts_completed)}
                                   </span>
                                 </div>
                                 <div>
                                   <span className="text-gray-600">Sonno: </span>
-                                  <span className="font-medium">{feedback.sleep_hours}h</span>
+                                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(feedback.sleep_quality, 'sleep')}`}>
+                                    {getSleepLabel(feedback.sleep_quality)}
+                                  </span>
                                 </div>
+                                {feedback.current_weight && (
+                                  <div>
+                                    <span className="text-gray-600">Peso: </span>
+                                    <span className="font-medium">{feedback.current_weight} kg</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <button
@@ -604,7 +677,7 @@ const FeedbackManagement: React.FC = () => {
           <div className="bg-white rounded-xl max-w-3xl w-full p-6 my-8">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-bold text-gray-900">
-                {t('admin.feedback.feedbackDetails')} {selectedFeedback.user_first_name} {selectedFeedback.user_last_name}
+                Check-in di {selectedFeedback.user_first_name} {selectedFeedback.user_last_name}
               </h3>
               <button
                 onClick={() => setSelectedFeedback(null)}
@@ -638,70 +711,61 @@ const FeedbackManagement: React.FC = () => {
                 </div>
               </div>
 
-              {/* Training */}
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">{t('admin.feedback.trainingProgress')}</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="text-sm text-gray-600">{t('admin.feedback.satisfaction')}</div>
-                    <div className={`text-3xl font-bold ${getScoreColor(selectedFeedback.training_satisfaction)}`}>
-                      {selectedFeedback.training_satisfaction}/10
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="text-sm text-gray-600">{t('admin.feedback.motivation')}</div>
-                    <div className={`text-3xl font-bold ${getScoreColor(selectedFeedback.motivation_level)}`}>
-                      {selectedFeedback.motivation_level}/10
-                    </div>
-                  </div>
-                </div>
-                {selectedFeedback.difficulties && (
-                  <div className="mt-4 bg-yellow-50 p-4 rounded-lg">
-                    <div className="text-sm font-medium text-gray-700 mb-1">{t('admin.feedback.difficulties')}:</div>
-                    <p className="text-gray-800">{selectedFeedback.difficulties}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Nutrition & Recovery */}
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">{t('admin.feedback.nutritionRecovery')}</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="text-sm text-gray-600 mb-1">{t('admin.feedback.nutrition')}</div>
-                    <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${getNutritionColor(selectedFeedback.nutrition_quality)}`}>
-                      {getNutritionLabel(selectedFeedback.nutrition_quality)}
-                    </span>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="text-sm text-gray-600 mb-1">{t('admin.feedback.sleepHours')}</div>
-                    <div className="text-2xl font-bold text-gray-900">{selectedFeedback.sleep_hours}h</div>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="text-sm text-gray-600 mb-1">{t('admin.feedback.recoveryImproved')}</div>
-                    <div className={`text-xl font-bold ${selectedFeedback.recovery_improved ? 'text-green-600' : 'text-red-600'}`}>
-                      {selectedFeedback.recovery_improved ? t('admin.feedback.yes') : t('admin.feedback.no')}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Support */}
-              <div className={`p-4 rounded-lg ${selectedFeedback.feels_supported ? 'bg-green-50' : 'bg-red-50'}`}>
-                <h4 className="font-semibold text-gray-900 mb-2">{t('admin.feedback.coachSupport')}</h4>
-                <div className="mb-2">
-                  <span className="text-gray-700">{t('admin.feedback.feelsSupported')}: </span>
-                  <span className={`font-bold ${selectedFeedback.feels_supported ? 'text-green-600' : 'text-red-600'}`}>
-                    {selectedFeedback.feels_supported ? t('admin.feedback.yes') : t('admin.feedback.no')}
+              {/* Check-in Details */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-sm text-gray-600 mb-1">Energia</div>
+                  <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${getStatusColor(selectedFeedback.energy_level, 'energy')}`}>
+                    {getEnergyLabel(selectedFeedback.energy_level)}
                   </span>
                 </div>
-                {selectedFeedback.support_improvement && (
-                  <div className="mt-3 bg-white p-3 rounded">
-                    <div className="text-sm font-medium text-gray-700 mb-1">{t('admin.feedback.improvements')}:</div>
-                    <p className="text-gray-800">{selectedFeedback.support_improvement}</p>
-                  </div>
-                )}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-sm text-gray-600 mb-1">Allenamenti</div>
+                  <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${getStatusColor(selectedFeedback.workouts_completed, 'workouts')}`}>
+                    {getWorkoutsLabel(selectedFeedback.workouts_completed)}
+                  </span>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-sm text-gray-600 mb-1">Piano Alimentare</div>
+                  <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${getStatusColor(selectedFeedback.meal_plan_followed, 'meal')}`}>
+                    {getMealPlanLabel(selectedFeedback.meal_plan_followed)}
+                  </span>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-sm text-gray-600 mb-1">Qualità Sonno</div>
+                  <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${getStatusColor(selectedFeedback.sleep_quality, 'sleep')}`}>
+                    {getSleepLabel(selectedFeedback.sleep_quality)}
+                  </span>
+                </div>
+                <div className={`p-4 rounded-lg ${selectedFeedback.physical_discomfort === 'none' ? 'bg-green-50' : selectedFeedback.physical_discomfort === 'minor' ? 'bg-yellow-50' : 'bg-red-50'}`}>
+                  <div className="text-sm text-gray-600 mb-1">Dolori/Fastidi</div>
+                  <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${getStatusColor(selectedFeedback.physical_discomfort, 'discomfort')}`}>
+                    {getDiscomfortLabel(selectedFeedback.physical_discomfort)}
+                  </span>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-sm text-gray-600 mb-1">Motivazione</div>
+                  <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${getStatusColor(selectedFeedback.motivation_level, 'motivation')}`}>
+                    {getMotivationLabel(selectedFeedback.motivation_level)}
+                  </span>
+                </div>
               </div>
+
+              {/* Weight */}
+              {selectedFeedback.current_weight && (
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="text-sm text-gray-600 mb-1">Peso Attuale</div>
+                  <div className="text-2xl font-bold text-blue-800">{selectedFeedback.current_weight} kg</div>
+                </div>
+              )}
+
+              {/* Weekly Highlights */}
+              {selectedFeedback.weekly_highlights && (
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-2">Cosa è andato bene questa settimana</h4>
+                  <p className="text-gray-800">{selectedFeedback.weekly_highlights}</p>
+                </div>
+              )}
 
               {/* Metadata */}
               <div className="text-xs text-gray-500 border-t pt-4">

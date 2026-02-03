@@ -118,7 +118,7 @@ router.get('/should-show', authenticateToken, (req, res) => {
   });
 });
 
-// POST /api/feedback - Submit a new feedback
+// POST /api/feedback - Submit a new weekly check-in
 router.post('/', authenticateToken, (req, res) => {
   const db = createDatabase();
   const userId = req.user.userId;
@@ -126,14 +126,14 @@ router.post('/', authenticateToken, (req, res) => {
     firstName,
     lastName,
     email,
-    trainingSatisfaction,
+    energyLevel,
+    workoutsCompleted,
+    mealPlanFollowed,
+    sleepQuality,
+    physicalDiscomfort,
     motivationLevel,
-    difficulties,
-    nutritionQuality,
-    sleepHours,
-    recoveryImproved,
-    feelsSupported,
-    supportImprovement
+    weeklyHighlights,
+    currentWeight
   } = req.body;
 
   // Validation
@@ -145,36 +145,70 @@ router.post('/', authenticateToken, (req, res) => {
     });
   }
 
-  if (trainingSatisfaction < 1 || trainingSatisfaction > 10) {
+  // Validate energy level
+  if (!['high', 'medium', 'low'].includes(energyLevel)) {
     db.close();
     return res.status(400).json({
       success: false,
-      message: 'La soddisfazione deve essere tra 1 e 10'
+      message: 'Valore non valido per il livello di energia'
     });
   }
 
-  if (motivationLevel < 1 || motivationLevel > 10) {
+  // Validate workouts completed
+  if (!['all', 'almost_all', 'few_or_none'].includes(workoutsCompleted)) {
     db.close();
     return res.status(400).json({
       success: false,
-      message: 'Il livello di motivazione deve essere tra 1 e 10'
+      message: 'Valore non valido per gli allenamenti completati'
     });
   }
 
-  if (!['ottima', 'buona', 'da_migliorare', 'difficolta'].includes(nutritionQuality)) {
+  // Validate meal plan followed
+  if (!['completely', 'mostly', 'sometimes', 'no'].includes(mealPlanFollowed)) {
     db.close();
     return res.status(400).json({
       success: false,
-      message: 'Valore non valido per la qualità dell\'alimentazione'
+      message: 'Valore non valido per il piano alimentare'
     });
   }
 
-  if (typeof recoveryImproved !== 'boolean' || typeof feelsSupported !== 'boolean') {
+  // Validate sleep quality
+  if (!['excellent', 'good', 'fair', 'poor'].includes(sleepQuality)) {
     db.close();
     return res.status(400).json({
       success: false,
-      message: 'I campi di recupero e supporto devono essere booleani'
+      message: 'Valore non valido per la qualita del sonno'
     });
+  }
+
+  // Validate physical discomfort
+  if (!['none', 'minor', 'significant'].includes(physicalDiscomfort)) {
+    db.close();
+    return res.status(400).json({
+      success: false,
+      message: 'Valore non valido per i fastidi fisici'
+    });
+  }
+
+  // Validate motivation level
+  if (!['very_high', 'good', 'medium', 'low'].includes(motivationLevel)) {
+    db.close();
+    return res.status(400).json({
+      success: false,
+      message: 'Valore non valido per il livello di motivazione'
+    });
+  }
+
+  // Validate weight (optional, but if provided must be valid)
+  if (currentWeight !== undefined && currentWeight !== null && currentWeight !== '') {
+    const weight = parseFloat(currentWeight);
+    if (isNaN(weight) || weight < 20 || weight > 300) {
+      db.close();
+      return res.status(400).json({
+        success: false,
+        message: 'Peso non valido (deve essere tra 20 e 300 kg)'
+      });
+    }
   }
 
   // Get the current PDF updated date
@@ -195,25 +229,29 @@ router.post('/', authenticateToken, (req, res) => {
     const insertQuery = `
       INSERT INTO user_feedbacks (
         user_id, first_name, last_name, email, feedback_date,
-        training_satisfaction, motivation_level, difficulties,
-        nutrition_quality, sleep_hours, recovery_improved,
-        feels_supported, support_improvement, pdf_change_date
+        energy_level, workouts_completed, meal_plan_followed,
+        sleep_quality, physical_discomfort, motivation_level,
+        weekly_highlights, current_weight, pdf_change_date
       ) VALUES (?, ?, ?, ?, DATE('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
+
+    const weightValue = currentWeight !== undefined && currentWeight !== null && currentWeight !== ''
+      ? parseFloat(currentWeight)
+      : null;
 
     const params = [
       userId,
       firstName,
       lastName,
       email,
-      trainingSatisfaction,
+      energyLevel,
+      workoutsCompleted,
+      mealPlanFollowed,
+      sleepQuality,
+      physicalDiscomfort,
       motivationLevel,
-      difficulties || null,
-      nutritionQuality,
-      sleepHours,
-      recoveryImproved ? 1 : 0,
-      feelsSupported ? 1 : 0,
-      supportImprovement || null,
+      weeklyHighlights || null,
+      weightValue,
       pdfChangeDate
     ];
 
@@ -245,7 +283,7 @@ router.post('/', authenticateToken, (req, res) => {
 
         res.status(201).json({
           success: true,
-          message: 'Feedback submitted successfully',
+          message: 'Check-in submitted successfully',
           data: { feedback }
         });
       });

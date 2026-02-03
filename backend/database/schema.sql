@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS user_pdf_files (
     UNIQUE(user_id) -- One PDF per user
 );
 
--- User Feedbacks - stores coaching feedback forms
+-- User Feedbacks - stores weekly check-in forms
 CREATE TABLE IF NOT EXISTS user_feedbacks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
@@ -99,14 +99,15 @@ CREATE TABLE IF NOT EXISTS user_feedbacks (
     last_name VARCHAR(100) NOT NULL,
     email VARCHAR(255) NOT NULL,
     feedback_date DATE NOT NULL,
-    training_satisfaction INTEGER NOT NULL CHECK (training_satisfaction >= 1 AND training_satisfaction <= 10),
-    motivation_level INTEGER NOT NULL CHECK (motivation_level >= 1 AND motivation_level <= 10),
-    difficulties TEXT,
-    nutrition_quality VARCHAR(50) NOT NULL CHECK (nutrition_quality IN ('ottima', 'buona', 'da_migliorare', 'difficolta')),
-    sleep_hours INTEGER NOT NULL,
-    recovery_improved BOOLEAN NOT NULL,
-    feels_supported BOOLEAN NOT NULL,
-    support_improvement TEXT,
+    -- Weekly check-in fields (8 questions)
+    energy_level VARCHAR(20) NOT NULL CHECK (energy_level IN ('high', 'medium', 'low')),
+    workouts_completed VARCHAR(30) NOT NULL CHECK (workouts_completed IN ('all', 'almost_all', 'few_or_none')),
+    meal_plan_followed VARCHAR(30) NOT NULL CHECK (meal_plan_followed IN ('completely', 'mostly', 'sometimes', 'no')),
+    sleep_quality VARCHAR(20) NOT NULL CHECK (sleep_quality IN ('excellent', 'good', 'fair', 'poor')),
+    physical_discomfort VARCHAR(30) NOT NULL CHECK (physical_discomfort IN ('none', 'minor', 'significant')),
+    motivation_level VARCHAR(20) NOT NULL CHECK (motivation_level IN ('very_high', 'good', 'medium', 'low')),
+    weekly_highlights TEXT,
+    current_weight DECIMAL(5,2),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     pdf_change_date DATETIME, -- Date when the PDF was changed that triggered this feedback
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

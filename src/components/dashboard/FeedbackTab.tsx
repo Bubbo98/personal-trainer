@@ -11,14 +11,14 @@ interface Feedback {
   last_name: string;
   email: string;
   feedback_date: string;
-  training_satisfaction: number;
-  motivation_level: number;
-  difficulties: string | null;
-  nutrition_quality: string;
-  sleep_hours: number;
-  recovery_improved: boolean;
-  feels_supported: boolean;
-  support_improvement: string | null;
+  energy_level: string;
+  workouts_completed: string;
+  meal_plan_followed: string;
+  sleep_quality: string;
+  physical_discomfort: string;
+  motivation_level: string;
+  weekly_highlights: string | null;
+  current_weight: number | null;
   created_at: string;
   pdf_change_date: string | null;
 }
@@ -113,8 +113,67 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user }) => {
     }
   };
 
-  const getNutritionLabel = (quality: string): string => {
-    return t(`dashboard.feedback.form.nutritionOptions.${quality}`, quality);
+  const getEnergyLabel = (level: string): string => {
+    return t(`dashboard.feedback.checkin.energyOptions.${level}`, level);
+  };
+
+  const getWorkoutsLabel = (status: string): string => {
+    return t(`dashboard.feedback.checkin.workoutsOptions.${status}`, status);
+  };
+
+  const getMealPlanLabel = (status: string): string => {
+    return t(`dashboard.feedback.checkin.mealPlanOptions.${status}`, status);
+  };
+
+  const getSleepLabel = (quality: string): string => {
+    return t(`dashboard.feedback.checkin.sleepOptions.${quality}`, quality);
+  };
+
+  const getDiscomfortLabel = (status: string): string => {
+    return t(`dashboard.feedback.checkin.discomfortOptions.${status}`, status);
+  };
+
+  const getMotivationLabel = (level: string): string => {
+    return t(`dashboard.feedback.checkin.motivationOptions.${level}`, level);
+  };
+
+  const getStatusColor = (value: string, type: 'energy' | 'workouts' | 'meal' | 'sleep' | 'discomfort' | 'motivation'): string => {
+    const colorMap: Record<string, Record<string, string>> = {
+      energy: {
+        high: 'bg-green-100 text-green-800',
+        medium: 'bg-yellow-100 text-yellow-800',
+        low: 'bg-red-100 text-red-800'
+      },
+      workouts: {
+        all: 'bg-green-100 text-green-800',
+        almost_all: 'bg-yellow-100 text-yellow-800',
+        few_or_none: 'bg-red-100 text-red-800'
+      },
+      meal: {
+        completely: 'bg-green-100 text-green-800',
+        mostly: 'bg-blue-100 text-blue-800',
+        sometimes: 'bg-yellow-100 text-yellow-800',
+        no: 'bg-red-100 text-red-800'
+      },
+      sleep: {
+        excellent: 'bg-green-100 text-green-800',
+        good: 'bg-blue-100 text-blue-800',
+        fair: 'bg-yellow-100 text-yellow-800',
+        poor: 'bg-red-100 text-red-800'
+      },
+      discomfort: {
+        none: 'bg-green-100 text-green-800',
+        minor: 'bg-yellow-100 text-yellow-800',
+        significant: 'bg-red-100 text-red-800'
+      },
+      motivation: {
+        very_high: 'bg-green-100 text-green-800',
+        good: 'bg-blue-100 text-blue-800',
+        medium: 'bg-yellow-100 text-yellow-800',
+        low: 'bg-red-100 text-red-800'
+      }
+    };
+    return colorMap[type]?.[value] || 'bg-gray-100 text-gray-800';
   };
 
   if (loading) {
@@ -240,7 +299,7 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user }) => {
                     {/* Target Date */}
                     {targetDate && (
                       <div className="mt-3 bg-white bg-opacity-50 rounded-lg p-3 border border-blue-100">
-                        <p className="text-xs text-gray-600 mb-1">Prossimo feedback disponibile il:</p>
+                        <p className="text-xs text-gray-600 mb-1">Prossimo check-in disponibile il:</p>
                         <p className="text-sm font-semibold text-gray-900">
                           {targetDate.toLocaleDateString('it-IT', {
                             weekday: 'long',
@@ -267,7 +326,7 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user }) => {
         );
       })()}
 
-      {/* Previous Feedbacks */}
+      {/* Previous Check-ins */}
       {feedbacks.length > 0 && (
         <div className="mt-8">
           <h3 className="text-xl font-bold text-gray-900 mb-4">{t('dashboard.feedback.previousFeedbacks')}</h3>
@@ -283,46 +342,57 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user }) => {
                       {t('dashboard.feedback.details.submittedOn')} {formatDate(feedback.created_at)}
                     </p>
                   </div>
+                  {feedback.current_weight && (
+                    <div className="text-right">
+                      <p className="text-sm text-gray-500">{t('dashboard.feedback.checkin.currentWeight')}</p>
+                      <p className="text-xl font-bold text-gray-900">{feedback.current_weight} kg</p>
+                    </div>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                   <div>
-                    <p className="text-gray-600 font-medium">{t('dashboard.feedback.details.trainingSatisfaction')}:</p>
-                    <p className="text-gray-900">{feedback.training_satisfaction}/10</p>
+                    <p className="text-gray-600 font-medium mb-1">{t('dashboard.feedback.checkin.energyLabel')}</p>
+                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getStatusColor(feedback.energy_level, 'energy')}`}>
+                      {getEnergyLabel(feedback.energy_level)}
+                    </span>
                   </div>
                   <div>
-                    <p className="text-gray-600 font-medium">{t('dashboard.feedback.details.motivationLevel')}:</p>
-                    <p className="text-gray-900">{feedback.motivation_level}/10</p>
+                    <p className="text-gray-600 font-medium mb-1">{t('dashboard.feedback.checkin.workoutsLabel')}</p>
+                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getStatusColor(feedback.workouts_completed, 'workouts')}`}>
+                      {getWorkoutsLabel(feedback.workouts_completed)}
+                    </span>
                   </div>
                   <div>
-                    <p className="text-gray-600 font-medium">{t('dashboard.feedback.details.nutritionQuality')}:</p>
-                    <p className="text-gray-900">{getNutritionLabel(feedback.nutrition_quality)}</p>
+                    <p className="text-gray-600 font-medium mb-1">{t('dashboard.feedback.checkin.mealPlanLabel')}</p>
+                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getStatusColor(feedback.meal_plan_followed, 'meal')}`}>
+                      {getMealPlanLabel(feedback.meal_plan_followed)}
+                    </span>
                   </div>
                   <div>
-                    <p className="text-gray-600 font-medium">{t('dashboard.feedback.details.avgSleepHours')}:</p>
-                    <p className="text-gray-900">{feedback.sleep_hours} ore</p>
+                    <p className="text-gray-600 font-medium mb-1">{t('dashboard.feedback.checkin.sleepLabel')}</p>
+                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getStatusColor(feedback.sleep_quality, 'sleep')}`}>
+                      {getSleepLabel(feedback.sleep_quality)}
+                    </span>
                   </div>
                   <div>
-                    <p className="text-gray-600 font-medium">{t('dashboard.feedback.details.recoveryImproved')}:</p>
-                    <p className="text-gray-900">{feedback.recovery_improved ? t('dashboard.feedback.form.yes') : t('dashboard.feedback.form.no')}</p>
+                    <p className="text-gray-600 font-medium mb-1">{t('dashboard.feedback.checkin.discomfortLabel')}</p>
+                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getStatusColor(feedback.physical_discomfort, 'discomfort')}`}>
+                      {getDiscomfortLabel(feedback.physical_discomfort)}
+                    </span>
                   </div>
                   <div>
-                    <p className="text-gray-600 font-medium">{t('dashboard.feedback.details.feelsSupported')}:</p>
-                    <p className="text-gray-900">{feedback.feels_supported ? t('dashboard.feedback.form.yes') : t('dashboard.feedback.form.no')}</p>
+                    <p className="text-gray-600 font-medium mb-1">{t('dashboard.feedback.checkin.motivationLabel')}</p>
+                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getStatusColor(feedback.motivation_level, 'motivation')}`}>
+                      {getMotivationLabel(feedback.motivation_level)}
+                    </span>
                   </div>
                 </div>
 
-                {feedback.difficulties && (
+                {feedback.weekly_highlights && (
                   <div className="mt-4">
-                    <p className="text-gray-600 font-medium mb-1">{t('dashboard.feedback.details.difficultiesFound')}:</p>
-                    <p className="text-gray-700 bg-gray-50 p-3 rounded">{feedback.difficulties}</p>
-                  </div>
-                )}
-
-                {feedback.support_improvement && (
-                  <div className="mt-4">
-                    <p className="text-gray-600 font-medium mb-1">{t('dashboard.feedback.details.improvementSuggestions')}:</p>
-                    <p className="text-gray-700 bg-gray-50 p-3 rounded">{feedback.support_improvement}</p>
+                    <p className="text-gray-600 font-medium mb-1">{t('dashboard.feedback.checkin.weeklyHighlightsLabel')}</p>
+                    <p className="text-gray-700 bg-gray-50 p-3 rounded">{feedback.weekly_highlights}</p>
                   </div>
                 )}
               </div>

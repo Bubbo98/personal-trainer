@@ -6,14 +6,14 @@ interface FeedbackFormData {
   firstName: string;
   lastName: string;
   email: string;
-  trainingSatisfaction: number;
-  motivationLevel: number;
-  difficulties: string;
-  nutritionQuality: 'ottima' | 'buona' | 'da_migliorare' | 'difficolta';
-  sleepHours: number;
-  recoveryImproved: boolean;
-  feelsSupported: boolean;
-  supportImprovement: string;
+  energyLevel: 'high' | 'medium' | 'low';
+  workoutsCompleted: 'all' | 'almost_all' | 'few_or_none';
+  mealPlanFollowed: 'completely' | 'mostly' | 'sometimes' | 'no';
+  sleepQuality: 'excellent' | 'good' | 'fair' | 'poor';
+  physicalDiscomfort: 'none' | 'minor' | 'significant';
+  motivationLevel: 'very_high' | 'good' | 'medium' | 'low';
+  weeklyHighlights: string;
+  currentWeight: string;
 }
 
 interface FeedbackFormProps {
@@ -28,14 +28,14 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ onSubmit, initialData, isLo
     firstName: initialData?.firstName || '',
     lastName: initialData?.lastName || '',
     email: initialData?.email || '',
-    trainingSatisfaction: initialData?.trainingSatisfaction || 5,
-    motivationLevel: initialData?.motivationLevel || 5,
-    difficulties: initialData?.difficulties || '',
-    nutritionQuality: initialData?.nutritionQuality || 'buona',
-    sleepHours: initialData?.sleepHours || 7,
-    recoveryImproved: initialData?.recoveryImproved || true,
-    feelsSupported: initialData?.feelsSupported || true,
-    supportImprovement: initialData?.supportImprovement || ''
+    energyLevel: initialData?.energyLevel || 'medium',
+    workoutsCompleted: initialData?.workoutsCompleted || 'all',
+    mealPlanFollowed: initialData?.mealPlanFollowed || 'mostly',
+    sleepQuality: initialData?.sleepQuality || 'good',
+    physicalDiscomfort: initialData?.physicalDiscomfort || 'none',
+    motivationLevel: initialData?.motivationLevel || 'good',
+    weeklyHighlights: initialData?.weeklyHighlights || '',
+    currentWeight: initialData?.currentWeight || ''
   });
 
   const [submitted, setSubmitted] = useState(false);
@@ -46,11 +46,11 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ onSubmit, initialData, isLo
       await onSubmit(formData);
       setSubmitted(true);
     } catch (error) {
-      console.error('Error submitting feedback:', error);
+      console.error('Error submitting check-in:', error);
     }
   };
 
-  const handleChange = (field: keyof FeedbackFormData, value: any) => {
+  const handleChange = (field: keyof FeedbackFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -80,255 +80,203 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ onSubmit, initialData, isLo
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Sezione 1 – Informazioni Generali */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">
-            🔹 {t('dashboard.feedback.form.generalInfo')}
-          </h3>
+        {/* Hidden fields for user info */}
+        <input type="hidden" value={formData.firstName} />
+        <input type="hidden" value={formData.lastName} />
+        <input type="hidden" value={formData.email} />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('dashboard.feedback.form.firstName')} *
+        {/* Question 1 - Energy Level */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-gray-900">
+            1. {t('dashboard.feedback.checkin.energyLevel')}
+          </label>
+          <div className="flex flex-wrap gap-3">
+            {[
+              { value: 'high', label: t('dashboard.feedback.checkin.energyOptions.high') },
+              { value: 'medium', label: t('dashboard.feedback.checkin.energyOptions.medium') },
+              { value: 'low', label: t('dashboard.feedback.checkin.energyOptions.low') }
+            ].map((option) => (
+              <label key={option.value} className="flex items-center">
+                <input
+                  type="radio"
+                  name="energyLevel"
+                  value={option.value}
+                  checked={formData.energyLevel === option.value}
+                  onChange={(e) => handleChange('energyLevel', e.target.value)}
+                  className="w-4 h-4 text-gray-800 border-gray-300 focus:ring-gray-800"
+                />
+                <span className="ml-2 text-gray-700">{option.label}</span>
               </label>
-              <input
-                type="text"
-                required
-                value={formData.firstName}
-                onChange={(e) => handleChange('firstName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('dashboard.feedback.form.lastName')} *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.lastName}
-                onChange={(e) => handleChange('lastName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('dashboard.feedback.form.email')} *
-            </label>
-            <input
-              type="email"
-              required
-              value={formData.email}
-              onChange={(e) => handleChange('email', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('dashboard.feedback.form.feedbackDate')}
-            </label>
-            <input
-              type="text"
-              disabled
-              value={new Date().toLocaleDateString('it-IT')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"
-            />
+            ))}
           </div>
         </div>
 
-        {/* Sezione 2 – Andamento dell'allenamento */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">
-            🔹 {t('dashboard.feedback.form.trainingProgress')}
-          </h3>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('dashboard.feedback.form.trainingSatisfaction')} *
-            </label>
-            <div className="flex items-center space-x-2">
-              <input
-                type="range"
-                min="1"
-                max="10"
-                value={formData.trainingSatisfaction}
-                onChange={(e) => handleChange('trainingSatisfaction', parseInt(e.target.value))}
-                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-              <span className="text-2xl font-bold text-gray-900 min-w-[3rem] text-center">
-                {formData.trainingSatisfaction}
-              </span>
-            </div>
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>1 ({t('dashboard.feedback.form.notAtAll')})</span>
-              <span>10 ({t('dashboard.feedback.form.veryMuch')})</span>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('dashboard.feedback.form.motivationLevel')} *
-            </label>
-            <div className="flex items-center space-x-2">
-              <input
-                type="range"
-                min="1"
-                max="10"
-                value={formData.motivationLevel}
-                onChange={(e) => handleChange('motivationLevel', parseInt(e.target.value))}
-                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-              <span className="text-2xl font-bold text-gray-900 min-w-[3rem] text-center">
-                {formData.motivationLevel}
-              </span>
-            </div>
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>1 ({t('dashboard.feedback.form.notAtAll')})</span>
-              <span>10 ({t('dashboard.feedback.form.veryMuch')})</span>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('dashboard.feedback.form.difficulties')}
-            </label>
-            <textarea
-              value={formData.difficulties}
-              onChange={(e) => handleChange('difficulties', e.target.value)}
-              rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
-              placeholder={t('dashboard.feedback.form.difficultiesPlaceholder')}
-            />
+        {/* Question 2 - Workouts Completed */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-gray-900">
+            2. {t('dashboard.feedback.checkin.workoutsCompleted')}
+          </label>
+          <div className="space-y-2">
+            {[
+              { value: 'all', label: t('dashboard.feedback.checkin.workoutsOptions.all') },
+              { value: 'almost_all', label: t('dashboard.feedback.checkin.workoutsOptions.almost_all') },
+              { value: 'few_or_none', label: t('dashboard.feedback.checkin.workoutsOptions.few_or_none') }
+            ].map((option) => (
+              <label key={option.value} className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name="workoutsCompleted"
+                  value={option.value}
+                  checked={formData.workoutsCompleted === option.value}
+                  onChange={(e) => handleChange('workoutsCompleted', e.target.value)}
+                  className="w-4 h-4 text-gray-800 border-gray-300 focus:ring-gray-800"
+                />
+                <span className="ml-2 text-gray-700">{option.label}</span>
+              </label>
+            ))}
           </div>
         </div>
 
-        {/* Sezione 3 – Alimentazione e recupero */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">
-            🔹 {t('dashboard.feedback.form.nutritionRecovery')}
-          </h3>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('dashboard.feedback.form.nutritionQuality')} *
-            </label>
-            <div className="space-y-2">
-              {[
-                { value: 'ottima', label: t('dashboard.feedback.form.nutritionOptions.ottima') },
-                { value: 'buona', label: t('dashboard.feedback.form.nutritionOptions.buona') },
-                { value: 'da_migliorare', label: t('dashboard.feedback.form.nutritionOptions.da_migliorare') },
-                { value: 'difficolta', label: t('dashboard.feedback.form.nutritionOptions.difficolta') }
-              ].map((option) => (
-                <label key={option.value} className="flex items-center space-x-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="nutritionQuality"
-                    value={option.value}
-                    checked={formData.nutritionQuality === option.value}
-                    onChange={(e) => handleChange('nutritionQuality', e.target.value)}
-                    className="w-4 h-4 text-gray-800 border-gray-300 focus:ring-gray-800"
-                  />
-                  <span className="text-gray-700">{option.label}</span>
-                </label>
-              ))}
-            </div>
+        {/* Question 3 - Meal Plan Followed */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-gray-900">
+            3. {t('dashboard.feedback.checkin.mealPlanFollowed')}
+          </label>
+          <div className="space-y-2">
+            {[
+              { value: 'completely', label: t('dashboard.feedback.checkin.mealPlanOptions.completely') },
+              { value: 'mostly', label: t('dashboard.feedback.checkin.mealPlanOptions.mostly') },
+              { value: 'sometimes', label: t('dashboard.feedback.checkin.mealPlanOptions.sometimes') },
+              { value: 'no', label: t('dashboard.feedback.checkin.mealPlanOptions.no') }
+            ].map((option) => (
+              <label key={option.value} className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name="mealPlanFollowed"
+                  value={option.value}
+                  checked={formData.mealPlanFollowed === option.value}
+                  onChange={(e) => handleChange('mealPlanFollowed', e.target.value)}
+                  className="w-4 h-4 text-gray-800 border-gray-300 focus:ring-gray-800"
+                />
+                <span className="ml-2 text-gray-700">{option.label}</span>
+              </label>
+            ))}
           </div>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('dashboard.feedback.form.sleepHours')} *
-            </label>
+        {/* Question 4 - Sleep Quality */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-gray-900">
+            4. {t('dashboard.feedback.checkin.sleepQuality')}
+          </label>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
+            {[
+              { value: 'excellent', label: t('dashboard.feedback.checkin.sleepOptions.excellent') },
+              { value: 'good', label: t('dashboard.feedback.checkin.sleepOptions.good') },
+              { value: 'fair', label: t('dashboard.feedback.checkin.sleepOptions.fair') },
+              { value: 'poor', label: t('dashboard.feedback.checkin.sleepOptions.poor') }
+            ].map((option) => (
+              <label key={option.value} className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name="sleepQuality"
+                  value={option.value}
+                  checked={formData.sleepQuality === option.value}
+                  onChange={(e) => handleChange('sleepQuality', e.target.value)}
+                  className="w-4 h-4 text-gray-800 border-gray-300 focus:ring-gray-800"
+                />
+                <span className="ml-2 text-gray-700">{option.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Question 5 - Physical Discomfort */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-gray-900">
+            5. {t('dashboard.feedback.checkin.physicalDiscomfort')}
+          </label>
+          <div className="space-y-2">
+            {[
+              { value: 'none', label: t('dashboard.feedback.checkin.discomfortOptions.none') },
+              { value: 'minor', label: t('dashboard.feedback.checkin.discomfortOptions.minor') },
+              { value: 'significant', label: t('dashboard.feedback.checkin.discomfortOptions.significant') }
+            ].map((option) => (
+              <label key={option.value} className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name="physicalDiscomfort"
+                  value={option.value}
+                  checked={formData.physicalDiscomfort === option.value}
+                  onChange={(e) => handleChange('physicalDiscomfort', e.target.value)}
+                  className="w-4 h-4 text-gray-800 border-gray-300 focus:ring-gray-800"
+                />
+                <span className="ml-2 text-gray-700">{option.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Question 6 - Motivation Level */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-gray-900">
+            6. {t('dashboard.feedback.checkin.motivationLevel')}
+          </label>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
+            {[
+              { value: 'very_high', label: t('dashboard.feedback.checkin.motivationOptions.very_high') },
+              { value: 'good', label: t('dashboard.feedback.checkin.motivationOptions.good') },
+              { value: 'medium', label: t('dashboard.feedback.checkin.motivationOptions.medium') },
+              { value: 'low', label: t('dashboard.feedback.checkin.motivationOptions.low') }
+            ].map((option) => (
+              <label key={option.value} className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name="motivationLevel"
+                  value={option.value}
+                  checked={formData.motivationLevel === option.value}
+                  onChange={(e) => handleChange('motivationLevel', e.target.value)}
+                  className="w-4 h-4 text-gray-800 border-gray-300 focus:ring-gray-800"
+                />
+                <span className="ml-2 text-gray-700">{option.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Question 7 - Weekly Highlights */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-gray-900">
+            7. {t('dashboard.feedback.checkin.weeklyHighlights')}
+          </label>
+          <textarea
+            value={formData.weeklyHighlights}
+            onChange={(e) => handleChange('weeklyHighlights', e.target.value)}
+            rows={4}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+            placeholder={t('dashboard.feedback.checkin.weeklyHighlightsPlaceholder')}
+          />
+        </div>
+
+        {/* Question 8 - Current Weight */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-gray-900">
+            8. {t('dashboard.feedback.checkin.currentWeight')}
+          </label>
+          <div className="flex items-center space-x-2">
             <input
               type="number"
-              min="0"
-              max="24"
-              required
-              value={formData.sleepHours}
-              onChange={(e) => handleChange('sleepHours', parseInt(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+              step="0.1"
+              min="20"
+              max="300"
+              value={formData.currentWeight}
+              onChange={(e) => handleChange('currentWeight', e.target.value)}
+              className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+              placeholder={t('dashboard.feedback.checkin.weightPlaceholder')}
             />
+            <span className="text-gray-600">kg</span>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('dashboard.feedback.form.recoveryImproved')} *
-            </label>
-            <div className="space-y-2">
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="recoveryImproved"
-                  checked={formData.recoveryImproved === true}
-                  onChange={() => handleChange('recoveryImproved', true)}
-                  className="w-4 h-4 text-gray-800 border-gray-300 focus:ring-gray-800"
-                />
-                <span className="text-gray-700">{t('dashboard.feedback.form.yes')}</span>
-              </label>
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="recoveryImproved"
-                  checked={formData.recoveryImproved === false}
-                  onChange={() => handleChange('recoveryImproved', false)}
-                  className="w-4 h-4 text-gray-800 border-gray-300 focus:ring-gray-800"
-                />
-                <span className="text-gray-700">{t('dashboard.feedback.form.no')}</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* Sezione 4 – Comunicazione e supporto */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">
-            🔹 {t('dashboard.feedback.form.supportCommunication')}
-          </h3>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('dashboard.feedback.form.feelsSupported')} *
-            </label>
-            <div className="space-y-2">
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="feelsSupported"
-                  checked={formData.feelsSupported === true}
-                  onChange={() => handleChange('feelsSupported', true)}
-                  className="w-4 h-4 text-gray-800 border-gray-300 focus:ring-gray-800"
-                />
-                <span className="text-gray-700">{t('dashboard.feedback.form.yes')}</span>
-              </label>
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="feelsSupported"
-                  checked={formData.feelsSupported === false}
-                  onChange={() => handleChange('feelsSupported', false)}
-                  className="w-4 h-4 text-gray-800 border-gray-300 focus:ring-gray-800"
-                />
-                <span className="text-gray-700">{t('dashboard.feedback.form.no')}</span>
-              </label>
-            </div>
-          </div>
-
-          {!formData.feelsSupported && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('dashboard.feedback.form.supportImprovement')}
-              </label>
-              <textarea
-                value={formData.supportImprovement}
-                onChange={(e) => handleChange('supportImprovement', e.target.value)}
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
-                placeholder={t('dashboard.feedback.form.supportImprovementPlaceholder')}
-              />
-            </div>
-          )}
+          <p className="text-xs text-gray-500">{t('dashboard.feedback.checkin.weightOptional')}</p>
         </div>
 
         {/* Submit Button */}
@@ -346,7 +294,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ onSubmit, initialData, isLo
             ) : (
               <>
                 {React.createElement(FiSend as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-                <span>{t('dashboard.feedback.form.submit')}</span>
+                <span>{t('dashboard.feedback.checkin.submit')}</span>
               </>
             )}
           </button>

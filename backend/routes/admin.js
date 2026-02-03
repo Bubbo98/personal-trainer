@@ -37,7 +37,7 @@ const generateLoginLinkToken = (user) => {
 };
 
 // POST /api/admin/users
-// Create a new user
+// Create a new user (or reactivate if previously deleted)
 router.post('/users', async (req, res) => {
     try {
         const {
@@ -64,76 +64,178 @@ router.post('/users', async (req, res) => {
 
         const db = createDatabase();
 
-        db.runCallback(`
-            INSERT INTO users (username, email, password_hash, first_name, last_name, is_paying)
-            VALUES (?, ?, ?, ?, ?, ?)
-        `, [username, email || null, passwordHash, firstName, lastName, isPayingValue], function(err) {
-            if (err) {
-                db.close();
-                // Handle UNIQUE constraint errors for both SQLite and Turso
-                const isUniqueConstraint =
-                    err.code === 'SQLITE_CONSTRAINT_UNIQUE' ||
-                    err.code === 'SQLITE_CONSTRAINT' ||
-                    (err.message && err.message.toLowerCase().includes('unique')) ||
-                    (err.message && err.message.toLowerCase().includes('constraint'));
-
-                if (isUniqueConstraint) {
-                    const isEmailError = err.message && err.message.toLowerCase().includes('email');
-                    return res.status(409).json({
-                        success: false,
-                        error: isEmailError ? 'Email already exists' : 'Username already exists'
-                    });
-                }
-                console.error('Database error:', err.message);
-                return res.status(500).json({
-                    success: false,
-                    error: 'Database error: ' + (err.message || 'Unknown error')
-                });
-            }
-
-            const userId = this.lastID;
-
-            // Get the created user
-            db.getCallback(
-                'SELECT id, username, email, first_name, last_name, is_paying, created_at FROM users WHERE id = ?',
-                [userId],
-                (err, user) => {
+        // First check if user exists but is inactive (soft deleted)
+        db.getCallback(
+            'SELECT id, username FROM users WHERE username = ? AND is_active = 0',
+            [username],
+            (err, existingUser) => {
+                if (err) {
                     db.close();
-
-                    if (err) {
-                        console.error('Database error:', err.message);
-                        return res.status(500).json({
-                            success: false,
-                            error: 'User created but failed to retrieve details'
-                        });
-                    }
-
-                    // Generate login link token
-                    const loginToken = generateLoginLinkToken(user);
-                    const loginUrl = `https://esercizifacili.com/dashboard/${loginToken}`;
-
-                    console.log(`Admin ${req.user.username} created user: ${user.username}`);
-
-                    res.status(201).json({
-                        success: true,
-                        message: 'User created successfully',
-                        data: {
-                            user: {
-                                id: user.id,
-                                username: user.username,
-                                email: user.email,
-                                firstName: user.first_name,
-                                lastName: user.last_name,
-                                isPaying: Number(user.is_paying) === 1,
-                                createdAt: user.created_at
-                            },
-                            loginToken,
-                            loginUrl
-                        }
+                    console.error('Database error:', err.message);
+                    return res.status(500).json({
+                        success: false,
+                        error: 'Database error'
                     });
                 }
-            );
-        });
+
+                if (existingUser) {
+                    // Reactivate the existing user with new data
+                    db.runCallback(`
+                        UPDATE users
+                        SET email = ?, password_hash = COALESCE(?, password_hash), first_name = ?, last_name = ?,
+                            is_paying = ?, is_active = 1, updated_at = CURRENT_TIMESTAMP
+                        WHERE id = ?
+                    `, [email || null, passwordHash, firstName, lastName, isPayingValue, existingUser.id], function(err) {
+                        if (err) {
+                            db.close();
+                            // Handle UNIQUE constraint on email
+                            const isUniqueConstraint =
+                                err.code === 'SQLITE_CONSTRAINT_UNIQUE' ||
+                                err.code === 'SQLITE_CONSTRAINT' ||
+                                (err.message && err.message.toLowerCase().includes('unique')) ||
+                                (err.message && err.message.toLowerCase().includes('constraint'));
+
+                            if (isUniqueConstraint) {
+                                return res.status(409).json({
+                                    success: false,
+                                    error: 'Email already exists'
+                                });
+                            }
+                            console.error('Database error:', err.message);
+                            return res.status(500).json({
+                                success: false,
+                                error: 'Database error: ' + (err.message || 'Unknown error')
+                            });
+                        }
+
+                        // Also reactivate user's video permissions
+                        db.runCallback(
+                            'UPDATE user_video_permissions SET is_active = 1 WHERE user_id = ?',
+                            [existingUser.id],
+                            (err) => {
+                                if (err) {
+                                    console.error('Error reactivating video permissions:', err.message);
+                                }
+
+                                // Get the reactivated user
+                                db.getCallback(
+                                    'SELECT id, username, email, first_name, last_name, is_paying, created_at FROM users WHERE id = ?',
+                                    [existingUser.id],
+                                    (err, user) => {
+                                        db.close();
+
+                                        if (err) {
+                                            console.error('Database error:', err.message);
+                                            return res.status(500).json({
+                                                success: false,
+                                                error: 'User reactivated but failed to retrieve details'
+                                            });
+                                        }
+
+                                        // Generate login link token
+                                        const loginToken = generateLoginLinkToken(user);
+                                        const loginUrl = `https://esercizifacili.com/dashboard/${loginToken}`;
+
+                                        console.log(`Admin ${req.user.username} reactivated user: ${user.username}`);
+
+                                        res.status(201).json({
+                                            success: true,
+                                            message: 'User reactivated successfully',
+                                            data: {
+                                                user: {
+                                                    id: user.id,
+                                                    username: user.username,
+                                                    email: user.email,
+                                                    firstName: user.first_name,
+                                                    lastName: user.last_name,
+                                                    isPaying: Number(user.is_paying) === 1,
+                                                    createdAt: user.created_at
+                                                },
+                                                loginToken,
+                                                loginUrl,
+                                                reactivated: true
+                                            }
+                                        });
+                                    }
+                                );
+                            }
+                        );
+                    });
+                } else {
+                    // Create new user
+                    db.runCallback(`
+                        INSERT INTO users (username, email, password_hash, first_name, last_name, is_paying)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    `, [username, email || null, passwordHash, firstName, lastName, isPayingValue], function(err) {
+                        if (err) {
+                            db.close();
+                            // Handle UNIQUE constraint errors for both SQLite and Turso
+                            const isUniqueConstraint =
+                                err.code === 'SQLITE_CONSTRAINT_UNIQUE' ||
+                                err.code === 'SQLITE_CONSTRAINT' ||
+                                (err.message && err.message.toLowerCase().includes('unique')) ||
+                                (err.message && err.message.toLowerCase().includes('constraint'));
+
+                            if (isUniqueConstraint) {
+                                const isEmailError = err.message && err.message.toLowerCase().includes('email');
+                                return res.status(409).json({
+                                    success: false,
+                                    error: isEmailError ? 'Email already exists' : 'Username already exists'
+                                });
+                            }
+                            console.error('Database error:', err.message);
+                            return res.status(500).json({
+                                success: false,
+                                error: 'Database error: ' + (err.message || 'Unknown error')
+                            });
+                        }
+
+                        const userId = this.lastID;
+
+                        // Get the created user
+                        db.getCallback(
+                            'SELECT id, username, email, first_name, last_name, is_paying, created_at FROM users WHERE id = ?',
+                            [userId],
+                            (err, user) => {
+                                db.close();
+
+                                if (err) {
+                                    console.error('Database error:', err.message);
+                                    return res.status(500).json({
+                                        success: false,
+                                        error: 'User created but failed to retrieve details'
+                                    });
+                                }
+
+                                // Generate login link token
+                                const loginToken = generateLoginLinkToken(user);
+                                const loginUrl = `https://esercizifacili.com/dashboard/${loginToken}`;
+
+                                console.log(`Admin ${req.user.username} created user: ${user.username}`);
+
+                                res.status(201).json({
+                                    success: true,
+                                    message: 'User created successfully',
+                                    data: {
+                                        user: {
+                                            id: user.id,
+                                            username: user.username,
+                                            email: user.email,
+                                            firstName: user.first_name,
+                                            lastName: user.last_name,
+                                            isPaying: Number(user.is_paying) === 1,
+                                            createdAt: user.created_at
+                                        },
+                                        loginToken,
+                                        loginUrl
+                                    }
+                                });
+                            }
+                        );
+                    });
+                }
+            }
+        );
     } catch (error) {
         console.error('Create user error:', error);
         res.status(500).json({
