@@ -9,14 +9,12 @@ import UserDetail from '../components/admin/UserDetail';
 import VideoManagement from '../components/admin/VideoManagement';
 import ReviewManagement from '../components/admin/ReviewManagement';
 import FeedbackManagement from '../components/admin/FeedbackManagement';
-import AnalyticsManagement from '../components/admin/AnalyticsManagement';
 import {
   FiUsers,
   FiVideo,
   FiLogOut,
   FiMessageSquare,
-  FiStar,
-  FiTrendingUp
+  FiStar
 } from 'react-icons/fi';
 import { apiCall, STORAGE_KEY } from '../utils/adminUtils';
 import { AdminState } from '../types/admin';
@@ -30,7 +28,7 @@ const AdminCMS: React.FC = () => {
     loading: true,
     error: null
   });
-  const [activeTab, setActiveTab] = useState<'users' | 'videos' | 'reviews' | 'feedback' | 'analytics'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'videos' | 'reviews' | 'feedback'>('users');
 
   // Check if we're on a user detail page
   const userDetailMatch = location.pathname.match(/^\/admin\/users\/(\d+)$/);
@@ -186,19 +184,7 @@ const AdminCMS: React.FC = () => {
                 }`}
               >
                 {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-                <span className="hidden sm:inline">Feedback</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('analytics')}
-                className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors flex-1 sm:flex-initial ${
-                  activeTab === 'analytics'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                {React.createElement(FiTrendingUp as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-                <span className="hidden sm:inline">Analytics</span>
+                <span className="hidden sm:inline">Check-in</span>
               </button>
             </div>
           )}
@@ -212,8 +198,6 @@ const AdminCMS: React.FC = () => {
             <VideoManagement />
           ) : activeTab === 'feedback' ? (
             <FeedbackManagement />
-          ) : activeTab === 'analytics' ? (
-            <AnalyticsManagement />
           ) : (
             <ReviewManagement />
           )}
