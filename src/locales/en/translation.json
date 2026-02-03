@@ -236,7 +236,8 @@
         "currentWeight": "What is your current weight (in kg)?",
         "weightPlaceholder": "e.g. 72.5",
         "weightOptional": "Optional",
-        "submit": "Submit Check-in"
+        "submit": "Submit Check-in",
+        "validationError": "Please answer all questions before submitting the check-in."
       },
       "details": {
         "submittedOn": "Submitted on",

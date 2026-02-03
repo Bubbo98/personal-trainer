@@ -6,12 +6,12 @@ interface FeedbackFormData {
   firstName: string;
   lastName: string;
   email: string;
-  energyLevel: 'high' | 'medium' | 'low';
-  workoutsCompleted: 'all' | 'almost_all' | 'few_or_none';
-  mealPlanFollowed: 'completely' | 'mostly' | 'sometimes' | 'no';
-  sleepQuality: 'excellent' | 'good' | 'fair' | 'poor';
-  physicalDiscomfort: 'none' | 'minor' | 'significant';
-  motivationLevel: 'very_high' | 'good' | 'medium' | 'low';
+  energyLevel: 'high' | 'medium' | 'low' | '';
+  workoutsCompleted: 'all' | 'almost_all' | 'few_or_none' | '';
+  mealPlanFollowed: 'completely' | 'mostly' | 'sometimes' | 'no' | '';
+  sleepQuality: 'excellent' | 'good' | 'fair' | 'poor' | '';
+  physicalDiscomfort: 'none' | 'minor' | 'significant' | '';
+  motivationLevel: 'very_high' | 'good' | 'medium' | 'low' | '';
   weeklyHighlights: string;
   currentWeight: string;
 }
@@ -28,20 +28,31 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ onSubmit, initialData, isLo
     firstName: initialData?.firstName || '',
     lastName: initialData?.lastName || '',
     email: initialData?.email || '',
-    energyLevel: initialData?.energyLevel || 'medium',
-    workoutsCompleted: initialData?.workoutsCompleted || 'all',
-    mealPlanFollowed: initialData?.mealPlanFollowed || 'mostly',
-    sleepQuality: initialData?.sleepQuality || 'good',
-    physicalDiscomfort: initialData?.physicalDiscomfort || 'none',
-    motivationLevel: initialData?.motivationLevel || 'good',
+    energyLevel: initialData?.energyLevel || '',
+    workoutsCompleted: initialData?.workoutsCompleted || '',
+    mealPlanFollowed: initialData?.mealPlanFollowed || '',
+    sleepQuality: initialData?.sleepQuality || '',
+    physicalDiscomfort: initialData?.physicalDiscomfort || '',
+    motivationLevel: initialData?.motivationLevel || '',
     weeklyHighlights: initialData?.weeklyHighlights || '',
     currentWeight: initialData?.currentWeight || ''
   });
+
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationError(null);
+
+    // Validate required fields
+    if (!formData.energyLevel || !formData.workoutsCompleted || !formData.mealPlanFollowed ||
+        !formData.sleepQuality || !formData.physicalDiscomfort || !formData.motivationLevel) {
+      setValidationError(t('dashboard.feedback.checkin.validationError'));
+      return;
+    }
+
     try {
       await onSubmit(formData);
       setSubmitted(true);
@@ -278,6 +289,13 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ onSubmit, initialData, isLo
           </div>
           <p className="text-xs text-gray-500">{t('dashboard.feedback.checkin.weightOptional')}</p>
         </div>
+
+        {/* Validation Error */}
+        {validationError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            {validationError}
+          </div>
+        )}
 
         {/* Submit Button */}
         <div className="pt-4 border-t">
