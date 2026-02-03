@@ -152,37 +152,37 @@
     "tabs": {
       "videos": "Videos",
       "trainingPlan": "Training Plan",
-      "feedback": "Check-in"
+      "feedback": "Check"
     },
     "feedback": {
-      "title": "Weekly Check-in",
-      "subtitle": "Complete this brief check-in to help me monitor your progress",
-      "formTitle": "Weekly Check-in",
-      "formSubtitle": "Complete this brief check-in to help me monitor your progress.",
-      "loading": "Loading check-in...",
+      "title": "Weekly Check",
+      "subtitle": "Complete this brief check to help me monitor your progress",
+      "formTitle": "Weekly Check",
+      "formSubtitle": "Complete this brief check to help me monitor your progress.",
+      "loading": "Loading check...",
       "submitting": "Submitting...",
-      "submit": "Submit Check-in",
-      "error": "Error submitting check-in",
-      "previousFeedbacks": "Your previous check-ins",
-      "noFeedbacks": "No check-in submitted",
-      "noFeedbacksMessage": "Your check-ins will appear here when you submit one.",
+      "submit": "Submit Check",
+      "error": "Error submitting check",
+      "previousFeedbacks": "Your previous checks",
+      "noFeedbacks": "No check submitted",
+      "noFeedbacksMessage": "Your checks will appear here when you submit one.",
       "status": {
-        "canSubmit": "It's time to complete your check-in!",
-        "canSubmitMessage": "It's been a week since your last training plan update. Your check-in will help me monitor your progress.",
+        "canSubmit": "It's time to complete your check!",
+        "canSubmitMessage": "It's been a week since your last training plan update. Your check will help me monitor your progress.",
         "noPlan": "No training plan available",
-        "noPlanMessage": "The weekly check-in will be available one week after you receive your training plan.",
+        "noPlanMessage": "The weekly check will be available one week after you receive your training plan.",
         "tooSoon": "It's still too early",
-        "tooSoonMessage": "The weekly check-in will be available one week after your last training plan update.",
+        "tooSoonMessage": "The weekly check will be available one week after your last training plan update.",
         "tooSoonSinceLast": "It's still too early",
-        "tooSoonSinceLastMessage": "You can submit a new check-in two weeks after your last one. Thank you for your participation!",
-        "alreadySubmitted": "Check-in already submitted",
-        "alreadySubmittedMessage": "You've already submitted your check-in for the current training plan. You can submit another one after the next plan update."
+        "tooSoonSinceLastMessage": "You can submit a new check two weeks after your last one. Thank you for your participation!",
+        "alreadySubmitted": "Check already submitted",
+        "alreadySubmittedMessage": "You've already submitted your check for the current training plan. You can submit another one after the next plan update."
       },
       "form": {
-        "thankYou": "Thank you for your check-in!",
-        "submittedSuccess": "Your check-in has been submitted successfully. Your answers will help me monitor your progress.",
+        "thankYou": "Thank you for your check!",
+        "submittedSuccess": "Your check has been submitted successfully. Your answers will help me monitor your progress.",
         "sending": "Sending...",
-        "closingMessage": "Thank you for your time! Your check-in is essential to help me support you better."
+        "closingMessage": "Thank you for your time! Your check is essential to help me support you better."
       },
       "checkin": {
         "energyLevel": "How would you rate your overall energy this week?",
@@ -236,12 +236,12 @@
         "currentWeight": "What is your current weight (in kg)?",
         "weightPlaceholder": "e.g. 72.5",
         "weightOptional": "Optional",
-        "submit": "Submit Check-in",
-        "validationError": "Please answer all questions before submitting the check-in."
+        "submit": "Submit Check",
+        "validationError": "Please answer all questions before submitting the check."
       },
       "details": {
         "submittedOn": "Submitted on",
-        "feedbackOf": "Check-in of"
+        "feedbackOf": "Check of"
       }
     },
     "referral": {
@@ -475,26 +475,26 @@
       "error": "Error"
     },
     "feedback": {
-      "title": "Check-in Management",
-      "tabTitle": "Check-ins",
-      "totalFeedbacks": "Total Check-ins",
+      "title": "Check Management",
+      "tabTitle": "Checks",
+      "totalFeedbacks": "Total Checks",
       "searchUser": "Search user...",
       "filterAll": "All",
-      "noFeedbackAvailable": "No check-ins available",
+      "noFeedbackAvailable": "No checks available",
       "date": "Date",
-      "deleteFeedback": "Delete check-in",
-      "confirmDelete": "Are you sure you want to delete this check-in?",
-      "deleteSuccess": "Check-in deleted successfully",
-      "deleteFailed": "Unable to delete check-in",
-      "feedbackDetails": "Check-in from",
+      "deleteFeedback": "Delete check",
+      "confirmDelete": "Are you sure you want to delete this check?",
+      "deleteSuccess": "Check deleted successfully",
+      "deleteFailed": "Unable to delete check",
+      "feedbackDetails": "Check from",
       "userInfo": "User Information",
       "name": "Name",
       "email": "Email",
       "username": "Username",
-      "feedbackDate": "Check-in Date",
+      "feedbackDate": "Check Date",
       "yes": "Yes",
       "no": "No",
-      "submittedOn": "Check-in submitted on",
+      "submittedOn": "Check submitted on",
       "planChangedOn": "Plan changed on"
     },
     "trainingDays": {

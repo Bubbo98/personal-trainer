@@ -152,37 +152,37 @@
     "tabs": {
       "videos": "Video",
       "trainingPlan": "Scheda",
-      "feedback": "Check-in"
+      "feedback": "Check"
     },
     "feedback": {
-      "title": "Check-in Settimanale",
-      "subtitle": "Compila questo breve check-in per aiutarmi a monitorare i tuoi progressi",
-      "formTitle": "Check-in Settimanale",
-      "formSubtitle": "Compila questo breve check-in per aiutarmi a monitorare i tuoi progressi.",
-      "loading": "Caricamento check-in...",
+      "title": "Check Settimanale",
+      "subtitle": "Compila questo breve check per aiutarmi a monitorare i tuoi progressi",
+      "formTitle": "Check Settimanale",
+      "formSubtitle": "Compila questo breve check per aiutarmi a monitorare i tuoi progressi.",
+      "loading": "Caricamento check...",
       "submitting": "Invio in corso...",
-      "submit": "Invia Check-in",
-      "error": "Errore durante l'invio del check-in",
-      "previousFeedbacks": "I tuoi check-in precedenti",
-      "noFeedbacks": "Nessun check-in inviato",
-      "noFeedbacksMessage": "I tuoi check-in appariranno qui quando ne invierai uno.",
+      "submit": "Invia Check",
+      "error": "Errore durante l'invio del check",
+      "previousFeedbacks": "I tuoi check precedenti",
+      "noFeedbacks": "Nessun check inviato",
+      "noFeedbacksMessage": "I tuoi check appariranno qui quando ne invierai uno.",
       "status": {
-        "canSubmit": "È ora di compilare il check-in!",
-        "canSubmitMessage": "È passata una settimana dall'ultimo aggiornamento della tua scheda. Il tuo check-in mi aiuterà a monitorare i tuoi progressi.",
+        "canSubmit": "È ora di compilare il check!",
+        "canSubmitMessage": "È passata una settimana dall'ultimo aggiornamento della tua scheda. Il tuo check mi aiuterà a monitorare i tuoi progressi.",
         "noPlan": "Nessuna scheda disponibile",
-        "noPlanMessage": "Il check-in settimanale sarà disponibile una settimana dopo che riceverai la tua scheda di allenamento.",
+        "noPlanMessage": "Il check settimanale sarà disponibile una settimana dopo che riceverai la tua scheda di allenamento.",
         "tooSoon": "È ancora troppo presto",
-        "tooSoonMessage": "Il check-in settimanale sarà disponibile una settimana dopo l'ultimo aggiornamento della tua scheda.",
+        "tooSoonMessage": "Il check settimanale sarà disponibile una settimana dopo l'ultimo aggiornamento della tua scheda.",
         "tooSoonSinceLast": "È ancora troppo presto",
-        "tooSoonSinceLastMessage": "Potrai inviare un nuovo check-in tra due settimane dall'ultimo inviato. Grazie per la tua partecipazione!",
-        "alreadySubmitted": "Check-in già inviato",
-        "alreadySubmittedMessage": "Hai già inviato il check-in per l'attuale scheda di allenamento. Potrai inviarne un altro dopo il prossimo aggiornamento della scheda."
+        "tooSoonSinceLastMessage": "Potrai inviare un nuovo check tra due settimane dall'ultimo inviato. Grazie per la tua partecipazione!",
+        "alreadySubmitted": "Check già inviato",
+        "alreadySubmittedMessage": "Hai già inviato il check per l'attuale scheda di allenamento. Potrai inviarne un altro dopo il prossimo aggiornamento della scheda."
       },
       "form": {
-        "thankYou": "Grazie per il tuo check-in!",
-        "submittedSuccess": "Il tuo check-in è stato inviato con successo. Le tue risposte mi aiuteranno a monitorare i tuoi progressi.",
+        "thankYou": "Grazie per il tuo check!",
+        "submittedSuccess": "Il tuo check è stato inviato con successo. Le tue risposte mi aiuteranno a monitorare i tuoi progressi.",
         "sending": "Invio in corso...",
-        "closingMessage": "Grazie per il tuo tempo! Il tuo check-in è fondamentale per aiutarmi a supportarti al meglio."
+        "closingMessage": "Grazie per il tuo tempo! Il tuo check è fondamentale per aiutarmi a supportarti al meglio."
       },
       "checkin": {
         "energyLevel": "Come valuti la tua energia generale di questa settimana?",
@@ -236,12 +236,12 @@
         "currentWeight": "Qual è il tuo peso attuale (in kg)?",
         "weightPlaceholder": "Es. 72.5",
         "weightOptional": "Opzionale",
-        "submit": "Invia Check-in",
-        "validationError": "Per favore rispondi a tutte le domande prima di inviare il check-in."
+        "submit": "Invia Check",
+        "validationError": "Per favore rispondi a tutte le domande prima di inviare il check."
       },
       "details": {
         "submittedOn": "Inviato il",
-        "feedbackOf": "Check-in del"
+        "feedbackOf": "Check del"
       }
     },
     "referral": {
@@ -475,26 +475,26 @@
       "error": "Errore"
     },
     "feedback": {
-      "title": "Gestione Check-in",
-      "tabTitle": "Check-in",
-      "totalFeedbacks": "Totale Check-in",
+      "title": "Gestione Check",
+      "tabTitle": "Check",
+      "totalFeedbacks": "Totale Check",
       "searchUser": "Cerca utente...",
       "filterAll": "Tutti",
-      "noFeedbackAvailable": "Nessun check-in disponibile",
+      "noFeedbackAvailable": "Nessun check disponibile",
       "date": "Data",
-      "deleteFeedback": "Elimina check-in",
-      "confirmDelete": "Sei sicuro di voler eliminare questo check-in?",
-      "deleteSuccess": "Check-in eliminato con successo",
-      "deleteFailed": "Impossibile eliminare il check-in",
-      "feedbackDetails": "Check-in di",
+      "deleteFeedback": "Elimina check",
+      "confirmDelete": "Sei sicuro di voler eliminare questo check?",
+      "deleteSuccess": "Check eliminato con successo",
+      "deleteFailed": "Impossibile eliminare il check",
+      "feedbackDetails": "Check di",
       "userInfo": "Informazioni Utente",
       "name": "Nome",
       "email": "Email",
       "username": "Username",
-      "feedbackDate": "Data Check-in",
+      "feedbackDate": "Data Check",
       "yes": "Sì",
       "no": "No",
-      "submittedOn": "Check-in inviato il",
+      "submittedOn": "Check inviato il",
       "planChangedOn": "Scheda cambiata il"
     },
     "trainingDays": {

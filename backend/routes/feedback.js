@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { createDatabase } = require('../utils/database');
 const { authenticateToken } = require('../middleware/auth');
+const { sendNewFeedbackNotification } = require('../services/emailService');
 
 // GET /api/feedback/my-feedbacks - Get all feedbacks for the authenticated user
 router.get('/my-feedbacks', authenticateToken, (req, res) => {
@@ -118,7 +119,7 @@ router.get('/should-show', authenticateToken, (req, res) => {
   });
 });
 
-// POST /api/feedback - Submit a new weekly check-in
+// POST /api/feedback - Submit a new weekly check
 router.post('/', authenticateToken, (req, res) => {
   const db = createDatabase();
   const userId = req.user.userId;
@@ -270,7 +271,7 @@ router.post('/', authenticateToken, (req, res) => {
       // Fetch the created feedback
       const selectQuery = `SELECT * FROM user_feedbacks WHERE id = ?`;
 
-      db.getCallback(selectQuery, [feedbackId], (err, feedback) => {
+      db.getCallback(selectQuery, [feedbackId], async (err, feedback) => {
         db.close();
 
         if (err) {
@@ -281,11 +282,128 @@ router.post('/', authenticateToken, (req, res) => {
           });
         }
 
+        // Send email notification to admin (async, don't wait for it)
+        sendNewFeedbackNotification(feedback).catch(err => {
+          console.error('Failed to send admin notification email:', err);
+        });
+
         res.status(201).json({
           success: true,
-          message: 'Check-in submitted successfully',
+          message: 'Check submitted successfully',
           data: { feedback }
         });
+      });
+    });
+  });
+});
+
+// GET /api/feedback/admin/unread-count - Get count of unread feedbacks (admin only)
+router.get('/admin/unread-count', authenticateToken, (req, res) => {
+  const db = createDatabase();
+  const adminUserId = req.user.userId;
+
+  // Check if user is admin
+  const checkAdminQuery = `SELECT username FROM users WHERE id = ?`;
+
+  db.getCallback(checkAdminQuery, [adminUserId], (err, user) => {
+    if (err || !user || !user.username.includes('admin')) {
+      db.close();
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized - Admin access required'
+      });
+    }
+
+    // Get the last_seen_at timestamp for this admin
+    const getLastSeenQuery = `
+      SELECT last_seen_at FROM admin_feedback_seen WHERE admin_user_id = ?
+    `;
+
+    db.getCallback(getLastSeenQuery, [adminUserId], (err, seenRow) => {
+      if (err) {
+        db.close();
+        console.error('Error fetching last seen:', err);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to check feedback status'
+        });
+      }
+
+      // If no record exists, all feedbacks are "unread"
+      // Otherwise, count feedbacks created after last_seen_at
+      let countQuery;
+      let params;
+
+      if (!seenRow || !seenRow.last_seen_at) {
+        countQuery = `SELECT COUNT(*) as count FROM user_feedbacks`;
+        params = [];
+      } else {
+        countQuery = `SELECT COUNT(*) as count FROM user_feedbacks WHERE created_at > ?`;
+        params = [seenRow.last_seen_at];
+      }
+
+      db.getCallback(countQuery, params, (err, countRow) => {
+        db.close();
+
+        if (err) {
+          console.error('Error counting unread feedbacks:', err);
+          return res.status(500).json({
+            success: false,
+            message: 'Failed to count unread feedbacks'
+          });
+        }
+
+        res.json({
+          success: true,
+          data: {
+            unreadCount: countRow?.count || 0,
+            lastSeenAt: seenRow?.last_seen_at || null
+          }
+        });
+      });
+    });
+  });
+});
+
+// POST /api/feedback/admin/mark-seen - Mark all feedbacks as seen (admin only)
+router.post('/admin/mark-seen', authenticateToken, (req, res) => {
+  const db = createDatabase();
+  const adminUserId = req.user.userId;
+
+  // Check if user is admin
+  const checkAdminQuery = `SELECT username FROM users WHERE id = ?`;
+
+  db.getCallback(checkAdminQuery, [adminUserId], (err, user) => {
+    if (err || !user || !user.username.includes('admin')) {
+      db.close();
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized - Admin access required'
+      });
+    }
+
+    // Insert or update the last_seen_at timestamp
+    const upsertQuery = `
+      INSERT INTO admin_feedback_seen (admin_user_id, last_seen_at)
+      VALUES (?, CURRENT_TIMESTAMP)
+      ON CONFLICT(admin_user_id)
+      DO UPDATE SET last_seen_at = CURRENT_TIMESTAMP
+    `;
+
+    db.runCallback(upsertQuery, [adminUserId], function(err) {
+      db.close();
+
+      if (err) {
+        console.error('Error marking feedbacks as seen:', err);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to mark feedbacks as seen'
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Feedbacks marked as seen'
       });
     });
   });

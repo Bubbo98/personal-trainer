@@ -279,14 +279,14 @@ const FeedbackManagement: React.FC = () => {
         <h2 className="text-2xl font-bold text-gray-900">{t('admin.feedback.title')}</h2>
         <div className="flex items-center space-x-2">
           {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-6 h-6 text-gray-600" })}
-          <span className="text-gray-600 font-medium">{filteredFeedbacks.length} check-in</span>
+          <span className="text-gray-600 font-medium">{filteredFeedbacks.length} check</span>
         </div>
       </div>
 
       {/* Statistics */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">Totale Check-in</div>
+          <div className="text-sm text-gray-600">Totale Check</div>
           <div className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
@@ -552,7 +552,7 @@ const FeedbackManagement: React.FC = () => {
                           </span>
                         )}
                         <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                          {userGroup.totalFeedbacks} check-in
+                          {userGroup.totalFeedbacks} check
                         </span>
                       </div>
                       <div className="text-sm text-gray-600 mb-3">
@@ -572,7 +572,7 @@ const FeedbackManagement: React.FC = () => {
                           </div>
                         </div>
                         <div className="px-4 py-2 rounded-lg bg-gray-50">
-                          <div className="text-xs text-gray-600">Ultimo Check-in</div>
+                          <div className="text-xs text-gray-600">Ultimo Check</div>
                           <div className="text-sm font-medium text-gray-900">
                             {formatDate(userGroup.lastFeedback.feedback_date)}
                           </div>
@@ -677,7 +677,7 @@ const FeedbackManagement: React.FC = () => {
           <div className="bg-white rounded-xl max-w-3xl w-full p-6 my-8">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-bold text-gray-900">
-                Check-in di {selectedFeedback.user_first_name} {selectedFeedback.user_last_name}
+                Check di {selectedFeedback.user_first_name} {selectedFeedback.user_last_name}
               </h3>
               <button
                 onClick={() => setSelectedFeedback(null)}
@@ -711,7 +711,7 @@ const FeedbackManagement: React.FC = () => {
                 </div>
               </div>
 
-              {/* Check-in Details */}
+              {/* Check Details */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="text-sm text-gray-600 mb-1">Energia</div>

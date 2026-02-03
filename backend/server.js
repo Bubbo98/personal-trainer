@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const cron = require('node-cron');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
@@ -129,6 +130,20 @@ app.listen(PORT, () => {
     console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL}`);
     console.log(`🔒 Environment: ${process.env.NODE_ENV}`);
     console.log(`💾 Database: ${process.env.DB_PATH}`);
+
+    // Schedule check reminder emails daily at 9:00 AM
+    cron.schedule('0 9 * * *', async () => {
+        console.log('🔔 Running scheduled check reminder job...');
+        try {
+            const { run } = require('./scripts/send-checkin-reminders');
+            await run();
+        } catch (err) {
+            console.error('❌ Check reminder job failed:', err);
+        }
+    }, {
+        timezone: 'Europe/Rome'
+    });
+    console.log('⏰ Check reminder cron job scheduled (daily at 9:00 AM Europe/Rome)');
 });
 
 module.exports = app;

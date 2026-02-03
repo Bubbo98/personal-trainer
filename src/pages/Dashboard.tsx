@@ -127,7 +127,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     }
   }, []);
 
-  // Check if check-in is required
+  // Check if check is required
   const checkIfCheckInRequired = useCallback(async (authToken: string) => {
     try {
       const response = await apiCall('/feedback/should-show', {
@@ -139,7 +139,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
         setActiveTab('feedback');
       }
     } catch (error) {
-      console.error('Failed to check check-in status:', error);
+      console.error('Failed to check check status:', error);
       setCheckInRequired(false);
     }
   }, []);
@@ -218,7 +218,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
           authToken = await verifyStoredToken();
         }
 
-        // Load videos, training days, check training plan and check-in status with the authenticated token
+        // Load videos, training days, check training plan and check status with the authenticated token
         await Promise.all([
           loadVideos(authToken),
           loadTrainingDays(authToken),
@@ -386,7 +386,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
             </div>
           )}
 
-          {/* Check-in Required Banner */}
+          {/* Check Required Banner */}
           {checkInRequired && (
             <div className="mb-6 bg-orange-50 border-2 border-orange-400 rounded-xl p-4">
               <div className="flex items-center space-x-3">
@@ -394,8 +394,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
                   {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-8 h-8 text-orange-500" })}
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-orange-800">Check-in settimanale richiesto</h3>
-                  <p className="text-orange-700 text-sm">Compila il check-in per continuare ad accedere alla tua dashboard.</p>
+                  <h3 className="text-lg font-bold text-orange-800">Check settimanale richiesto</h3>
+                  <p className="text-orange-700 text-sm">Compila il check per continuare ad accedere alla tua dashboard.</p>
                 </div>
               </div>
             </div>
@@ -455,7 +455,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                   ? 'bg-white text-gray-900 shadow'
                   : 'text-gray-600 hover:text-gray-900'
               } ${checkInRequired ? 'ring-2 ring-orange-400' : ''}`}
-              title="Check-in"
+              title="Check"
             >
               {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
               <span className="max-[399px]:hidden text-xs sm:text-base">{t('dashboard.tabs.feedback')}</span>

@@ -106,7 +106,7 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) =
       await loadFeedbackStatus();
       await loadFeedbacks();
 
-      // Notify parent that check-in is completed
+      // Notify parent that check is completed
       if (onCheckInCompleted) {
         onCheckInCompleted();
       }
@@ -305,7 +305,7 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) =
                     {/* Target Date */}
                     {targetDate && (
                       <div className="mt-3 bg-white bg-opacity-50 rounded-lg p-3 border border-blue-100">
-                        <p className="text-xs text-gray-600 mb-1">Prossimo check-in disponibile il:</p>
+                        <p className="text-xs text-gray-600 mb-1">Prossimo check disponibile il:</p>
                         <p className="text-sm font-semibold text-gray-900">
                           {targetDate.toLocaleDateString('it-IT', {
                             weekday: 'long',
@@ -332,7 +332,7 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) =
         );
       })()}
 
-      {/* Previous Check-ins */}
+      {/* Previous Checks */}
       {feedbacks.length > 0 && (
         <div className="mt-8">
           <h3 className="text-xl font-bold text-gray-900 mb-4">{t('dashboard.feedback.previousFeedbacks')}</h3>

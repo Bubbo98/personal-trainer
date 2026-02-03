@@ -68,7 +68,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
       await onSubmit(formData);
       setSubmitted(true);
     } catch (error) {
-      console.error("Error submitting check-in:", error);
+      console.error("Error submitting check:", error);
     }
   };
 

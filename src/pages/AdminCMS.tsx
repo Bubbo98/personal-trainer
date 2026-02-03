@@ -29,6 +29,7 @@ const AdminCMS: React.FC = () => {
     error: null
   });
   const [activeTab, setActiveTab] = useState<'users' | 'videos' | 'reviews' | 'feedback'>('users');
+  const [unreadFeedbackCount, setUnreadFeedbackCount] = useState(0);
 
   // Check if we're on a user detail page
   const userDetailMatch = location.pathname.match(/^\/admin\/users\/(\d+)$/);
@@ -40,6 +41,38 @@ const AdminCMS: React.FC = () => {
       setActiveTab('users');
     }
   }, [location.pathname, isUserDetailPage]);
+
+  // Fetch unread feedback count
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      if (!adminState.isAuthenticated) return;
+
+      try {
+        const response = await apiCall('/feedback/admin/unread-count');
+        if (response.success) {
+          setUnreadFeedbackCount(response.data.unreadCount);
+        }
+      } catch (error) {
+        console.error('Error fetching unread feedback count:', error);
+      }
+    };
+
+    fetchUnreadCount();
+  }, [adminState.isAuthenticated]);
+
+  // Mark feedback as seen when clicking on feedback tab
+  const handleFeedbackTabClick = async () => {
+    setActiveTab('feedback');
+
+    if (unreadFeedbackCount > 0) {
+      try {
+        await apiCall('/feedback/admin/mark-seen', { method: 'POST' });
+        setUnreadFeedbackCount(0);
+      } catch (error) {
+        console.error('Error marking feedback as seen:', error);
+      }
+    }
+  };
 
   // Check authentication on mount
   useEffect(() => {
@@ -176,15 +209,27 @@ const AdminCMS: React.FC = () => {
               </button>
 
               <button
-                onClick={() => setActiveTab('feedback')}
-                className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors flex-1 sm:flex-initial ${
+                onClick={handleFeedbackTabClick}
+                className={`relative flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors flex-1 sm:flex-initial ${
                   activeTab === 'feedback'
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-                <span className="hidden sm:inline">Check-in</span>
+                <div className="relative">
+                  {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+                  {/* Mobile: red dot on icon */}
+                  {unreadFeedbackCount > 0 && (
+                    <span className="sm:hidden absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
+                  )}
+                </div>
+                <span className="hidden sm:inline">Check</span>
+                {/* Desktop: badge with number */}
+                {unreadFeedbackCount > 0 && (
+                  <span className="hidden sm:flex bg-red-500 text-white text-xs rounded-full min-w-[18px] h-[18px] items-center justify-center px-1">
+                    {unreadFeedbackCount > 99 ? '99+' : unreadFeedbackCount}
+                  </span>
+                )}
               </button>
             </div>
           )}
