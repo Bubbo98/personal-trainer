@@ -222,6 +222,8 @@
           "minor": "Qualche piccolo fastidio",
           "significant": "Sì, dolore rilevante"
         },
+        "discomfortDetailsLabel": "Descrivi i dolori o fastidi:",
+        "discomfortDetailsPlaceholder": "Indica dove senti dolore e che tipo di fastidio è...",
         "motivationLevel": "Come valuti la tua motivazione generale?",
         "motivationLabel": "Motivazione",
         "motivationOptions": {

@@ -11,6 +11,7 @@ interface FeedbackFormData {
   mealPlanFollowed: "completely" | "mostly" | "sometimes" | "no" | "";
   sleepQuality: "excellent" | "good" | "fair" | "poor" | "";
   physicalDiscomfort: "none" | "minor" | "significant" | "";
+  discomfortDetails: string;
   motivationLevel: "very_high" | "good" | "medium" | "low" | "";
   weeklyHighlights: string;
   currentWeight: string;
@@ -37,6 +38,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
     mealPlanFollowed: initialData?.mealPlanFollowed || "",
     sleepQuality: initialData?.sleepQuality || "",
     physicalDiscomfort: initialData?.physicalDiscomfort || "",
+    discomfortDetails: initialData?.discomfortDetails || "",
     motivationLevel: initialData?.motivationLevel || "",
     weeklyHighlights: initialData?.weeklyHighlights || "",
     currentWeight: initialData?.currentWeight || "",
@@ -310,15 +312,34 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
                   name="physicalDiscomfort"
                   value={option.value}
                   checked={formData.physicalDiscomfort === option.value}
-                  onChange={(e) =>
-                    handleChange("physicalDiscomfort", e.target.value)
-                  }
+                  onChange={(e) => {
+                    handleChange("physicalDiscomfort", e.target.value);
+                    if (e.target.value === "none") {
+                      handleChange("discomfortDetails", "");
+                    }
+                  }}
                   className="w-4 h-4 text-gray-800 border-gray-300 focus:ring-gray-800"
                 />
                 <span className="ml-2 text-gray-700">{option.label}</span>
               </label>
             ))}
           </div>
+
+          {/* Discomfort Details Textarea - shown when minor or significant */}
+          {(formData.physicalDiscomfort === "minor" || formData.physicalDiscomfort === "significant") && (
+            <div className="mt-3 pl-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t("dashboard.feedback.checkin.discomfortDetailsLabel")}
+              </label>
+              <textarea
+                value={formData.discomfortDetails}
+                onChange={(e) => handleChange("discomfortDetails", e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+                placeholder={t("dashboard.feedback.checkin.discomfortDetailsPlaceholder")}
+              />
+            </div>
+          )}
         </div>
 
         {/* Question 6 - Motivation Level */}

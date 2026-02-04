@@ -18,6 +18,7 @@ interface Feedback {
   meal_plan_followed: string;
   sleep_quality: string;
   physical_discomfort: string;
+  discomfort_details: string | null;
   motivation_level: string;
   weekly_highlights: string | null;
   current_weight: number | null;
@@ -742,6 +743,11 @@ const FeedbackManagement: React.FC = () => {
                   <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${getStatusColor(selectedFeedback.physical_discomfort, 'discomfort')}`}>
                     {getDiscomfortLabel(selectedFeedback.physical_discomfort)}
                   </span>
+                  {selectedFeedback.discomfort_details && (
+                    <p className="mt-2 text-sm text-gray-800 bg-white bg-opacity-50 p-2 rounded">
+                      {selectedFeedback.discomfort_details}
+                    </p>
+                  )}
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="text-sm text-gray-600 mb-1">Motivazione</div>

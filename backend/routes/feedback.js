@@ -132,6 +132,7 @@ router.post('/', authenticateToken, (req, res) => {
     mealPlanFollowed,
     sleepQuality,
     physicalDiscomfort,
+    discomfortDetails,
     motivationLevel,
     weeklyHighlights,
     currentWeight
@@ -231,9 +232,9 @@ router.post('/', authenticateToken, (req, res) => {
       INSERT INTO user_feedbacks (
         user_id, first_name, last_name, email, feedback_date,
         energy_level, workouts_completed, meal_plan_followed,
-        sleep_quality, physical_discomfort, motivation_level,
+        sleep_quality, physical_discomfort, discomfort_details, motivation_level,
         weekly_highlights, current_weight, pdf_change_date
-      ) VALUES (?, ?, ?, ?, DATE('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, DATE('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const weightValue = currentWeight !== undefined && currentWeight !== null && currentWeight !== ''
@@ -250,6 +251,7 @@ router.post('/', authenticateToken, (req, res) => {
       mealPlanFollowed,
       sleepQuality,
       physicalDiscomfort,
+      discomfortDetails || null,
       motivationLevel,
       weeklyHighlights || null,
       weightValue,

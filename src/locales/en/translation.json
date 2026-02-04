@@ -222,6 +222,8 @@
           "minor": "Some minor discomfort",
           "significant": "Yes, significant pain"
         },
+        "discomfortDetailsLabel": "Describe the pain or discomfort:",
+        "discomfortDetailsPlaceholder": "Indicate where you feel pain and what type of discomfort...",
         "motivationLevel": "How would you rate your overall motivation?",
         "motivationLabel": "Motivation",
         "motivationOptions": {
