@@ -223,8 +223,8 @@ const Services: React.FC<ServicesPageProps> = () => {
     <div className={pageClassName}>
       <Helmet>
         <title>{t('pages.services.title')}</title>
-        <link rel="canonical" href="https://esercizifacili.com/services" />
-        <meta property="og:url" content="https://esercizifacili.com/services" />
+        <link rel="canonical" href="https://www.esercizifacili.com/services" />
+        <meta property="og:url" content="https://www.esercizifacili.com/services" />
         <meta name="description" content="Scopri i servizi di Personal Training a Milano: allenamenti 1-to-1, calisthenics, bodybuilding, corsi di gruppo e coaching online. Prenota ora!" />
       </Helmet>
       <Header />

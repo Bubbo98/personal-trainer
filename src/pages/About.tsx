@@ -209,8 +209,8 @@ const About: React.FC<AboutPageProps> = () => {
     <div className={pageClassName} style={{ scrollBehavior: 'smooth' }}>
       <Helmet>
         <title>{t('pages.about.title')}</title>
-        <link rel="canonical" href="https://esercizifacili.com/about" />
-        <meta property="og:url" content="https://esercizifacili.com/about" />
+        <link rel="canonical" href="https://www.esercizifacili.com/about" />
+        <meta property="og:url" content="https://www.esercizifacili.com/about" />
         <meta name="description" content="Scopri chi è Joshua Maurizio, Personal Trainer certificato AIPT e Burningate a Milano. Esperienza in calisthenics, bodybuilding e allenamento funzionale." />
       </Helmet>
       <Header />

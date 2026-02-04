@@ -206,8 +206,8 @@ const Contact: React.FC<ContactPageProps> = () => {
     <div className={pageClassName}>
       <Helmet>
         <title>{t('pages.contact.title')}</title>
-        <link rel="canonical" href="https://esercizifacili.com/contact" />
-        <meta property="og:url" content="https://esercizifacili.com/contact" />
+        <link rel="canonical" href="https://www.esercizifacili.com/contact" />
+        <meta property="og:url" content="https://www.esercizifacili.com/contact" />
         <meta name="description" content="Contatta Joshua, Personal Trainer a Milano. Telefono, email, Instagram e TikTok. Palestra in Via Cortina d'Ampezzo 14, Milano." />
       </Helmet>
       <Header />
