@@ -7,7 +7,7 @@ const resend = process.env.RESEND_API_KEY
   : null;
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
-const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@esercizifacili.com';
+const FROM_EMAIL = process.env.FROM_EMAIL || 'EserciziFacili <noreply@esercizifacili.com>';
 
 /**
  * Send email notification to admin when a user submits a new feedback
@@ -21,6 +21,11 @@ const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@esercizifacili.com';
  * @param {string} feedback.weekly_highlights - Optional highlights/notes
  */
 async function sendNewFeedbackNotification(feedback) {
+  console.log('📧 sendNewFeedbackNotification called');
+  console.log('📧 RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
+  console.log('📧 ADMIN_EMAIL:', process.env.ADMIN_EMAIL);
+  console.log('📧 FROM_EMAIL:', FROM_EMAIL);
+
   if (!resend) {
     console.log('📧 Email service not configured (RESEND_API_KEY missing)');
     return { success: false, error: 'Email service not configured' };
