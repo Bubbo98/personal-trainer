@@ -159,7 +159,7 @@ async function sendNewFeedbackNotification(feedback) {
 
             <!-- CTA Button -->
             <div style="background: white; padding: 24px; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; text-align: center;">
-              <a href="https://app.esercizifacili.com/admin"
+              <a href="https://www.esercizifacili.com/admin"
                  style="display: inline-block; background: linear-gradient(135deg, #1f2937 0%, #374151 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">
                 Vai alla Dashboard Admin →
               </a>
@@ -254,7 +254,7 @@ async function sendCheckInReminder(userEmail, userName) {
 
               <!-- CTA Button -->
               <div style="text-align: center; margin: 32px 0;">
-                <a href="https://app.esercizifacili.com/dashboard"
+                <a href="https://www.esercizifacili.com/dashboard"
                    style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 16px 40px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);">
                   Compila il Check →
                 </a>

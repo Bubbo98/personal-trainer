@@ -1,4 +1,17 @@
 {
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "esercizifacili.com"
+        }
+      ],
+      "destination": "https://www.esercizifacili.com/:path*",
+      "permanent": true
+    }
+  ],
   "builds": [
     {
       "src": "package.json",

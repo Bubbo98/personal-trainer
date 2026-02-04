@@ -11,8 +11,8 @@ const CookiePolicy: React.FC = () => {
     <div className="min-h-screen bg-white">
       <Helmet>
         <title>{t('pages.cookies.title')}</title>
-        <link rel="canonical" href="https://www.esercizifacili.com/cookies" />
-        <meta property="og:url" content="https://www.esercizifacili.com/cookies" />
+        <link rel="canonical" href="https://www.esercizifacili.com/cookie-policy" />
+        <meta property="og:url" content="https://www.esercizifacili.com/cookie-policy" />
       </Helmet>
       <Header />
 

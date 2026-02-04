@@ -134,7 +134,7 @@ router.post('/users', async (req, res) => {
 
                                         // Generate login link token
                                         const loginToken = generateLoginLinkToken(user);
-                                        const loginUrl = `https://esercizifacili.com/dashboard/${loginToken}`;
+                                        const loginUrl = `https://www.esercizifacili.com/dashboard/${loginToken}`;
 
                                         console.log(`Admin ${req.user.username} reactivated user: ${user.username}`);
 
@@ -209,7 +209,7 @@ router.post('/users', async (req, res) => {
 
                                 // Generate login link token
                                 const loginToken = generateLoginLinkToken(user);
-                                const loginUrl = `https://esercizifacili.com/dashboard/${loginToken}`;
+                                const loginUrl = `https://www.esercizifacili.com/dashboard/${loginToken}`;
 
                                 console.log(`Admin ${req.user.username} created user: ${user.username}`);
 
@@ -425,7 +425,7 @@ router.post('/users/:id/generate-link', (req, res) => {
 
             // Generate new login token
             const loginToken = generateLoginLinkToken(user);
-            const loginUrl = `https://esercizifacili.com/dashboard/${loginToken}`;
+            const loginUrl = `https://www.esercizifacili.com/dashboard/${loginToken}`;
 
             console.log(`Admin ${req.user.username} generated login link for user: ${user.username}`);
 
