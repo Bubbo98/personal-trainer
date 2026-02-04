@@ -434,10 +434,38 @@ const TermsOfService: React.FC = () => {
                   </div>
 
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">Risoluzione Alternative delle Controversie</h3>
+                    <h3 className="font-semibold text-gray-900 mb-1">Risoluzione Alternative delle Controversie (ADR/ODR)</h3>
                     <p className="text-gray-700 text-sm">
                       Prima di ricorrere al foro competente, le parti si impegnano a tentare una risoluzione
                       amichevole della controversia attraverso mediazione o arbitrato, se concordato.
+                    </p>
+                  </div>
+
+                  <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <h3 className="font-semibold text-blue-900 mb-2">🇪🇺 Piattaforma ODR (Online Dispute Resolution)</h3>
+                    <p className="text-blue-800 text-sm mb-3">
+                      Ai sensi del Regolamento UE n. 524/2013, informiamo che è disponibile una piattaforma europea
+                      per la risoluzione online delle controversie (ODR) tra consumatori e professionisti.
+                    </p>
+                    <div className="bg-white p-3 rounded border border-blue-200">
+                      <p className="text-blue-900 text-sm">
+                        <strong>Link alla piattaforma:</strong><br/>
+                        <a
+                          href="https://ec.europa.eu/consumers/odr"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline break-all"
+                        >
+                          https://ec.europa.eu/consumers/odr
+                        </a>
+                      </p>
+                      <p className="text-blue-700 text-xs mt-2">
+                        Tramite questa piattaforma, il consumatore può presentare un reclamo e avviare
+                        una procedura di risoluzione extragiudiziale delle controversie online.
+                      </p>
+                    </div>
+                    <p className="text-blue-700 text-xs mt-2">
+                      <strong>Email per ODR:</strong> josh17111991@gmail.com
                     </p>
                   </div>
                 </div>

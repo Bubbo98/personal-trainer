@@ -224,9 +224,40 @@ const PrivacyPolicy: React.FC = () => {
               </div>
             </section>
 
-            {/* 7. Trasferimenti Internazionali */}
+            {/* 7. Profilazione e Decisioni Automatizzate */}
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">7. Trasferimenti di Dati verso Paesi Terzi</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">7. Profilazione e Decisioni Automatizzate</h2>
+              <p className="mb-4">
+                Ai sensi dell'art. 22 del GDPR, informiamo che:
+              </p>
+
+              <div className="bg-green-50 p-6 rounded-lg border-l-4 border-green-500">
+                <h3 className="font-semibold text-green-900 mb-3">Nessuna Profilazione Automatizzata</h3>
+                <p className="text-green-800 mb-3">
+                  I tuoi dati personali <strong>NON</strong> sono soggetti a processi decisionali automatizzati
+                  né a profilazione che producano effetti giuridici o incidano significativamente sulla tua persona.
+                </p>
+                <ul className="text-green-800 text-sm space-y-1">
+                  <li>• Non utilizziamo algoritmi per decisioni automatiche sui servizi offerti</li>
+                  <li>• I programmi di allenamento sono creati personalmente dal Personal Trainer</li>
+                  <li>• Le valutazioni sui progressi sono effettuate manualmente</li>
+                  <li>• Non vendiamo o condividiamo dati per finalità di marketing automatizzato</li>
+                </ul>
+              </div>
+
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                <h3 className="font-semibold text-blue-900 mb-2">Analisi Statistiche Aggregate</h3>
+                <p className="text-blue-800 text-sm">
+                  Utilizziamo strumenti di analisi (Vercel Analytics) per raccogliere dati anonimi e aggregati
+                  sul traffico del sito web. Questi dati non permettono l'identificazione personale e sono
+                  utilizzati esclusivamente per migliorare l'esperienza utente del sito.
+                </p>
+              </div>
+            </section>
+
+            {/* 8. Trasferimenti Internazionali */}
+            <section className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">8. Trasferimenti di Dati verso Paesi Terzi</h2>
               <p className="mb-4">I dati personali possono essere trasferiti verso paesi terzi esclusivamente nei seguenti casi:</p>
 
               <div className="space-y-3">
@@ -256,9 +287,9 @@ const PrivacyPolicy: React.FC = () => {
               </div>
             </section>
 
-            {/* 8. Comunicazione e Diffusione */}
+            {/* 9. Comunicazione e Diffusione */}
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">8. Comunicazione e Diffusione dei Dati</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">9. Comunicazione e Diffusione dei Dati</h2>
               <p className="mb-4">I dati personali non sono oggetto di diffusione. Possono essere comunicati esclusivamente a:</p>
 
               <ul className="space-y-2">
@@ -281,9 +312,9 @@ const PrivacyPolicy: React.FC = () => {
               </ul>
             </section>
 
-            {/* 9. Reclami */}
+            {/* 10. Reclami */}
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">9. Diritto di Reclamo</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">10. Diritto di Reclamo</h2>
               <div className="bg-red-50 p-6 rounded-lg">
                 <p className="mb-4">L'interessato ha diritto di proporre reclamo al Garante per la protezione dei dati personali:</p>
                 <div className="space-y-2 text-sm">
@@ -297,9 +328,9 @@ const PrivacyPolicy: React.FC = () => {
               </div>
             </section>
 
-            {/* 10. Aggiornamenti */}
+            {/* 11. Aggiornamenti */}
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">10. Aggiornamenti della Privacy Policy</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">11. Aggiornamenti della Privacy Policy</h2>
               <p className="mb-4">
                 La presente informativa può essere aggiornata periodicamente. In caso di modifiche sostanziali,
                 l'utente sarà informato mediante:

@@ -195,7 +195,41 @@ const CookiePolicy: React.FC = () => {
                     </div>
 
                     <div>
-                      <h4 className="font-semibold text-purple-900 mb-2">Vercel (Hosting e CDN)</h4>
+                      <h4 className="font-semibold text-purple-900 mb-2">Vercel Analytics (Analisi Traffico)</h4>
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse border border-purple-300 text-sm">
+                          <thead className="bg-purple-100">
+                            <tr>
+                              <th className="border border-purple-300 px-3 py-2 text-left">Cookie/Tecnologia</th>
+                              <th className="border border-purple-300 px-3 py-2 text-left">Finalità</th>
+                              <th className="border border-purple-300 px-3 py-2 text-left">Durata</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td className="border border-purple-300 px-3 py-2">Vercel Analytics</td>
+                              <td className="border border-purple-300 px-3 py-2">Analisi anonima del traffico web, pagine visitate, dispositivi</td>
+                              <td className="border border-purple-300 px-3 py-2">Sessione</td>
+                            </tr>
+                            <tr className="bg-purple-25">
+                              <td className="border border-purple-300 px-3 py-2">__vercel_live_token</td>
+                              <td className="border border-purple-300 px-3 py-2">Ottimizzazione performance</td>
+                              <td className="border border-purple-300 px-3 py-2">Sessione</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <p className="text-purple-700 text-xs mt-2">
+                        Privacy Policy Vercel: <a href="https://vercel.com/legal/privacy-policy" className="underline" target="_blank" rel="noopener noreferrer">https://vercel.com/legal/privacy-policy</a>
+                      </p>
+                      <div className="mt-2 p-2 bg-purple-100 rounded text-xs text-purple-800">
+                        <strong>Nota:</strong> Vercel Analytics raccoglie dati anonimi e aggregati sul traffico del sito.
+                        Non utilizza cookie persistenti e rispetta la privacy degli utenti senza tracciamento personale.
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="font-semibold text-purple-900 mb-2">Google Maps (Mappe Interattive)</h4>
                       <div className="overflow-x-auto">
                         <table className="w-full border-collapse border border-purple-300 text-sm">
                           <thead className="bg-purple-100">
@@ -207,16 +241,29 @@ const CookiePolicy: React.FC = () => {
                           </thead>
                           <tbody>
                             <tr>
-                              <td className="border border-purple-300 px-3 py-2">__vercel_live_token</td>
-                              <td className="border border-purple-300 px-3 py-2">Ottimizzazione performance (solo sviluppo)</td>
-                              <td className="border border-purple-300 px-3 py-2">Sessione</td>
+                              <td className="border border-purple-300 px-3 py-2">NID</td>
+                              <td className="border border-purple-300 px-3 py-2">Memorizza preferenze e informazioni utente</td>
+                              <td className="border border-purple-300 px-3 py-2">6 mesi</td>
+                            </tr>
+                            <tr className="bg-purple-25">
+                              <td className="border border-purple-300 px-3 py-2">CONSENT</td>
+                              <td className="border border-purple-300 px-3 py-2">Stato del consenso cookie Google</td>
+                              <td className="border border-purple-300 px-3 py-2">20 anni</td>
+                            </tr>
+                            <tr>
+                              <td className="border border-purple-300 px-3 py-2">1P_JAR</td>
+                              <td className="border border-purple-300 px-3 py-2">Raccoglie statistiche e traccia conversioni</td>
+                              <td className="border border-purple-300 px-3 py-2">1 mese</td>
                             </tr>
                           </tbody>
                         </table>
                       </div>
                       <p className="text-purple-700 text-xs mt-2">
-                        Privacy Policy Vercel: <a href="https://vercel.com/legal/privacy-policy" className="underline" target="_blank" rel="noopener noreferrer">https://vercel.com/legal/privacy-policy</a>
+                        Privacy Policy Google: <a href="https://policies.google.com/privacy" className="underline" target="_blank" rel="noopener noreferrer">https://policies.google.com/privacy</a>
                       </p>
+                      <div className="mt-2 p-2 bg-purple-100 rounded text-xs text-purple-800">
+                        <strong>Dove utilizzato:</strong> Mappa interattiva nella pagina Contatti per mostrare la posizione della palestra.
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -446,6 +493,60 @@ const CookiePolicy: React.FC = () => {
                   </div>
                 </div>
 
+                <div className="border border-purple-200 bg-purple-50 p-4 rounded-lg">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-purple-900 mb-1">Google Maps (Mappe)</h3>
+                      <p className="text-purple-800 text-sm mb-2">
+                        Mappa interattiva nella pagina Contatti per mostrare la posizione della palestra.
+                      </p>
+                      <ul className="text-purple-800 text-xs space-y-1">
+                        <li>• Cookie per funzionamento mappa</li>
+                        <li>• Preferenze visualizzazione</li>
+                        <li>• Statistiche utilizzo</li>
+                      </ul>
+                    </div>
+                    <div className="ml-4 text-right">
+                      <a
+                        href="https://policies.google.com/privacy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-purple-700 text-xs underline hover:no-underline"
+                      >
+                        Privacy Policy →
+                      </a>
+                      <p className="text-purple-600 text-xs mt-1">Gestibile da browser</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border border-purple-200 bg-purple-50 p-4 rounded-lg">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-purple-900 mb-1">Vercel Analytics (Statistiche)</h3>
+                      <p className="text-purple-800 text-sm mb-2">
+                        Analisi anonima del traffico web per migliorare l'esperienza utente.
+                      </p>
+                      <ul className="text-purple-800 text-xs space-y-1">
+                        <li>• Dati anonimi e aggregati</li>
+                        <li>• Nessun tracciamento personale</li>
+                        <li>• Rispetta la privacy by design</li>
+                      </ul>
+                    </div>
+                    <div className="ml-4 text-right">
+                      <a
+                        href="https://vercel.com/legal/privacy-policy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-purple-700 text-xs underline hover:no-underline"
+                      >
+                        Privacy Policy →
+                      </a>
+                      <p className="text-purple-600 text-xs mt-1">Privacy-friendly</p>
+                    </div>
+                  </div>
+                </div>
+
               </div>
 
               <div className="mt-4 p-4 bg-blue-50 rounded-lg">
@@ -507,8 +608,13 @@ const CookiePolicy: React.FC = () => {
               <div className="bg-orange-50 p-6 rounded-lg border-l-4 border-orange-400">
                 <h3 className="font-semibold text-orange-900 mb-3">🌍 Paesi Coinvolti</h3>
                 <div className="space-y-2 text-orange-800 text-sm">
-                  <p><strong>Stati Uniti:</strong> Cal.com (con garanzie di protezione dati)</p>
-                  <p><strong>Protezioni:</strong> Clausole Contrattuali Standard UE, Principi di Privacy Shield (dove applicabili)</p>
+                  <p><strong>Stati Uniti:</strong></p>
+                  <ul className="list-disc list-inside ml-2 space-y-1">
+                    <li>Cal.com - Sistema di prenotazione</li>
+                    <li>Google (Maps) - Mappe interattive</li>
+                    <li>Vercel - Hosting e analytics</li>
+                  </ul>
+                  <p className="mt-2"><strong>Protezioni:</strong> Data Privacy Framework UE-USA, Clausole Contrattuali Standard UE</p>
                   <p><strong>Diritti:</strong> Puoi sempre revocare il consenso e richiedere la cancellazione dei tuoi dati</p>
                 </div>
               </div>
