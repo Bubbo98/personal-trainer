@@ -36,11 +36,16 @@ async function runMigration() {
         const migrationPath = path.join(__dirname, '../database/add-trainers.sql');
         const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
 
-        // Split into individual statements
-        const statements = migrationSQL
+        // Remove comment lines and split into individual statements
+        const cleanedSQL = migrationSQL
+            .split('\n')
+            .filter(line => !line.trim().startsWith('--'))
+            .join('\n');
+
+        const statements = cleanedSQL
             .split(';')
             .map(s => s.trim())
-            .filter(s => s.length > 0 && !s.startsWith('--'));
+            .filter(s => s.length > 0);
 
         console.log(`Executing ${statements.length} SQL statements...`);
 
