@@ -1314,7 +1314,8 @@ router.put('/users/:id', async (req, res) => {
     }
     if (email !== undefined) {
         updates.push('email = ?');
-        params.push(email);
+        // Convert empty string to null to avoid UNIQUE constraint issues
+        params.push(email === '' ? null : email);
     }
     if (isPaying !== undefined) {
         updates.push('is_paying = ?');
