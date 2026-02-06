@@ -41,9 +41,10 @@ type ViewMode = 'timeline' | 'user';
 
 interface FeedbackManagementProps {
   trainerId?: number; // Optional: filter feedbacks by trainer
+  onFeedbacksSeen?: () => void; // Callback when feedbacks are loaded/seen
 }
 
-const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId }) => {
+const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFeedbacksSeen }) => {
   const { t } = useTranslation();
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(false);
@@ -63,12 +64,16 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId }) =>
         : '/feedback/admin/all';
       const response = await apiCall(endpoint);
       setFeedbacks(response.data.feedbacks);
+      // Notify parent that feedbacks have been seen
+      if (onFeedbacksSeen) {
+        onFeedbacksSeen();
+      }
     } catch (error) {
       console.error('Failed to load feedbacks:', error);
     } finally {
       setLoading(false);
     }
-  }, [trainerId]);
+  }, [trainerId, onFeedbacksSeen]);
 
   useEffect(() => {
     loadFeedbacks();

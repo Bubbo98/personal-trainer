@@ -420,7 +420,18 @@ const UserManagement: React.FC = () => {
 
       {/* Content based on active tab */}
       {activeContentTab === 'feedback' ? (
-        <FeedbackManagement trainerId={activeTrainerId} />
+        <FeedbackManagement
+          trainerId={activeTrainerId}
+          onFeedbacksSeen={() => {
+            // Mark feedbacks as seen and reset badge count
+            apiCall('/feedback/admin/mark-seen', {
+              method: 'POST',
+              body: JSON.stringify({ trainerId: activeTrainerId })
+            }).then(() => {
+              setUnreadFeedbackCounts(prev => ({ ...prev, [activeTrainerId]: 0 }));
+            }).catch(err => console.error('Error marking feedback as seen:', err));
+          }}
+        />
       ) : (
         <>
           {/* Search Bar */}
