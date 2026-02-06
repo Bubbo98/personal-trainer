@@ -10,10 +10,12 @@ import {
   FiSearch,
   FiClock,
   FiStar,
-  FiEdit3
+  FiEdit3,
+  FiMessageSquare
 } from 'react-icons/fi';
 import { apiCall, formatDate } from '../../utils/adminUtils';
-import { User, CreateUserForm, UpdateUserForm } from '../../types/admin';
+import { User, CreateUserForm, UpdateUserForm, Trainer } from '../../types/admin';
+import FeedbackManagement from './FeedbackManagement';
 
 interface PdfInfo {
   expirationDate?: string;
@@ -25,50 +27,94 @@ const UserManagement: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
+  const [trainers, setTrainers] = useState<Trainer[]>([]);
   const [userPdfs, setUserPdfs] = useState<Record<number, PdfInfo | null>>({});
   const [loading, setLoading] = useState(false);
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'paying' | 'nonPaying'>('paying');
+  const [activeTrainerId, setActiveTrainerId] = useState<number>(1); // Default to Joshua (id=1)
+  const [activeContentTab, setActiveContentTab] = useState<'paying' | 'nonPaying' | 'feedback'>('paying');
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [unreadFeedbackCounts, setUnreadFeedbackCounts] = useState<Record<number, number>>({});
 
   const [createUserForm, setCreateUserForm] = useState<CreateUserForm>({
     username: '',
     firstName: '',
     lastName: '',
-    isPaying: true
+    isPaying: true,
+    trainerId: 1
   });
 
   const [updateUserForm, setUpdateUserForm] = useState<UpdateUserForm>({
     firstName: '',
     lastName: '',
     email: '',
-    isPaying: false
+    isPaying: false,
+    trainerId: 1
   });
 
   const loadUsers = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await apiCall('/admin/users');
-      setUsers(response.data.users);
 
-      // Extract PDF data from users response (no separate API calls needed)
-      const pdfData: Record<number, PdfInfo | null> = {};
-      response.data.users.forEach((user: any) => {
-        if (user.pdf) {
-          pdfData[user.id] = {
-            expirationDate: user.pdf.expirationDate,
-            durationMonths: user.pdf.durationMonths,
-            durationDays: user.pdf.durationDays
-          };
-        } else {
-          pdfData[user.id] = null;
+      // Load trainers and users in parallel
+      // Use Promise.allSettled to handle case where trainers table doesn't exist yet
+      const [trainersResult, usersResult] = await Promise.allSettled([
+        apiCall('/admin/trainers'),
+        apiCall('/admin/users')
+      ]);
+
+      // Handle trainers - fallback to defaults if API fails
+      let loadedTrainers: Trainer[] = [];
+      if (trainersResult.status === 'fulfilled') {
+        loadedTrainers = trainersResult.value.data.trainers;
+        setTrainers(loadedTrainers);
+      } else {
+        console.warn('Failed to load trainers, using defaults:', trainersResult.reason);
+        // Fallback trainers if migration hasn't been run yet
+        loadedTrainers = [
+          { id: 1, name: 'Joshua', createdAt: new Date().toISOString() },
+          { id: 2, name: 'Denise', createdAt: new Date().toISOString() }
+        ];
+        setTrainers(loadedTrainers);
+      }
+
+      // Load unread feedback counts for each trainer
+      const feedbackCounts: Record<number, number> = {};
+      for (const trainer of loadedTrainers) {
+        try {
+          const countResponse = await apiCall(`/feedback/admin/unread-count?trainerId=${trainer.id}`);
+          feedbackCounts[trainer.id] = countResponse.data.unreadCount || 0;
+        } catch {
+          feedbackCounts[trainer.id] = 0;
         }
-      });
-      setUserPdfs(pdfData);
+      }
+      setUnreadFeedbackCounts(feedbackCounts);
+
+      // Handle users
+      if (usersResult.status === 'fulfilled') {
+        setUsers(usersResult.value.data.users);
+
+        // Extract PDF data from users response (no separate API calls needed)
+        const pdfData: Record<number, PdfInfo | null> = {};
+        usersResult.value.data.users.forEach((user: any) => {
+          if (user.pdf) {
+            pdfData[user.id] = {
+              expirationDate: user.pdf.expirationDate,
+              durationMonths: user.pdf.durationMonths,
+              durationDays: user.pdf.durationDays
+            };
+          } else {
+            pdfData[user.id] = null;
+          }
+        });
+        setUserPdfs(pdfData);
+      } else {
+        console.error('Failed to load users:', usersResult.reason);
+      }
     } catch (error) {
-      console.error('Failed to load users:', error);
+      console.error('Failed to load data:', error);
     } finally {
       setLoading(false);
     }
@@ -107,7 +153,8 @@ const UserManagement: React.FC = () => {
         username: '',
         firstName: '',
         lastName: '',
-        isPaying: true
+        isPaying: true,
+        trainerId: activeTrainerId
       });
       setShowCreateUser(false);
 
@@ -200,7 +247,8 @@ const UserManagement: React.FC = () => {
       firstName: user.firstName || '',
       lastName: user.lastName || '',
       email: user.email || '',
-      isPaying: Boolean(user.isPaying)
+      isPaying: Boolean(user.isPaying),
+      trainerId: user.trainerId || 1
     });
   };
 
@@ -240,11 +288,15 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  // Filter users based on search term and payment status
+  // Filter users based on trainer, payment status, and search term
   const filteredUsers = users.filter(user => {
-    // Filter by payment status
-    if (activeTab === 'paying' && !user.isPaying) return false;
-    if (activeTab === 'nonPaying' && user.isPaying) return false;
+    // Filter by trainer (default to 1/Joshua if not set)
+    const userTrainerId = user.trainerId || 1;
+    if (userTrainerId !== activeTrainerId) return false;
+
+    // Filter by payment status (only when not on feedback tab)
+    if (activeContentTab === 'paying' && !user.isPaying) return false;
+    if (activeContentTab === 'nonPaying' && user.isPaying) return false;
 
     // Filter by search term
     if (!searchTerm) return true;
@@ -257,6 +309,28 @@ const UserManagement: React.FC = () => {
       (user.email && user.email.toLowerCase().includes(searchLower))
     );
   });
+
+  // Get counts for current trainer (default to 1/Joshua if not set)
+  const currentTrainerUsers = users.filter(u => (u.trainerId || 1) === activeTrainerId);
+  const payingCount = currentTrainerUsers.filter(u => u.isPaying).length;
+  const nonPayingCount = currentTrainerUsers.filter(u => !u.isPaying).length;
+  const feedbackCount = unreadFeedbackCounts[activeTrainerId] || 0;
+
+  // Handle feedback tab click - mark as seen
+  const handleFeedbackTabClick = async () => {
+    setActiveContentTab('feedback');
+    if (feedbackCount > 0) {
+      try {
+        await apiCall('/feedback/admin/mark-seen', {
+          method: 'POST',
+          body: JSON.stringify({ trainerId: activeTrainerId })
+        });
+        setUnreadFeedbackCounts(prev => ({ ...prev, [activeTrainerId]: 0 }));
+      } catch (error) {
+        console.error('Error marking feedback as seen:', error);
+      }
+    }
+  };
 
   if (loading && users.length === 0) {
     return (
@@ -272,7 +346,10 @@ const UserManagement: React.FC = () => {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">{t('admin.users.title')}</h2>
         <button
-          onClick={() => setShowCreateUser(true)}
+          onClick={() => {
+            setCreateUserForm(prev => ({ ...prev, trainerId: activeTrainerId }));
+            setShowCreateUser(true);
+          }}
           className="bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 flex items-center space-x-2"
         >
           {React.createElement(FiPlus as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
@@ -280,50 +357,92 @@ const UserManagement: React.FC = () => {
         </button>
       </div>
 
-      {/* Tabs */}
+      {/* Trainer Tabs - Level 1 */}
+      <div className="flex space-x-1 bg-gray-800 p-1 rounded-lg">
+        {trainers.map(trainer => {
+          // Count users for this trainer (default to 1/Joshua if trainerId not set)
+          const trainerUserCount = users.filter(u => (u.trainerId || 1) === trainer.id).length;
+          return (
+            <button
+              key={trainer.id}
+              onClick={() => setActiveTrainerId(trainer.id)}
+              className={`flex-1 py-3 rounded-lg font-medium transition-all ${
+                activeTrainerId === trainer.id
+                  ? 'bg-white text-gray-900 shadow'
+                  : 'text-gray-300 hover:text-white'
+              }`}
+            >
+              PT {trainer.name} ({trainerUserCount})
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Content Tabs - Level 2 */}
       <div className="flex space-x-1 bg-gray-200 p-1 rounded-lg">
         <button
-          onClick={() => setActiveTab('paying')}
+          onClick={() => setActiveContentTab('paying')}
           className={`flex-1 py-3 rounded-lg font-medium transition-all ${
-            activeTab === 'paying'
+            activeContentTab === 'paying'
               ? 'bg-white text-gray-900 shadow'
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          Utenti Paganti ({users.filter(u => u.isPaying).length})
+          Utenti Paganti ({payingCount})
         </button>
         <button
-          onClick={() => setActiveTab('nonPaying')}
+          onClick={() => setActiveContentTab('nonPaying')}
           className={`flex-1 py-3 rounded-lg font-medium transition-all ${
-            activeTab === 'nonPaying'
+            activeContentTab === 'nonPaying'
               ? 'bg-white text-gray-900 shadow'
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          Utenti Non Paganti ({users.filter(u => !u.isPaying).length})
+          Utenti Non Paganti ({nonPayingCount})
+        </button>
+        <button
+          onClick={handleFeedbackTabClick}
+          className={`flex-1 py-3 rounded-lg font-medium transition-all flex items-center justify-center space-x-2 ${
+            activeContentTab === 'feedback'
+              ? 'bg-white text-gray-900 shadow'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+          <span>Check</span>
+          {feedbackCount > 0 && (
+            <span className="bg-red-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+              {feedbackCount > 99 ? '99+' : feedbackCount}
+            </span>
+          )}
         </button>
       </div>
 
-      {/* Search Bar */}
-      <div className="flex items-center space-x-4">
-        <div className="relative flex-1 max-w-md">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            {React.createElement(FiSearch as React.ComponentType<{ className?: string }>, { className: "w-4 h-4 text-gray-400" })}
+      {/* Content based on active tab */}
+      {activeContentTab === 'feedback' ? (
+        <FeedbackManagement trainerId={activeTrainerId} />
+      ) : (
+        <>
+          {/* Search Bar */}
+          <div className="flex items-center space-x-4">
+            <div className="relative flex-1 max-w-md">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                {React.createElement(FiSearch as React.ComponentType<{ className?: string }>, { className: "w-4 h-4 text-gray-400" })}
+              </div>
+              <input
+                type="text"
+                placeholder={t('dashboard.searchPlaceholder')}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+              />
+            </div>
+            {searchTerm && (
+              <div className="text-sm text-gray-500">
+                {filteredUsers.length} di {currentTrainerUsers.length} utenti
+              </div>
+            )}
           </div>
-          <input
-            type="text"
-            placeholder={t('dashboard.searchPlaceholder')}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
-          />
-        </div>
-        {searchTerm && (
-          <div className="text-sm text-gray-500">
-            {filteredUsers.length} di {users.length} utenti
-          </div>
-        )}
-      </div>
 
       {/* Create User Modal */}
       {showCreateUser && (
@@ -372,6 +491,21 @@ const UserManagement: React.FC = () => {
                   onChange={(e) => setCreateUserForm(prev => ({ ...prev, username: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Personal Trainer</label>
+                <select
+                  value={createUserForm.trainerId}
+                  onChange={(e) => setCreateUserForm(prev => ({ ...prev, trainerId: Number(e.target.value) }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                >
+                  {trainers.map(trainer => (
+                    <option key={trainer.id} value={trainer.id}>
+                      {trainer.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="flex items-center space-x-2 py-3">
@@ -451,6 +585,21 @@ const UserManagement: React.FC = () => {
                   onChange={(e) => setUpdateUserForm(prev => ({ ...prev, email: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Personal Trainer</label>
+                <select
+                  value={updateUserForm.trainerId}
+                  onChange={(e) => setUpdateUserForm(prev => ({ ...prev, trainerId: Number(e.target.value) }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                >
+                  {trainers.map(trainer => (
+                    <option key={trainer.id} value={trainer.id}>
+                      {trainer.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="flex items-center space-x-2 py-3">
@@ -734,6 +883,8 @@ const UserManagement: React.FC = () => {
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 };

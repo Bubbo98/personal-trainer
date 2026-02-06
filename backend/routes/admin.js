@@ -23,6 +23,40 @@ const r2Client = new S3Client({
 router.use(authenticateToken);
 router.use(requireAdmin);
 
+// GET /api/admin/trainers
+// Get all active trainers
+router.get('/trainers', (req, res) => {
+    const db = createDatabase();
+
+    db.allCallback(
+        'SELECT id, name, email, created_at FROM trainers WHERE is_active = 1 ORDER BY id ASC',
+        [],
+        (err, trainers) => {
+            db.close();
+
+            if (err) {
+                console.error('Database error:', err.message);
+                return res.status(500).json({
+                    success: false,
+                    error: 'Database error'
+                });
+            }
+
+            res.json({
+                success: true,
+                data: {
+                    trainers: trainers.map(t => ({
+                        id: t.id,
+                        name: t.name,
+                        email: t.email,
+                        createdAt: t.created_at
+                    }))
+                }
+            });
+        }
+    );
+});
+
 // Generate login link token for users (no expiration)
 const generateLoginLinkToken = (user) => {
     return jwt.sign(
@@ -46,7 +80,8 @@ router.post('/users', async (req, res) => {
             password,
             firstName,
             lastName,
-            isPaying
+            isPaying,
+            trainerId
         } = req.body;
 
         if (!username) {
@@ -61,6 +96,9 @@ router.post('/users', async (req, res) => {
 
         // Default to paying user if not specified
         const isPayingValue = isPaying !== undefined ? (isPaying ? 1 : 0) : 1;
+
+        // Default to trainer 1 (Joshua) if not specified
+        const trainerIdValue = trainerId || 1;
 
         const db = createDatabase();
 
@@ -83,9 +121,9 @@ router.post('/users', async (req, res) => {
                     db.runCallback(`
                         UPDATE users
                         SET email = ?, password_hash = COALESCE(?, password_hash), first_name = ?, last_name = ?,
-                            is_paying = ?, is_active = 1, updated_at = CURRENT_TIMESTAMP
+                            is_paying = ?, trainer_id = ?, is_active = 1, updated_at = CURRENT_TIMESTAMP
                         WHERE id = ?
-                    `, [email || null, passwordHash, firstName, lastName, isPayingValue, existingUser.id], function(err) {
+                    `, [email || null, passwordHash, firstName, lastName, isPayingValue, trainerIdValue, existingUser.id], function(err) {
                         if (err) {
                             db.close();
                             // Handle UNIQUE constraint on email
@@ -117,9 +155,12 @@ router.post('/users', async (req, res) => {
                                     console.error('Error reactivating video permissions:', err.message);
                                 }
 
-                                // Get the reactivated user
+                                // Get the reactivated user with trainer info
                                 db.getCallback(
-                                    'SELECT id, username, email, first_name, last_name, is_paying, created_at FROM users WHERE id = ?',
+                                    `SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.is_paying, u.trainer_id, u.created_at, t.name as trainer_name
+                                     FROM users u
+                                     LEFT JOIN trainers t ON u.trainer_id = t.id
+                                     WHERE u.id = ?`,
                                     [existingUser.id],
                                     (err, user) => {
                                         db.close();
@@ -149,6 +190,8 @@ router.post('/users', async (req, res) => {
                                                     firstName: user.first_name,
                                                     lastName: user.last_name,
                                                     isPaying: Number(user.is_paying) === 1,
+                                                    trainerId: user.trainer_id,
+                                                    trainerName: user.trainer_name,
                                                     createdAt: user.created_at
                                                 },
                                                 loginToken,
@@ -164,9 +207,9 @@ router.post('/users', async (req, res) => {
                 } else {
                     // Create new user
                     db.runCallback(`
-                        INSERT INTO users (username, email, password_hash, first_name, last_name, is_paying)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                    `, [username, email || null, passwordHash, firstName, lastName, isPayingValue], function(err) {
+                        INSERT INTO users (username, email, password_hash, first_name, last_name, is_paying, trainer_id)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    `, [username, email || null, passwordHash, firstName, lastName, isPayingValue, trainerIdValue], function(err) {
                         if (err) {
                             db.close();
                             // Handle UNIQUE constraint errors for both SQLite and Turso
@@ -192,9 +235,12 @@ router.post('/users', async (req, res) => {
 
                         const userId = this.lastID;
 
-                        // Get the created user
+                        // Get the created user with trainer info
                         db.getCallback(
-                            'SELECT id, username, email, first_name, last_name, is_paying, created_at FROM users WHERE id = ?',
+                            `SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.is_paying, u.trainer_id, u.created_at, t.name as trainer_name
+                             FROM users u
+                             LEFT JOIN trainers t ON u.trainer_id = t.id
+                             WHERE u.id = ?`,
                             [userId],
                             (err, user) => {
                                 db.close();
@@ -224,6 +270,8 @@ router.post('/users', async (req, res) => {
                                             firstName: user.first_name,
                                             lastName: user.last_name,
                                             isPaying: Number(user.is_paying) === 1,
+                                            trainerId: user.trainer_id,
+                                            trainerName: user.trainer_name,
                                             createdAt: user.created_at
                                         },
                                         loginToken,
@@ -259,6 +307,8 @@ router.get('/users', (req, res) => {
             u.last_name,
             u.is_active,
             u.is_paying,
+            u.trainer_id,
+            t.name as trainer_name,
             u.created_at,
             u.last_login,
             COUNT(uvp.video_id) as video_count,
@@ -273,6 +323,7 @@ router.get('/users', (req, res) => {
             upf.duration_days as pdf_duration_days,
             upf.expiration_date as pdf_expiration_date
         FROM users u
+        LEFT JOIN trainers t ON u.trainer_id = t.id
         LEFT JOIN user_video_permissions uvp ON u.id = uvp.user_id AND uvp.is_active = 1
         LEFT JOIN user_pdf_files upf ON u.id = upf.user_id
         WHERE u.is_active = 1
@@ -306,6 +357,8 @@ router.get('/users', (req, res) => {
                     lastName: user.last_name,
                     isActive: Number(user.is_active) === 1,
                     isPaying: Number(user.is_paying) === 1,
+                    trainerId: user.trainer_id,
+                    trainerName: user.trainer_name,
                     createdAt: user.created_at,
                     lastLogin: user.last_login,
                     videoCount: user.video_count,
@@ -1236,7 +1289,7 @@ router.delete('/reviews/:id', (req, res) => {
 // Update user details
 router.put('/users/:id', async (req, res) => {
     const userId = req.params.id;
-    const { firstName, lastName, email, isPaying } = req.body;
+    const { firstName, lastName, email, isPaying, trainerId } = req.body;
 
     if (!userId || isNaN(userId)) {
         return res.status(400).json({
@@ -1266,6 +1319,10 @@ router.put('/users/:id', async (req, res) => {
     if (isPaying !== undefined) {
         updates.push('is_paying = ?');
         params.push(isPaying ? 1 : 0);
+    }
+    if (trainerId !== undefined) {
+        updates.push('trainer_id = ?');
+        params.push(trainerId);
     }
 
     if (updates.length === 0) {
@@ -1299,9 +1356,12 @@ router.put('/users/:id', async (req, res) => {
             });
         }
 
-        // Return updated user
+        // Return updated user with trainer info
         db.getCallback(
-            'SELECT id, username, email, first_name, last_name, is_paying, is_active, created_at, updated_at FROM users WHERE id = ?',
+            `SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.is_paying, u.is_active, u.trainer_id, u.created_at, u.updated_at, t.name as trainer_name
+             FROM users u
+             LEFT JOIN trainers t ON u.trainer_id = t.id
+             WHERE u.id = ?`,
             [userId],
             (err, user) => {
                 db.close();
@@ -1328,6 +1388,8 @@ router.put('/users/:id', async (req, res) => {
                             lastName: user.last_name,
                             isPaying: Number(user.is_paying) === 1,
                             isActive: Number(user.is_active) === 1,
+                            trainerId: user.trainer_id,
+                            trainerName: user.trainer_name,
                             createdAt: user.created_at,
                             updatedAt: user.updated_at
                         }

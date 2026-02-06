@@ -1,4 +1,11 @@
 // Admin Types
+export interface Trainer {
+  id: number;
+  name: string;
+  email?: string;
+  createdAt: string;
+}
+
 export interface User {
   id: number;
   username: string;
@@ -7,6 +14,8 @@ export interface User {
   lastName?: string;
   isActive: boolean;
   isPaying: boolean;
+  trainerId: number;
+  trainerName?: string;
   createdAt: string;
   lastLogin?: string;
   videoCount: number;
@@ -33,6 +42,7 @@ export interface CreateUserForm {
   firstName: string;
   lastName: string;
   isPaying: boolean;
+  trainerId: number;
 }
 
 export interface UpdateUserForm {
@@ -40,6 +50,7 @@ export interface UpdateUserForm {
   lastName?: string;
   email?: string;
   isPaying?: boolean;
+  trainerId?: number;
 }
 
 export interface CreateVideoForm {

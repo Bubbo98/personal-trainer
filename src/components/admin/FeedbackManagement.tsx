@@ -39,7 +39,11 @@ interface UserFeedbackGroup {
 
 type ViewMode = 'timeline' | 'user';
 
-const FeedbackManagement: React.FC = () => {
+interface FeedbackManagementProps {
+  trainerId?: number; // Optional: filter feedbacks by trainer
+}
+
+const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId }) => {
   const { t } = useTranslation();
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(false);
@@ -54,14 +58,17 @@ const FeedbackManagement: React.FC = () => {
   const loadFeedbacks = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await apiCall('/feedback/admin/all');
+      const endpoint = trainerId
+        ? `/feedback/admin/all?trainerId=${trainerId}`
+        : '/feedback/admin/all';
+      const response = await apiCall(endpoint);
       setFeedbacks(response.data.feedbacks);
     } catch (error) {
       console.error('Failed to load feedbacks:', error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [trainerId]);
 
   useEffect(() => {
     loadFeedbacks();

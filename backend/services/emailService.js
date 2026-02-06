@@ -34,11 +34,14 @@ const getStatusColor = (type, value) => {
 
 /**
  * Send email notification to admin when a user submits a new feedback
+ * @param {Object} feedback - The feedback object
+ * @param {string} trainerName - The name of the trainer (Joshua or Denise)
  */
-async function sendNewFeedbackNotification(feedback) {
+async function sendNewFeedbackNotification(feedback, trainerName = 'Joshua') {
   console.log('📧 sendNewFeedbackNotification called');
   console.log('📧 RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
   console.log('📧 ADMIN_EMAIL:', process.env.ADMIN_EMAIL);
+  console.log('📧 Trainer:', trainerName);
 
   if (!resend) {
     console.log('📧 Email service not configured (RESEND_API_KEY missing)');
@@ -68,7 +71,7 @@ async function sendNewFeedbackNotification(feedback) {
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: ADMIN_EMAIL,
-      subject: `📋 Nuovo Check da ${feedback.first_name} ${feedback.last_name}`,
+      subject: `📋 [PT ${trainerName}] Nuovo Check da ${feedback.first_name} ${feedback.last_name}`,
       html: `
         <!DOCTYPE html>
         <html>

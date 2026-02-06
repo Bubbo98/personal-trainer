@@ -8,12 +8,10 @@ import UserManagement from '../components/admin/UserManagement';
 import UserDetail from '../components/admin/UserDetail';
 import VideoManagement from '../components/admin/VideoManagement';
 import ReviewManagement from '../components/admin/ReviewManagement';
-import FeedbackManagement from '../components/admin/FeedbackManagement';
 import {
   FiUsers,
   FiVideo,
   FiLogOut,
-  FiMessageSquare,
   FiStar
 } from 'react-icons/fi';
 import { apiCall, STORAGE_KEY } from '../utils/adminUtils';
@@ -28,8 +26,7 @@ const AdminCMS: React.FC = () => {
     loading: true,
     error: null
   });
-  const [activeTab, setActiveTab] = useState<'users' | 'videos' | 'reviews' | 'feedback'>('users');
-  const [unreadFeedbackCount, setUnreadFeedbackCount] = useState(0);
+  const [activeTab, setActiveTab] = useState<'users' | 'videos' | 'reviews'>('users');
 
   // Check if we're on a user detail page
   const userDetailMatch = location.pathname.match(/^\/admin\/users\/(\d+)$/);
@@ -41,38 +38,6 @@ const AdminCMS: React.FC = () => {
       setActiveTab('users');
     }
   }, [location.pathname, isUserDetailPage]);
-
-  // Fetch unread feedback count
-  useEffect(() => {
-    const fetchUnreadCount = async () => {
-      if (!adminState.isAuthenticated) return;
-
-      try {
-        const response = await apiCall('/feedback/admin/unread-count');
-        if (response.success) {
-          setUnreadFeedbackCount(response.data.unreadCount);
-        }
-      } catch (error) {
-        console.error('Error fetching unread feedback count:', error);
-      }
-    };
-
-    fetchUnreadCount();
-  }, [adminState.isAuthenticated]);
-
-  // Mark feedback as seen when clicking on feedback tab
-  const handleFeedbackTabClick = async () => {
-    setActiveTab('feedback');
-
-    if (unreadFeedbackCount > 0) {
-      try {
-        await apiCall('/feedback/admin/mark-seen', { method: 'POST' });
-        setUnreadFeedbackCount(0);
-      } catch (error) {
-        console.error('Error marking feedback as seen:', error);
-      }
-    }
-  };
 
   // Check authentication on mount
   useEffect(() => {
@@ -207,30 +172,6 @@ const AdminCMS: React.FC = () => {
                 {React.createElement(FiStar as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
                 <span className="hidden sm:inline">{t('admin.reviews.tabTitle')}</span>
               </button>
-
-              <button
-                onClick={handleFeedbackTabClick}
-                className={`relative flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors flex-1 sm:flex-initial ${
-                  activeTab === 'feedback'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <div className="relative">
-                  {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-                  {/* Mobile: red dot on icon */}
-                  {unreadFeedbackCount > 0 && (
-                    <span className="sm:hidden absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
-                  )}
-                </div>
-                <span className="hidden sm:inline">Check</span>
-                {/* Desktop: badge with number */}
-                {unreadFeedbackCount > 0 && (
-                  <span className="hidden sm:flex bg-red-500 text-white text-xs rounded-full min-w-[18px] h-[18px] items-center justify-center px-1">
-                    {unreadFeedbackCount > 99 ? '99+' : unreadFeedbackCount}
-                  </span>
-                )}
-              </button>
             </div>
           )}
 
@@ -241,8 +182,6 @@ const AdminCMS: React.FC = () => {
             <UserManagement />
           ) : activeTab === 'videos' ? (
             <VideoManagement />
-          ) : activeTab === 'feedback' ? (
-            <FeedbackManagement />
           ) : (
             <ReviewManagement />
           )}

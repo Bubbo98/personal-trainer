@@ -1,6 +1,19 @@
 -- Personal Trainer App Database Schema
 -- SQLite Database for User Authentication and Video Access Control
 
+-- Trainers table - stores personal trainer information
+CREATE TABLE IF NOT EXISTS trainers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    email VARCHAR(255),
+    is_active BOOLEAN DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert default trainers (Joshua and Denise)
+INSERT OR IGNORE INTO trainers (name, email) VALUES ('Joshua', NULL);
+INSERT OR IGNORE INTO trainers (name, email) VALUES ('Denise', NULL);
+
 -- Users table - stores user credentials and info
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -11,11 +24,13 @@ CREATE TABLE IF NOT EXISTS users (
     last_name VARCHAR(100),
     is_active BOOLEAN DEFAULT 1,
     is_paying BOOLEAN DEFAULT 1,
+    trainer_id INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     last_login DATETIME,
     login_token VARCHAR(500),
-    token_expires_at DATETIME
+    token_expires_at DATETIME,
+    FOREIGN KEY (trainer_id) REFERENCES trainers(id)
 );
 
 -- Videos table - stores video metadata
@@ -131,3 +146,5 @@ CREATE INDEX IF NOT EXISTS idx_reviews_rating ON reviews(rating);
 CREATE INDEX IF NOT EXISTS idx_user_pdf_files_user ON user_pdf_files(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_feedbacks_user ON user_feedbacks(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_feedbacks_date ON user_feedbacks(feedback_date);
+CREATE INDEX IF NOT EXISTS idx_users_trainer ON users(trainer_id);
+CREATE INDEX IF NOT EXISTS idx_trainers_active ON trainers(is_active);

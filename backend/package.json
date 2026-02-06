@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "init-db": "node scripts/initDatabase.js"
+    "init-db": "node scripts/initDatabase.js",
+    "migrate-trainers": "node scripts/migrateTrainers.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.908.0",

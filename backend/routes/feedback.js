@@ -270,8 +270,14 @@ router.post('/', authenticateToken, (req, res) => {
 
       const feedbackId = this.lastID;
 
-      // Fetch the created feedback
-      const selectQuery = `SELECT * FROM user_feedbacks WHERE id = ?`;
+      // Fetch the created feedback with trainer info
+      const selectQuery = `
+        SELECT f.*, u.trainer_id, t.name as trainer_name
+        FROM user_feedbacks f
+        JOIN users u ON f.user_id = u.id
+        LEFT JOIN trainers t ON u.trainer_id = t.id
+        WHERE f.id = ?
+      `;
 
       db.getCallback(selectQuery, [feedbackId], async (err, feedback) => {
         db.close();
@@ -285,7 +291,8 @@ router.post('/', authenticateToken, (req, res) => {
         }
 
         // Send email notification to admin (async, don't wait for it)
-        sendNewFeedbackNotification(feedback).catch(err => {
+        // Include trainer name for email subject
+        sendNewFeedbackNotification(feedback, feedback.trainer_name || 'Joshua').catch(err => {
           console.error('Failed to send admin notification email:', err);
         });
 
@@ -300,9 +307,11 @@ router.post('/', authenticateToken, (req, res) => {
 });
 
 // GET /api/feedback/admin/unread-count - Get count of unread feedbacks (admin only)
+// Optional query param: trainerId - filter by trainer
 router.get('/admin/unread-count', authenticateToken, (req, res) => {
   const db = createDatabase();
   const adminUserId = req.user.userId;
+  const { trainerId } = req.query;
 
   // Check if user is admin
   const checkAdminQuery = `SELECT username FROM users WHERE id = ?`;
@@ -316,12 +325,14 @@ router.get('/admin/unread-count', authenticateToken, (req, res) => {
       });
     }
 
-    // Get the last_seen_at timestamp for this admin
+    // Get the last_seen_at timestamp for this admin and trainer combination
+    const seenKey = trainerId ? `${adminUserId}_${trainerId}` : `${adminUserId}`;
     const getLastSeenQuery = `
-      SELECT last_seen_at FROM admin_feedback_seen WHERE admin_user_id = ?
+      SELECT last_seen_at FROM admin_feedback_seen WHERE admin_user_id = ? OR admin_user_id = ?
+      ORDER BY last_seen_at DESC LIMIT 1
     `;
 
-    db.getCallback(getLastSeenQuery, [adminUserId], (err, seenRow) => {
+    db.getCallback(getLastSeenQuery, [seenKey, adminUserId], (err, seenRow) => {
       if (err) {
         db.close();
         console.error('Error fetching last seen:', err);
@@ -331,17 +342,36 @@ router.get('/admin/unread-count', authenticateToken, (req, res) => {
         });
       }
 
-      // If no record exists, all feedbacks are "unread"
-      // Otherwise, count feedbacks created after last_seen_at
+      // Build count query based on trainerId filter
       let countQuery;
-      let params;
+      let params = [];
 
-      if (!seenRow || !seenRow.last_seen_at) {
-        countQuery = `SELECT COUNT(*) as count FROM user_feedbacks`;
-        params = [];
+      if (trainerId) {
+        // Filter by trainer - join with users to get trainer_id
+        if (!seenRow || !seenRow.last_seen_at) {
+          countQuery = `
+            SELECT COUNT(*) as count FROM user_feedbacks f
+            JOIN users u ON f.user_id = u.id
+            WHERE (u.trainer_id = ? OR (u.trainer_id IS NULL AND ? = 1))
+          `;
+          params = [trainerId, trainerId];
+        } else {
+          countQuery = `
+            SELECT COUNT(*) as count FROM user_feedbacks f
+            JOIN users u ON f.user_id = u.id
+            WHERE f.created_at > ? AND (u.trainer_id = ? OR (u.trainer_id IS NULL AND ? = 1))
+          `;
+          params = [seenRow.last_seen_at, trainerId, trainerId];
+        }
       } else {
-        countQuery = `SELECT COUNT(*) as count FROM user_feedbacks WHERE created_at > ?`;
-        params = [seenRow.last_seen_at];
+        // No filter - count all
+        if (!seenRow || !seenRow.last_seen_at) {
+          countQuery = `SELECT COUNT(*) as count FROM user_feedbacks`;
+          params = [];
+        } else {
+          countQuery = `SELECT COUNT(*) as count FROM user_feedbacks WHERE created_at > ?`;
+          params = [seenRow.last_seen_at];
+        }
       }
 
       db.getCallback(countQuery, params, (err, countRow) => {
@@ -368,9 +398,11 @@ router.get('/admin/unread-count', authenticateToken, (req, res) => {
 });
 
 // POST /api/feedback/admin/mark-seen - Mark all feedbacks as seen (admin only)
+// Optional body param: trainerId - mark seen for specific trainer
 router.post('/admin/mark-seen', authenticateToken, (req, res) => {
   const db = createDatabase();
   const adminUserId = req.user.userId;
+  const { trainerId } = req.body;
 
   // Check if user is admin
   const checkAdminQuery = `SELECT username FROM users WHERE id = ?`;
@@ -384,6 +416,9 @@ router.post('/admin/mark-seen', authenticateToken, (req, res) => {
       });
     }
 
+    // Use trainer-specific key if trainerId provided
+    const seenKey = trainerId ? `${adminUserId}_${trainerId}` : `${adminUserId}`;
+
     // Insert or update the last_seen_at timestamp
     const upsertQuery = `
       INSERT INTO admin_feedback_seen (admin_user_id, last_seen_at)
@@ -392,7 +427,7 @@ router.post('/admin/mark-seen', authenticateToken, (req, res) => {
       DO UPDATE SET last_seen_at = CURRENT_TIMESTAMP
     `;
 
-    db.runCallback(upsertQuery, [adminUserId], function(err) {
+    db.runCallback(upsertQuery, [seenKey], function(err) {
       db.close();
 
       if (err) {
@@ -412,8 +447,10 @@ router.post('/admin/mark-seen', authenticateToken, (req, res) => {
 });
 
 // GET /api/feedback/admin/all - Get all feedbacks (admin only)
+// Optional query param: trainerId - filter by trainer
 router.get('/admin/all', authenticateToken, (req, res) => {
   const db = createDatabase();
+  const { trainerId } = req.query;
 
   // Check if user is admin
   const checkAdminQuery = `SELECT username FROM users WHERE id = ?`;
@@ -427,18 +464,40 @@ router.get('/admin/all', authenticateToken, (req, res) => {
       });
     }
 
-    const query = `
-      SELECT
-        f.*,
-        u.username,
-        u.first_name as user_first_name,
-        u.last_name as user_last_name
-      FROM user_feedbacks f
-      JOIN users u ON f.user_id = u.id
-      ORDER BY f.feedback_date DESC, f.created_at DESC
-    `;
+    let query;
+    let params = [];
 
-    db.allCallback(query, [], (err, feedbacks) => {
+    if (trainerId) {
+      // Filter by trainer
+      query = `
+        SELECT
+          f.*,
+          u.username,
+          u.first_name as user_first_name,
+          u.last_name as user_last_name,
+          u.trainer_id
+        FROM user_feedbacks f
+        JOIN users u ON f.user_id = u.id
+        WHERE u.trainer_id = ? OR (u.trainer_id IS NULL AND ? = 1)
+        ORDER BY f.feedback_date DESC, f.created_at DESC
+      `;
+      params = [trainerId, trainerId];
+    } else {
+      // No filter - get all
+      query = `
+        SELECT
+          f.*,
+          u.username,
+          u.first_name as user_first_name,
+          u.last_name as user_last_name,
+          u.trainer_id
+        FROM user_feedbacks f
+        JOIN users u ON f.user_id = u.id
+        ORDER BY f.feedback_date DESC, f.created_at DESC
+      `;
+    }
+
+    db.allCallback(query, params, (err, feedbacks) => {
       db.close();
 
       if (err) {
