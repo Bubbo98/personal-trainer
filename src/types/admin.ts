@@ -39,6 +39,7 @@ export interface Video {
 
 export interface CreateUserForm {
   username: string;
+  email: string;
   firstName: string;
   lastName: string;
   isPaying: boolean;

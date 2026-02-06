@@ -40,6 +40,7 @@ const UserManagement: React.FC = () => {
 
   const [createUserForm, setCreateUserForm] = useState<CreateUserForm>({
     username: '',
+    email: '',
     firstName: '',
     lastName: '',
     isPaying: true,
@@ -151,6 +152,7 @@ const UserManagement: React.FC = () => {
       setUsers(prev => [response.data.user, ...prev]);
       setCreateUserForm({
         username: '',
+        email: '',
         firstName: '',
         lastName: '',
         isPaying: true,
@@ -501,6 +503,17 @@ const UserManagement: React.FC = () => {
                   value={createUserForm.username}
                   onChange={(e) => setCreateUserForm(prev => ({ ...prev, username: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email (opzionale)</label>
+                <input
+                  type="email"
+                  value={createUserForm.email}
+                  onChange={(e) => setCreateUserForm(prev => ({ ...prev, email: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                  placeholder="email@esempio.com"
                 />
               </div>
 
