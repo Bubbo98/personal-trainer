@@ -15,11 +15,10 @@ CREATE TABLE IF NOT EXISTS trainers (
 INSERT OR IGNORE INTO trainers (name, email) VALUES ('Joshua', NULL);
 INSERT OR IGNORE INTO trainers (name, email) VALUES ('Denise', NULL);
 
--- Add trainer_id column to users table
--- Default to 1 (Joshua) for existing users
-ALTER TABLE users ADD COLUMN trainer_id INTEGER REFERENCES trainers(id) DEFAULT 1;
+-- Add trainer_id column to users table (SQLite doesn't allow REFERENCES + DEFAULT together)
+ALTER TABLE users ADD COLUMN trainer_id INTEGER;
 
--- Update all existing users to be assigned to Joshua (trainer_id = 1)
+-- Assign all existing users to Joshua (trainer_id = 1)
 UPDATE users SET trainer_id = 1 WHERE trainer_id IS NULL;
 
 -- Index for better query performance

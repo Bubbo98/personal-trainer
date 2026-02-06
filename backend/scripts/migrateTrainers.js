@@ -25,12 +25,26 @@ async function runMigration() {
             );
         });
 
-        if (tableExists) {
-            console.log('Trainers table already exists, skipping migration.');
+        // Check if trainer_id column already exists in users table
+        const columnExists = await new Promise((resolve, reject) => {
+            db.getCallback(
+                "SELECT 1 FROM pragma_table_info('users') WHERE name='trainer_id'",
+                [],
+                (err, row) => {
+                    if (err) reject(err);
+                    else resolve(!!row);
+                }
+            );
+        });
+
+        if (tableExists && columnExists) {
+            console.log('Migration already complete (trainers table and trainer_id column exist).');
             db.close();
             process.exit(0);
             return;
         }
+
+        console.log(`Trainers table exists: ${tableExists}, trainer_id column exists: ${columnExists}`);
 
         // Read migration SQL
         const migrationPath = path.join(__dirname, '../database/add-trainers.sql');
