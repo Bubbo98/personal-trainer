@@ -245,7 +245,7 @@ router.post('/', authenticateToken, (req, res) => {
       userId,
       firstName,
       lastName,
-      email,
+      email || '',
       energyLevel,
       workoutsCompleted,
       mealPlanFollowed,

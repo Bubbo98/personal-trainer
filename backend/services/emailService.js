@@ -102,9 +102,9 @@ async function sendNewFeedbackNotification(feedback, trainerName = 'Joshua') {
                   <h2 style="margin: 0; color: #1f2937; font-size: 18px; font-weight: 600;">
                     ${feedback.first_name} ${feedback.last_name}
                   </h2>
-                  <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">
+                  ${feedback.email ? `<p style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">
                     ${feedback.email}
-                  </p>
+                  </p>` : ''}
                 </div>
               </div>
             </div>
