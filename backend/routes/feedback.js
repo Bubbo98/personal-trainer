@@ -139,11 +139,11 @@ router.post('/', authenticateToken, (req, res) => {
   } = req.body;
 
   // Validation
-  if (!firstName || !lastName || !email) {
+  if (!firstName || !lastName) {
     db.close();
     return res.status(400).json({
       success: false,
-      message: 'Nome, cognome ed email sono obbligatori'
+      message: 'Nome e cognome sono obbligatori'
     });
   }
 
