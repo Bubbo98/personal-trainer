@@ -12,10 +12,25 @@ interface FeedbackFormData {
   sleepQuality: "excellent" | "good" | "fair" | "poor" | "";
   physicalDiscomfort: "none" | "minor" | "significant" | "";
   discomfortDetails: string;
+  muscularZones: string[];
+  muscularNotes: string;
+  articularZones: string[];
+  articularNotes: string;
   motivationLevel: "very_high" | "good" | "medium" | "low" | "";
   weeklyHighlights: string;
   currentWeight: string;
 }
+
+const MUSCULAR_ZONES = [
+  "Collo", "Spalla", "Petto", "Schiena alta", "Lombare", "Addome",
+  "Bicipite", "Tricipite", "Avambraccio", "Gluteo", "Quadricipite",
+  "Femorali", "Polpaccio", "Tibiale"
+];
+
+const ARTICULAR_ZONES = [
+  "Cervicale", "Spalla", "Gomito", "Polso", "Colonna",
+  "Anca", "Ginocchio", "Caviglia", "Piede"
+];
 
 interface FeedbackFormProps {
   onSubmit: (data: FeedbackFormData) => Promise<void>;
@@ -39,13 +54,17 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
     sleepQuality: initialData?.sleepQuality || "",
     physicalDiscomfort: initialData?.physicalDiscomfort || "",
     discomfortDetails: initialData?.discomfortDetails || "",
+    muscularZones: initialData?.muscularZones || [],
+    muscularNotes: initialData?.muscularNotes || "",
+    articularZones: initialData?.articularZones || [],
+    articularNotes: initialData?.articularNotes || "",
     motivationLevel: initialData?.motivationLevel || "",
     weeklyHighlights: initialData?.weeklyHighlights || "",
     currentWeight: initialData?.currentWeight || "",
   });
 
+  const [hasDiscomfort, setHasDiscomfort] = useState<boolean>(false);
   const [validationError, setValidationError] = useState<string | null>(null);
-
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,7 +77,6 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
       !formData.workoutsCompleted ||
       !formData.mealPlanFollowed ||
       !formData.sleepQuality ||
-      !formData.physicalDiscomfort ||
       !formData.motivationLevel ||
       !formData.currentWeight
     ) {
@@ -66,8 +84,15 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
       return;
     }
 
+    // Derive physicalDiscomfort from hasDiscomfort state and selected zones
+    const physicalDiscomfort = !hasDiscomfort
+      ? "none"
+      : (formData.muscularZones.length > 0 || formData.articularZones.length > 0)
+        ? "significant"
+        : "minor";
+
     try {
-      await onSubmit(formData);
+      await onSubmit({ ...formData, physicalDiscomfort });
       setSubmitted(true);
     } catch (error) {
       console.error("Error submitting check:", error);
@@ -286,58 +311,111 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
           <label className="block text-sm font-medium text-gray-900">
             5. {t("dashboard.feedback.checkin.physicalDiscomfort")}
           </label>
-          <div className="space-y-2">
-            {[
-              {
-                value: "none",
-                label: t("dashboard.feedback.checkin.discomfortOptions.none"),
-              },
-              {
-                value: "minor",
-                label: t("dashboard.feedback.checkin.discomfortOptions.minor"),
-              },
-              {
-                value: "significant",
-                label: t(
-                  "dashboard.feedback.checkin.discomfortOptions.significant",
-                ),
-              },
-            ].map((option) => (
-              <label
-                key={option.value}
-                className="flex items-center cursor-pointer"
-              >
-                <input
-                  type="radio"
-                  name="physicalDiscomfort"
-                  value={option.value}
-                  checked={formData.physicalDiscomfort === option.value}
-                  onChange={(e) => {
-                    handleChange("physicalDiscomfort", e.target.value);
-                    if (e.target.value === "none") {
-                      handleChange("discomfortDetails", "");
-                    }
-                  }}
-                  className="w-4 h-4 text-gray-800 border-gray-300 focus:ring-gray-800"
-                />
-                <span className="ml-2 text-gray-700">{option.label}</span>
-              </label>
-            ))}
+          <div className="flex flex-wrap gap-3">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="radio"
+                name="hasDiscomfort"
+                checked={!hasDiscomfort}
+                onChange={() => {
+                  setHasDiscomfort(false);
+                  setFormData(prev => ({ ...prev, muscularZones: [], muscularNotes: "", articularZones: [], articularNotes: "" }));
+                }}
+                className="w-4 h-4 text-gray-800 border-gray-300 focus:ring-gray-800"
+              />
+              <span className="ml-2 text-gray-700">{t("dashboard.feedback.checkin.discomfortNo")}</span>
+            </label>
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="radio"
+                name="hasDiscomfort"
+                checked={hasDiscomfort}
+                onChange={() => setHasDiscomfort(true)}
+                className="w-4 h-4 text-gray-800 border-gray-300 focus:ring-gray-800"
+              />
+              <span className="ml-2 text-gray-700">{t("dashboard.feedback.checkin.discomfortYes")}</span>
+            </label>
           </div>
 
-          {/* Discomfort Details Textarea - shown when minor or significant */}
-          {(formData.physicalDiscomfort === "minor" || formData.physicalDiscomfort === "significant") && (
-            <div className="mt-3 pl-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t("dashboard.feedback.checkin.discomfortDetailsLabel")}
-              </label>
-              <textarea
-                value={formData.discomfortDetails}
-                onChange={(e) => handleChange("discomfortDetails", e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
-                placeholder={t("dashboard.feedback.checkin.discomfortDetailsPlaceholder")}
-              />
+          {hasDiscomfort && (
+            <div className="mt-3 space-y-5 pl-2">
+              {/* Muscular section */}
+              <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">💪</span>
+                  <span className="text-sm font-semibold text-gray-800">{t("dashboard.feedback.checkin.muscularTitle")}</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {MUSCULAR_ZONES.map((zone) => {
+                    const selected = formData.muscularZones.includes(zone);
+                    return (
+                      <button
+                        key={zone}
+                        type="button"
+                        onClick={() => setFormData(prev => ({
+                          ...prev,
+                          muscularZones: selected
+                            ? prev.muscularZones.filter(z => z !== zone)
+                            : [...prev.muscularZones, zone]
+                        }))}
+                        className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                          selected
+                            ? "bg-gray-900 text-white border-gray-900"
+                            : "bg-white text-gray-600 border-gray-300 hover:border-gray-500"
+                        }`}
+                      >
+                        {t(`dashboard.feedback.checkin.muscularZones.${zone}`, zone)}
+                      </button>
+                    );
+                  })}
+                </div>
+                <textarea
+                  value={formData.muscularNotes}
+                  onChange={(e) => setFormData(prev => ({ ...prev, muscularNotes: e.target.value }))}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+                  placeholder={t("dashboard.feedback.checkin.discomfortNotesPlaceholder")}
+                />
+              </div>
+
+              {/* Articular section */}
+              <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🦴</span>
+                  <span className="text-sm font-semibold text-gray-800">{t("dashboard.feedback.checkin.articularTitle")}</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {ARTICULAR_ZONES.map((zone) => {
+                    const selected = formData.articularZones.includes(zone);
+                    return (
+                      <button
+                        key={zone}
+                        type="button"
+                        onClick={() => setFormData(prev => ({
+                          ...prev,
+                          articularZones: selected
+                            ? prev.articularZones.filter(z => z !== zone)
+                            : [...prev.articularZones, zone]
+                        }))}
+                        className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                          selected
+                            ? "bg-gray-900 text-white border-gray-900"
+                            : "bg-white text-gray-600 border-gray-300 hover:border-gray-500"
+                        }`}
+                      >
+                        {t(`dashboard.feedback.checkin.articularZones.${zone}`, zone)}
+                      </button>
+                    );
+                  })}
+                </div>
+                <textarea
+                  value={formData.articularNotes}
+                  onChange={(e) => setFormData(prev => ({ ...prev, articularNotes: e.target.value }))}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+                  placeholder={t("dashboard.feedback.checkin.discomfortNotesPlaceholder")}
+                />
+              </div>
             </div>
           )}
         </div>

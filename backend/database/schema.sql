@@ -123,6 +123,10 @@ CREATE TABLE IF NOT EXISTS user_feedbacks (
     motivation_level VARCHAR(20) NOT NULL CHECK (motivation_level IN ('very_high', 'good', 'medium', 'low')),
     weekly_highlights TEXT,
     current_weight DECIMAL(5,2),
+    muscular_zones TEXT,     -- JSON array e.g. '["Spalla","Schiena alta"]'
+    muscular_notes TEXT,
+    articular_zones TEXT,    -- JSON array e.g. '["Ginocchio","Anca"]'
+    articular_notes TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     pdf_change_date DATETIME, -- Date when the PDF was changed that triggered this feedback
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

@@ -133,6 +133,10 @@ router.post('/', authenticateToken, (req, res) => {
     sleepQuality,
     physicalDiscomfort,
     discomfortDetails,
+    muscularZones,
+    muscularNotes,
+    articularZones,
+    articularNotes,
     motivationLevel,
     weeklyHighlights,
     currentWeight
@@ -233,12 +237,20 @@ router.post('/', authenticateToken, (req, res) => {
         user_id, first_name, last_name, email, feedback_date,
         energy_level, workouts_completed, meal_plan_followed,
         sleep_quality, physical_discomfort, discomfort_details, motivation_level,
-        weekly_highlights, current_weight, pdf_change_date
-      ) VALUES (?, ?, ?, ?, DATE('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        weekly_highlights, current_weight, muscular_zones, muscular_notes,
+        articular_zones, articular_notes, pdf_change_date
+      ) VALUES (?, ?, ?, ?, DATE('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const weightValue = currentWeight !== undefined && currentWeight !== null && currentWeight !== ''
       ? parseFloat(currentWeight)
+      : null;
+
+    const muscularZonesValue = Array.isArray(muscularZones) && muscularZones.length > 0
+      ? JSON.stringify(muscularZones)
+      : null;
+    const articularZonesValue = Array.isArray(articularZones) && articularZones.length > 0
+      ? JSON.stringify(articularZones)
       : null;
 
     const params = [
@@ -255,6 +267,10 @@ router.post('/', authenticateToken, (req, res) => {
       motivationLevel,
       weeklyHighlights || null,
       weightValue,
+      muscularZonesValue,
+      muscularNotes || null,
+      articularZonesValue,
+      articularNotes || null,
       pdfChangeDate
     ];
 

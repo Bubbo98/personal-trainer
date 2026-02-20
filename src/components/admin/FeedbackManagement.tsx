@@ -19,6 +19,10 @@ interface Feedback {
   sleep_quality: string;
   physical_discomfort: string;
   discomfort_details: string | null;
+  muscular_zones: string | null;
+  muscular_notes: string | null;
+  articular_zones: string | null;
+  articular_notes: string | null;
   motivation_level: string;
   weekly_highlights: string | null;
   current_weight: number | null;
@@ -760,6 +764,41 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                       {selectedFeedback.discomfort_details}
                     </p>
                   )}
+                  {selectedFeedback.physical_discomfort !== 'none' && (() => {
+                    const muscZones: string[] = selectedFeedback.muscular_zones ? (() => { try { return JSON.parse(selectedFeedback.muscular_zones); } catch { return []; } })() : [];
+                    const artZones: string[] = selectedFeedback.articular_zones ? (() => { try { return JSON.parse(selectedFeedback.articular_zones); } catch { return []; } })() : [];
+                    if (muscZones.length === 0 && artZones.length === 0) return null;
+                    return (
+                      <div className="mt-3 space-y-2">
+                        {muscZones.length > 0 && (
+                          <div>
+                            <span className="text-xs font-semibold text-gray-700">💪 Muscolari: </span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {muscZones.map((z: string) => (
+                                <span key={z} className="px-2 py-0.5 bg-orange-100 text-orange-800 rounded-full text-xs">{z}</span>
+                              ))}
+                            </div>
+                            {selectedFeedback.muscular_notes && (
+                              <p className="text-xs text-gray-600 mt-1 italic">📝 {selectedFeedback.muscular_notes}</p>
+                            )}
+                          </div>
+                        )}
+                        {artZones.length > 0 && (
+                          <div>
+                            <span className="text-xs font-semibold text-gray-700">🦴 Articolari: </span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {artZones.map((z: string) => (
+                                <span key={z} className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs">{z}</span>
+                              ))}
+                            </div>
+                            {selectedFeedback.articular_notes && (
+                              <p className="text-xs text-gray-600 mt-1 italic">📝 {selectedFeedback.articular_notes}</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="text-sm text-gray-600 mb-1">Motivazione</div>

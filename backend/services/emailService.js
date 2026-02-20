@@ -117,6 +117,28 @@ async function sendNewFeedbackNotification(feedback, trainerName = 'Joshua') {
                 ${statusRow('🥗', 'Alimentazione', labels.mealPlan[feedback.meal_plan_followed] || feedback.meal_plan_followed, 'mealPlan', feedback.meal_plan_followed)}
                 ${statusRow('😴', 'Sonno', labels.sleep[feedback.sleep_quality] || feedback.sleep_quality, 'sleep', feedback.sleep_quality)}
                 ${statusRow('💪', 'Dolori/Fastidi', labels.discomfort[feedback.physical_discomfort] || feedback.physical_discomfort, 'discomfort', feedback.physical_discomfort)}
+                ${(() => {
+                  const muscZones = feedback.muscular_zones ? (() => { try { return JSON.parse(feedback.muscular_zones); } catch(e) { return []; } })() : [];
+                  const artZones = feedback.articular_zones ? (() => { try { return JSON.parse(feedback.articular_zones); } catch(e) { return []; } })() : [];
+                  if (muscZones.length === 0 && artZones.length === 0) return '';
+                  return `
+                <tr>
+                  <td colspan="2" style="padding: 0 16px 12px 16px;">
+                    ${muscZones.length > 0 ? `
+                    <div style="margin-bottom: 8px;">
+                      <span style="font-size: 13px; font-weight: 600; color: #374151;">💪 Muscolari:</span>
+                      <span style="font-size: 13px; color: #6b7280; margin-left: 6px;">${muscZones.join(', ')}</span>
+                      ${feedback.muscular_notes ? `<div style="font-size: 12px; color: #9ca3af; margin-top: 2px; padding-left: 8px;">📝 ${feedback.muscular_notes}</div>` : ''}
+                    </div>` : ''}
+                    ${artZones.length > 0 ? `
+                    <div>
+                      <span style="font-size: 13px; font-weight: 600; color: #374151;">🦴 Articolari:</span>
+                      <span style="font-size: 13px; color: #6b7280; margin-left: 6px;">${artZones.join(', ')}</span>
+                      ${feedback.articular_notes ? `<div style="font-size: 12px; color: #9ca3af; margin-top: 2px; padding-left: 8px;">📝 ${feedback.articular_notes}</div>` : ''}
+                    </div>` : ''}
+                  </td>
+                </tr>`;
+                })()}
                 ${statusRow('🔥', 'Motivazione', labels.motivation[feedback.motivation_level] || feedback.motivation_level, 'motivation', feedback.motivation_level)}
                 ${feedback.current_weight ? `
                 <tr>
