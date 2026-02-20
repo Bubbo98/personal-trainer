@@ -68,16 +68,12 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
         : '/feedback/admin/all';
       const response = await apiCall(endpoint);
       setFeedbacks(response.data.feedbacks);
-      // Notify parent that feedbacks have been seen
-      if (onFeedbacksSeen) {
-        onFeedbacksSeen();
-      }
     } catch (error) {
       console.error('Failed to load feedbacks:', error);
     } finally {
       setLoading(false);
     }
-  }, [trainerId, onFeedbacksSeen]);
+  }, [trainerId]);
 
   useEffect(() => {
     loadFeedbacks();
@@ -424,7 +420,10 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                       <tr
                         key={feedback.id}
                         className={`hover:bg-gray-50 cursor-pointer transition-colors ${feedback.physical_discomfort === 'significant' ? 'bg-red-50' : ''}`}
-                        onClick={() => setSelectedFeedback(feedback)}
+                        onClick={() => {
+                          setSelectedFeedback(feedback);
+                          if (onFeedbacksSeen) onFeedbacksSeen();
+                        }}
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {formatDate(feedback.feedback_date)}
@@ -625,6 +624,7 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedFeedback(feedback);
+                            if (onFeedbacksSeen) onFeedbacksSeen();
                           }}
                         >
                           <div className="flex items-start justify-between">
