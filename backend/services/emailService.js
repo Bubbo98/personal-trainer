@@ -197,7 +197,7 @@ async function sendNewFeedbackNotification(feedback, trainerName = 'Joshua') {
 /**
  * Send check reminder email to a user
  */
-async function sendCheckInReminder(userEmail, userName) {
+async function sendCheckInReminder(userEmail, userName, trainerName = 'Joshua') {
   if (!resend) {
     console.log('📧 Email service not configured (RESEND_API_KEY missing)');
     return { success: false, error: 'Email service not configured' };
@@ -271,7 +271,7 @@ async function sendCheckInReminder(userEmail, userName) {
             <!-- Footer -->
             <div style="background: #f9fafb; border-radius: 0 0 16px 16px; padding: 24px; text-align: center; border: 1px solid #e5e7eb; border-top: none;">
               <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 14px;">
-                <strong>Joshua Maurizio</strong> - Personal Trainer
+                <strong>${trainerName}</strong> - Personal Trainer
               </p>
               <p style="margin: 0; color: #9ca3af; font-size: 12px;">
                 EserciziFacili.com

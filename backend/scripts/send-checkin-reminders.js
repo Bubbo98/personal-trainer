@@ -26,6 +26,7 @@ async function findUsersNeedingReminder() {
       u.id as user_id,
       u.first_name,
       u.username,
+      COALESCE(t.name, 'Joshua') as trainer_name,
       upf.updated_at as pdf_updated_at,
       (
         SELECT uf.email
@@ -41,6 +42,7 @@ async function findUsersNeedingReminder() {
       ) as last_feedback_at
     FROM users u
     JOIN user_pdf_files upf ON upf.user_id = u.id
+    LEFT JOIN trainers t ON u.trainer_id = t.id
     WHERE
       upf.updated_at <= ?
       AND u.username NOT LIKE '%admin%'
@@ -65,6 +67,7 @@ async function findUsersNeedingReminder() {
         userId: row.user_id,
         firstName: row.first_name || row.username,
         email: row.last_known_email,
+        trainerName: row.trainer_name,
         reason: 'first_feedback_due'
       });
     } else if (new Date(lastFeedbackAt) <= new Date(twoWeeksAgo)) {
@@ -73,6 +76,7 @@ async function findUsersNeedingReminder() {
         userId: row.user_id,
         firstName: row.first_name || row.username,
         email: row.last_known_email,
+        trainerName: row.trainer_name,
         reason: 'biweekly_reminder'
       });
     } else {
@@ -106,7 +110,7 @@ async function run() {
     for (const user of users) {
       console.log(`📧 Sending reminder to ${user.firstName} (${user.email}) - reason: ${user.reason}`);
 
-      const result = await sendCheckInReminder(user.email, user.firstName);
+      const result = await sendCheckInReminder(user.email, user.firstName, user.trainerName);
 
       if (result.success) {
         sent++;

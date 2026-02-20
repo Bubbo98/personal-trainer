@@ -61,3 +61,4 @@ backend/pdfs/
 # OS files
 Thumbs.db
 .vercel
+.env*.local

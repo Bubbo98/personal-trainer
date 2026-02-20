@@ -128,6 +128,12 @@ CREATE TABLE IF NOT EXISTS user_feedbacks (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- Admin Feedback Seen - tracks when admin last viewed feedbacks per trainer
+CREATE TABLE IF NOT EXISTS admin_feedback_seen (
+    admin_user_id VARCHAR(255) PRIMARY KEY,
+    last_seen_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -148,3 +154,4 @@ CREATE INDEX IF NOT EXISTS idx_user_feedbacks_user ON user_feedbacks(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_feedbacks_date ON user_feedbacks(feedback_date);
 CREATE INDEX IF NOT EXISTS idx_users_trainer ON users(trainer_id);
 CREATE INDEX IF NOT EXISTS idx_trainers_active ON trainers(is_active);
+CREATE INDEX IF NOT EXISTS idx_admin_feedback_seen ON admin_feedback_seen(last_seen_at);

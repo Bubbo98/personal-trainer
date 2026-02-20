@@ -103,12 +103,22 @@ async function initTursoDatabase() {
         `);
         console.log('✅ Access logs table created');
 
+        // Create admin_feedback_seen table
+        await client.execute(`
+            CREATE TABLE IF NOT EXISTS admin_feedback_seen (
+                admin_user_id VARCHAR(255) PRIMARY KEY,
+                last_seen_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        console.log('✅ Admin feedback seen table created');
+
         // Create indexes
         await client.execute('CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)');
         await client.execute('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)');
         await client.execute('CREATE INDEX IF NOT EXISTS idx_reviews_user ON reviews(user_id)');
         await client.execute('CREATE INDEX IF NOT EXISTS idx_reviews_approved ON reviews(is_approved)');
         await client.execute('CREATE INDEX IF NOT EXISTS idx_reviews_featured ON reviews(is_featured)');
+        await client.execute('CREATE INDEX IF NOT EXISTS idx_admin_feedback_seen ON admin_feedback_seen(last_seen_at)');
         console.log('✅ Indexes created');
 
         // Create admin user
