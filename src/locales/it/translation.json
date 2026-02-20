@@ -347,7 +347,7 @@
     "workouts": "🏋️ Allenamenti: 9:00 - 17:00",
     "consultations": "💬 Consulenze: 17:00 - 19:00",
     "allRightsReserved": "Tutti i diritti riservati",
-    "copyright": "© {year} Joshua Maurizio - Personal Trainer",
+    "copyright": "© {{year}} Joshua Maurizio - Personal Trainer",
     "privacyPolicy": "Privacy Policy",
     "termsOfService": "Termini di Servizio",
     "cookiePolicy": "Cookie Policy",
