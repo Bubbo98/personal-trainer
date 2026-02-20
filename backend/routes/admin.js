@@ -1343,9 +1343,23 @@ router.put('/users/:id', async (req, res) => {
         if (err) {
             db.close();
             console.error('Database error:', err.message);
+
+            const isUniqueConstraint =
+                err.code === 'SQLITE_CONSTRAINT_UNIQUE' ||
+                err.code === 'SQLITE_CONSTRAINT' ||
+                (err.message && err.message.toLowerCase().includes('unique')) ||
+                (err.message && err.message.toLowerCase().includes('constraint'));
+
+            if (isUniqueConstraint) {
+                return res.status(409).json({
+                    success: false,
+                    error: 'Email già in uso da un altro utente'
+                });
+            }
+
             return res.status(500).json({
                 success: false,
-                error: 'Database error'
+                error: 'Database error: ' + (err.message || 'Unknown error')
             });
         }
 
