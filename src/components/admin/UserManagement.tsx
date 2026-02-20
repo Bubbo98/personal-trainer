@@ -318,20 +318,9 @@ const UserManagement: React.FC = () => {
   const nonPayingCount = currentTrainerUsers.filter(u => !u.isPaying).length;
   const feedbackCount = unreadFeedbackCounts[activeTrainerId] || 0;
 
-  // Handle feedback tab click - mark as seen
-  const handleFeedbackTabClick = async () => {
+  // Handle feedback tab click - just switch tab, badge updates on individual feedback open
+  const handleFeedbackTabClick = () => {
     setActiveContentTab('feedback');
-    if (feedbackCount > 0) {
-      try {
-        await apiCall('/feedback/admin/mark-seen', {
-          method: 'POST',
-          body: JSON.stringify({ trainerId: activeTrainerId })
-        });
-        setUnreadFeedbackCounts(prev => ({ ...prev, [activeTrainerId]: 0 }));
-      } catch (error) {
-        console.error('Error marking feedback as seen:', error);
-      }
-    }
   };
 
   if (loading && users.length === 0) {
@@ -425,13 +414,13 @@ const UserManagement: React.FC = () => {
         <FeedbackManagement
           trainerId={activeTrainerId}
           onFeedbacksSeen={() => {
-            // Mark feedbacks as seen and reset badge count
-            apiCall('/feedback/admin/mark-seen', {
-              method: 'POST',
-              body: JSON.stringify({ trainerId: activeTrainerId })
-            }).then(() => {
-              setUnreadFeedbackCounts(prev => ({ ...prev, [activeTrainerId]: 0 }));
-            }).catch(err => console.error('Error marking feedback as seen:', err));
+            // Re-fetch unread count after a feedback is opened
+            apiCall(`/feedback/admin/unread-count?trainerId=${activeTrainerId}`)
+              .then(res => setUnreadFeedbackCounts(prev => ({
+                ...prev,
+                [activeTrainerId]: res.data.unreadCount || 0
+              })))
+              .catch(err => console.error('Error refreshing feedback count:', err));
           }}
         />
       ) : (

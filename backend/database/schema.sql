@@ -129,6 +129,8 @@ CREATE TABLE IF NOT EXISTS user_feedbacks (
     articular_notes TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     pdf_change_date DATETIME, -- Date when the PDF was changed that triggered this feedback
+    trainer_seen_at DATETIME, -- NULL = not yet seen by the PT
+    user_dismissed_trainer_seen INTEGER DEFAULT 0, -- 0 = user hasn't dismissed the "PT seen" notification
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 

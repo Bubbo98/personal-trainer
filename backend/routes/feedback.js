@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { createDatabase } = require('../utils/database');
 const { authenticateToken } = require('../middleware/auth');
-const { sendNewFeedbackNotification } = require('../services/emailService');
+const { sendNewFeedbackNotification, sendTrainerSeenFeedbackNotification } = require('../services/emailService');
 
 // GET /api/feedback/my-feedbacks - Get all feedbacks for the authenticated user
 router.get('/my-feedbacks', authenticateToken, (req, res) => {
@@ -324,6 +324,7 @@ router.post('/', authenticateToken, (req, res) => {
 
 // GET /api/feedback/admin/unread-count - Get count of unread feedbacks (admin only)
 // Optional query param: trainerId - filter by trainer
+// Uses trainer_seen_at per-feedback tracking instead of bulk timestamp
 router.get('/admin/unread-count', authenticateToken, (req, res) => {
   const db = createDatabase();
   const adminUserId = req.user.userId;
@@ -341,73 +342,38 @@ router.get('/admin/unread-count', authenticateToken, (req, res) => {
       });
     }
 
-    // Get the last_seen_at timestamp for this admin and trainer combination
-    const seenKey = trainerId ? `${adminUserId}_${trainerId}` : `${adminUserId}`;
-    const getLastSeenQuery = `
-      SELECT last_seen_at FROM admin_feedback_seen WHERE admin_user_id = ? OR admin_user_id = ?
-      ORDER BY last_seen_at DESC LIMIT 1
-    `;
+    let countQuery;
+    let params = [];
 
-    db.getCallback(getLastSeenQuery, [seenKey, adminUserId], (err, seenRow) => {
+    if (trainerId) {
+      countQuery = `
+        SELECT COUNT(*) as count FROM user_feedbacks f
+        JOIN users u ON f.user_id = u.id
+        WHERE f.trainer_seen_at IS NULL
+          AND (u.trainer_id = ? OR (u.trainer_id IS NULL AND ? = 1))
+      `;
+      params = [trainerId, trainerId];
+    } else {
+      countQuery = `SELECT COUNT(*) as count FROM user_feedbacks WHERE trainer_seen_at IS NULL`;
+      params = [];
+    }
+
+    db.getCallback(countQuery, params, (err, countRow) => {
+      db.close();
+
       if (err) {
-        db.close();
-        console.error('Error fetching last seen:', err);
+        console.error('Error counting unread feedbacks:', err);
         return res.status(500).json({
           success: false,
-          message: 'Failed to check feedback status'
+          message: 'Failed to count unread feedbacks'
         });
       }
 
-      // Build count query based on trainerId filter
-      let countQuery;
-      let params = [];
-
-      if (trainerId) {
-        // Filter by trainer - join with users to get trainer_id
-        if (!seenRow || !seenRow.last_seen_at) {
-          countQuery = `
-            SELECT COUNT(*) as count FROM user_feedbacks f
-            JOIN users u ON f.user_id = u.id
-            WHERE (u.trainer_id = ? OR (u.trainer_id IS NULL AND ? = 1))
-          `;
-          params = [trainerId, trainerId];
-        } else {
-          countQuery = `
-            SELECT COUNT(*) as count FROM user_feedbacks f
-            JOIN users u ON f.user_id = u.id
-            WHERE f.created_at > ? AND (u.trainer_id = ? OR (u.trainer_id IS NULL AND ? = 1))
-          `;
-          params = [seenRow.last_seen_at, trainerId, trainerId];
+      res.json({
+        success: true,
+        data: {
+          unreadCount: countRow?.count || 0
         }
-      } else {
-        // No filter - count all
-        if (!seenRow || !seenRow.last_seen_at) {
-          countQuery = `SELECT COUNT(*) as count FROM user_feedbacks`;
-          params = [];
-        } else {
-          countQuery = `SELECT COUNT(*) as count FROM user_feedbacks WHERE created_at > ?`;
-          params = [seenRow.last_seen_at];
-        }
-      }
-
-      db.getCallback(countQuery, params, (err, countRow) => {
-        db.close();
-
-        if (err) {
-          console.error('Error counting unread feedbacks:', err);
-          return res.status(500).json({
-            success: false,
-            message: 'Failed to count unread feedbacks'
-          });
-        }
-
-        res.json({
-          success: true,
-          data: {
-            unreadCount: countRow?.count || 0,
-            lastSeenAt: seenRow?.last_seen_at || null
-          }
-        });
       });
     });
   });
@@ -460,6 +426,142 @@ router.post('/admin/mark-seen', authenticateToken, (req, res) => {
       });
     });
   });
+});
+
+// POST /api/feedback/admin/:feedbackId/mark-seen - Mark a single feedback as seen by PT
+router.post('/admin/:feedbackId/mark-seen', authenticateToken, (req, res) => {
+  const db = createDatabase();
+  const adminUserId = req.user.userId;
+  const { feedbackId } = req.params;
+
+  const checkAdminQuery = `SELECT username FROM users WHERE id = ?`;
+
+  db.getCallback(checkAdminQuery, [adminUserId], (err, user) => {
+    if (err || !user || !user.username.includes('admin')) {
+      db.close();
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized - Admin access required'
+      });
+    }
+
+    // Check current state of the feedback
+    const getFeedbackQuery = `
+      SELECT f.id, f.trainer_seen_at, f.user_id, f.feedback_date,
+             u.email as user_email, u.first_name as user_first_name,
+             u.trainer_id, t.name as trainer_name
+      FROM user_feedbacks f
+      JOIN users u ON f.user_id = u.id
+      LEFT JOIN trainers t ON u.trainer_id = t.id
+      WHERE f.id = ?
+    `;
+
+    db.getCallback(getFeedbackQuery, [feedbackId], (err, feedback) => {
+      if (err || !feedback) {
+        db.close();
+        return res.status(404).json({
+          success: false,
+          message: 'Feedback not found'
+        });
+      }
+
+      // Already seen — skip update and email
+      if (feedback.trainer_seen_at) {
+        db.close();
+        return res.json({ success: true });
+      }
+
+      // Mark as seen
+      db.runCallback(
+        `UPDATE user_feedbacks SET trainer_seen_at = CURRENT_TIMESTAMP WHERE id = ? AND trainer_seen_at IS NULL`,
+        [feedbackId],
+        function(err) {
+          db.close();
+
+          if (err) {
+            console.error('Error marking feedback as seen:', err);
+            return res.status(500).json({
+              success: false,
+              message: 'Failed to mark feedback as seen'
+            });
+          }
+
+          // Send email notification if user has an email
+          if (feedback.user_email) {
+            const trainerName = feedback.trainer_name || 'Il tuo PT';
+            sendTrainerSeenFeedbackNotification(
+              feedback.user_email,
+              feedback.user_first_name || 'Utente',
+              trainerName,
+              feedback.feedback_date
+            ).catch(emailErr => {
+              console.error('Failed to send trainer-seen email:', emailErr);
+            });
+          }
+
+          res.json({ success: true });
+        }
+      );
+    });
+  });
+});
+
+// GET /api/feedback/trainer-seen-notification - Get unseen "PT read your check" notifications (user auth)
+router.get('/trainer-seen-notification', authenticateToken, (req, res) => {
+  const db = createDatabase();
+  const userId = req.user.userId;
+
+  const query = `
+    SELECT id, feedback_date, trainer_seen_at
+    FROM user_feedbacks
+    WHERE user_id = ?
+      AND trainer_seen_at IS NOT NULL
+      AND user_dismissed_trainer_seen = 0
+    ORDER BY trainer_seen_at DESC
+  `;
+
+  db.allCallback(query, [userId], (err, notifications) => {
+    db.close();
+
+    if (err) {
+      console.error('Error fetching trainer-seen notifications:', err);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch notifications'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: { notifications: notifications || [] }
+    });
+  });
+});
+
+// POST /api/feedback/dismiss-trainer-seen - Dismiss all "PT seen" notifications for user
+router.post('/dismiss-trainer-seen', authenticateToken, (req, res) => {
+  const db = createDatabase();
+  const userId = req.user.userId;
+
+  db.runCallback(
+    `UPDATE user_feedbacks
+     SET user_dismissed_trainer_seen = 1
+     WHERE user_id = ? AND trainer_seen_at IS NOT NULL AND user_dismissed_trainer_seen = 0`,
+    [userId],
+    function(err) {
+      db.close();
+
+      if (err) {
+        console.error('Error dismissing trainer-seen notifications:', err);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to dismiss notifications'
+        });
+      }
+
+      res.json({ success: true });
+    }
+  );
 });
 
 // GET /api/feedback/admin/all - Get all feedbacks (admin only)

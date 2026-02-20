@@ -28,6 +28,7 @@ interface Feedback {
   current_weight: number | null;
   created_at: string;
   pdf_change_date: string | null;
+  trainer_seen_at: string | null;
 }
 
 interface UserFeedbackGroup {
@@ -422,7 +423,9 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                         className={`hover:bg-gray-50 cursor-pointer transition-colors ${feedback.physical_discomfort === 'significant' ? 'bg-red-50' : ''}`}
                         onClick={() => {
                           setSelectedFeedback(feedback);
-                          if (onFeedbacksSeen) onFeedbacksSeen();
+                          apiCall(`/feedback/admin/${feedback.id}/mark-seen`, { method: 'POST' })
+                            .then(() => { if (onFeedbacksSeen) onFeedbacksSeen(); })
+                            .catch(err => console.error('Error marking feedback as seen:', err));
                         }}
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -458,16 +461,21 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                           {feedback.current_weight ? `${feedback.current_weight} kg` : '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteFeedback(feedback.id);
-                            }}
-                            className="text-red-600 hover:text-red-800 p-2"
-                            title={t('admin.feedback.deleteFeedback')}
-                          >
-                            {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
-                          </button>
+                          <div className="flex items-center justify-center space-x-1">
+                            {feedback.trainer_seen_at && (
+                              <span title="Già visto" className="text-green-500 text-xs font-medium">✓</span>
+                            )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteFeedback(feedback.id);
+                              }}
+                              className="text-red-600 hover:text-red-800 p-2"
+                              title={t('admin.feedback.deleteFeedback')}
+                            >
+                              {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -624,7 +632,9 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedFeedback(feedback);
-                            if (onFeedbacksSeen) onFeedbacksSeen();
+                            apiCall(`/feedback/admin/${feedback.id}/mark-seen`, { method: 'POST' })
+                              .then(() => { if (onFeedbacksSeen) onFeedbacksSeen(); })
+                              .catch(err => console.error('Error marking feedback as seen:', err));
                           }}
                         >
                           <div className="flex items-start justify-between">

@@ -10,10 +10,10 @@ import SearchBar from '../components/dashboard/SearchBar';
 import TrainingPlan from '../components/dashboard/TrainingPlan';
 import FeedbackTab from '../components/dashboard/FeedbackTab';
 import ReviewTab from '../components/dashboard/ReviewTab';
-import { FiGrid, FiLogOut, FiStar, FiVideo, FiFile, FiGift, FiMessageSquare } from 'react-icons/fi';
+import { FiGrid, FiLogOut, FiStar, FiVideo, FiFile, FiGift, FiMessageSquare, FiCheckCircle, FiX } from 'react-icons/fi';
 
 import { Video, AuthState, VideoState } from '../types/dashboard';
-import { STORAGE_KEY, apiCall } from '../utils/dashboardUtils';
+import { STORAGE_KEY, apiCall, formatDate } from '../utils/dashboardUtils';
 
 interface TrainingDay {
   id: number;
@@ -55,6 +55,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
   const [hasTrainingPlan, setHasTrainingPlan] = useState(false);
   const [trainingDays, setTrainingDays] = useState<TrainingDay[]>([]);
   const [checkInRequired, setCheckInRequired] = useState(false);
+  const [trainerSeenNotifications, setTrainerSeenNotifications] = useState<any[]>([]);
 
   // Authentication logic
   const authenticateWithToken = useCallback(async (authToken: string) => {
@@ -145,6 +146,18 @@ const Dashboard: React.FC<DashboardProps> = () => {
   }, []);
 
 
+  // Check if PT has seen any of the user's check-ins (and user hasn't dismissed the notification)
+  const checkTrainerSeenNotifications = useCallback(async (authToken: string) => {
+    try {
+      const response = await apiCall('/feedback/trainer-seen-notification', {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      setTrainerSeenNotifications(response.data.notifications || []);
+    } catch (error) {
+      console.error('Failed to check trainer seen notifications:', error);
+    }
+  }, []);
+
   // Load videos
   const loadVideos = useCallback(async (authToken: string) => {
     try {
@@ -223,7 +236,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
           loadVideos(authToken),
           loadTrainingDays(authToken),
           checkTrainingPlan(authToken),
-          checkIfCheckInRequired(authToken)
+          checkIfCheckInRequired(authToken),
+          checkTrainerSeenNotifications(authToken)
         ]);
       } catch (error) {
         console.error('Dashboard initialization failed:', error);
@@ -236,7 +250,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     };
 
     initializeDashboard();
-  }, [token, navigate, authenticateWithToken, verifyStoredToken, loadVideos, loadTrainingDays, checkTrainingPlan, checkIfCheckInRequired]);
+  }, [token, navigate, authenticateWithToken, verifyStoredToken, loadVideos, loadTrainingDays, checkTrainingPlan, checkIfCheckInRequired, checkTrainerSeenNotifications]);
 
   // Filtered videos based on selected category and search query
   const filteredVideos = useMemo(() => {
@@ -286,6 +300,15 @@ const Dashboard: React.FC<DashboardProps> = () => {
   const handleVideoClose = useCallback(() => {
     setSelectedVideo(null);
   }, []);
+
+  const dismissTrainerSeenNotifications = async () => {
+    setTrainerSeenNotifications([]);
+    try {
+      await apiCall('/feedback/dismiss-trainer-seen', { method: 'POST' });
+    } catch (error) {
+      console.error('Error dismissing notifications:', error);
+    }
+  };
 
   useEffect(() => console.log(trainingDays), [trainingDays]);
 
@@ -382,6 +405,30 @@ const Dashboard: React.FC<DashboardProps> = () => {
                     {t('dashboard.referral.message')}
                   </p>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Trainer Seen Notification Banner */}
+          {trainerSeenNotifications.length > 0 && (
+            <div className="mb-6 bg-green-50 border-2 border-green-400 rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="flex-shrink-0">
+                    {React.createElement(FiCheckCircle as React.ComponentType<{ className?: string }>, { className: "w-8 h-8 text-green-500" })}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-green-800">Il tuo PT ha visto il tuo check!</h3>
+                    <p className="text-green-700 text-sm">
+                      {trainerSeenNotifications.length === 1
+                        ? `Check del ${formatDate(trainerSeenNotifications[0].feedback_date)} letto dal tuo PT.`
+                        : `${trainerSeenNotifications.length} tuoi check letti dal tuo PT.`}
+                    </p>
+                  </div>
+                </div>
+                <button onClick={dismissTrainerSeenNotifications} className="text-green-600 hover:text-green-800 ml-4">
+                  {React.createElement(FiX as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+                </button>
               </div>
             </div>
           )}
