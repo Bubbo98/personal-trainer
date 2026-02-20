@@ -215,7 +215,7 @@
           "fair": "Fair",
           "poor": "Poor"
         },
-        "physicalDiscomfort": "Did you experience any pain or physical discomfort during workouts?",
+        "physicalDiscomfort": "Did you experience any joint pain or physical discomfort during workouts?",
         "discomfortLabel": "Pain/Discomfort",
         "discomfortNo": "No, I feel good",
         "discomfortYes": "Yes, I have pain",
