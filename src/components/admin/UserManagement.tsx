@@ -37,6 +37,7 @@ const UserManagement: React.FC = () => {
   const [activeContentTab, setActiveContentTab] = useState<'paying' | 'nonPaying' | 'feedback'>('paying');
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [unreadFeedbackCounts, setUnreadFeedbackCounts] = useState<Record<number, number>>({});
+  const [feedbackRefreshKey, setFeedbackRefreshKey] = useState(0);
 
   const [createUserForm, setCreateUserForm] = useState<CreateUserForm>({
     username: '',
@@ -318,9 +319,19 @@ const UserManagement: React.FC = () => {
   const nonPayingCount = currentTrainerUsers.filter(u => !u.isPaying).length;
   const feedbackCount = unreadFeedbackCounts[activeTrainerId] || 0;
 
-  // Handle feedback tab click - just switch tab, badge updates on individual feedback open
-  const handleFeedbackTabClick = () => {
+  // Handle feedback tab click - refresh list and badge count
+  const handleFeedbackTabClick = async () => {
     setActiveContentTab('feedback');
+    setFeedbackRefreshKey(prev => prev + 1);
+    try {
+      const res = await apiCall(`/feedback/admin/unread-count?trainerId=${activeTrainerId}`);
+      setUnreadFeedbackCounts(prev => ({
+        ...prev,
+        [activeTrainerId]: res.data.unreadCount || 0
+      }));
+    } catch (err) {
+      console.error('Error refreshing feedback count:', err);
+    }
   };
 
   if (loading && users.length === 0) {
@@ -412,6 +423,7 @@ const UserManagement: React.FC = () => {
       {/* Content based on active tab */}
       {activeContentTab === 'feedback' ? (
         <FeedbackManagement
+          key={feedbackRefreshKey}
           trainerId={activeTrainerId}
           onFeedbacksSeen={() => {
             // Re-fetch unread count after a feedback is opened
