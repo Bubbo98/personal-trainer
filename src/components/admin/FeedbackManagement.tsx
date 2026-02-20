@@ -702,11 +702,10 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
       {selectedFeedback && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 cursor-pointer"
-          onClick={() => setSelectedFeedback(null)}
+          onClick={(e) => { if (e.target === e.currentTarget) setSelectedFeedback(null); }}
         >
           <div
-            className="bg-white rounded-xl max-w-3xl w-full flex flex-col max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-xl max-w-3xl w-full flex flex-col max-h-[90vh] cursor-default"
           >
             {/* Sticky header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
