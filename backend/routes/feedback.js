@@ -328,7 +328,7 @@ router.post('/', authenticateToken, (req, res) => {
 router.get('/admin/unread-count', authenticateToken, (req, res) => {
   const db = createDatabase();
   const adminUserId = req.user.userId;
-  const { trainerId } = req.query;
+  const trainerId = req.query.trainerId ? parseInt(req.query.trainerId) : null;
 
   // Check if user is admin
   const checkAdminQuery = `SELECT username FROM users WHERE id = ?`;
@@ -568,7 +568,7 @@ router.post('/dismiss-trainer-seen', authenticateToken, (req, res) => {
 // Optional query param: trainerId - filter by trainer
 router.get('/admin/all', authenticateToken, (req, res) => {
   const db = createDatabase();
-  const { trainerId } = req.query;
+  const trainerId = req.query.trainerId ? parseInt(req.query.trainerId) : null;
 
   // Check if user is admin
   const checkAdminQuery = `SELECT username FROM users WHERE id = ?`;
