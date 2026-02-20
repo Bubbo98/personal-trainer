@@ -11,6 +11,7 @@ import TrainingPlan from '../components/dashboard/TrainingPlan';
 import FeedbackTab from '../components/dashboard/FeedbackTab';
 import ReviewTab from '../components/dashboard/ReviewTab';
 import { FiGrid, FiLogOut, FiStar, FiVideo, FiFile, FiGift, FiMessageSquare, FiCheckCircle, FiX } from 'react-icons/fi';
+import { SiInstagram, SiTiktok } from 'react-icons/si';
 
 import { Video, AuthState, VideoState } from '../types/dashboard';
 import { STORAGE_KEY, apiCall, formatDate } from '../utils/dashboardUtils';
@@ -405,6 +406,49 @@ const Dashboard: React.FC<DashboardProps> = () => {
                     {t('dashboard.referral.message')}
                   </p>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Social Media Banner */}
+          {authState.user?.trainerId === 2 ? (
+            <div className="mb-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-5 shadow-lg">
+              <div className="flex items-center space-x-4">
+                <div className="flex-shrink-0">
+                  {React.createElement(SiInstagram as React.ComponentType<{ className?: string }>, { className: "w-10 h-10 text-white" })}
+                </div>
+                <div className="flex-1">
+                  <p className="text-white font-semibold text-lg">Seguimi su Instagram!</p>
+                  <p className="text-purple-100 text-sm">Contenuti esclusivi, consigli e aggiornamenti sul tuo percorso.</p>
+                </div>
+                <a
+                  href="https://www.instagram.com/lamendye?igsh=bzN6NDhscnVhMHVw"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-shrink-0 bg-white text-purple-600 font-semibold px-4 py-2 rounded-lg hover:bg-purple-50 transition-colors text-sm"
+                >
+                  @lamendye
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div className="mb-6 bg-gradient-to-r from-gray-900 to-gray-700 rounded-xl p-5 shadow-lg">
+              <div className="flex items-center space-x-4">
+                <div className="flex-shrink-0">
+                  {React.createElement(SiTiktok as React.ComponentType<{ className?: string }>, { className: "w-10 h-10 text-white" })}
+                </div>
+                <div className="flex-1">
+                  <p className="text-white font-semibold text-lg">Seguimi su TikTok!</p>
+                  <p className="text-gray-300 text-sm">Video, tips e motivazione per i tuoi allenamenti.</p>
+                </div>
+                <a
+                  href="https://www.tiktok.com/@jd.push.pull?_r=1&_t=ZN-945Y5lf6Dbi"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-shrink-0 bg-white text-gray-900 font-semibold px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors text-sm"
+                >
+                  @jd.push.pull
+                </a>
               </div>
             </div>
           )}

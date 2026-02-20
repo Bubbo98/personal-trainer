@@ -198,7 +198,8 @@ router.post('/login-link', (req, res) => {
                                 username: user.username,
                                 email: user.email,
                                 firstName: user.first_name,
-                                lastName: user.last_name
+                                lastName: user.last_name,
+                                trainerId: user.trainer_id || 1
                             }
                         }
                     });
@@ -238,7 +239,7 @@ router.get('/verify', (req, res) => {
         const db = createDatabase();
 
         db.getCallback(
-            'SELECT id, username, email, first_name, last_name FROM users WHERE id = ? AND is_active = 1',
+            'SELECT id, username, email, first_name, last_name, trainer_id FROM users WHERE id = ? AND is_active = 1',
             [decoded.userId],
             (err, user) => {
                 db.close();
@@ -258,7 +259,8 @@ router.get('/verify', (req, res) => {
                             username: user.username,
                             email: user.email,
                             firstName: user.first_name,
-                            lastName: user.last_name
+                            lastName: user.last_name,
+                            trainerId: user.trainer_id || 1
                         }
                     }
                 });
