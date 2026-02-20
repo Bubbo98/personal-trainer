@@ -700,8 +700,14 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
 
       {/* Feedback Detail Modal */}
       {selectedFeedback && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-3xl w-full flex flex-col max-h-[90vh]">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedFeedback(null)}
+        >
+          <div
+            className="bg-white rounded-xl max-w-3xl w-full flex flex-col max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Sticky header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
               <h3 className="text-xl font-bold text-gray-900">
