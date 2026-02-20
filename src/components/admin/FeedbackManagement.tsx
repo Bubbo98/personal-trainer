@@ -700,25 +700,28 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
 
       {/* Feedback Detail Modal */}
       {selectedFeedback && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl max-w-3xl w-full p-6 my-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-3xl w-full flex flex-col max-h-[90vh]">
+            {/* Sticky header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
+              <h3 className="text-xl font-bold text-gray-900">
                 Check di {selectedFeedback.user_first_name} {selectedFeedback.user_last_name}
               </h3>
               <button
                 onClick={() => setSelectedFeedback(null)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 ml-4"
               >
                 {React.createElement(FiX as React.ComponentType<{ className?: string }>, { className: "w-6 h-6" })}
               </button>
             </div>
 
+            {/* Scrollable content */}
+            <div className="overflow-y-auto flex-1 p-6">
             <div className="space-y-6">
               {/* User Info */}
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-semibold text-gray-900 mb-2">{t('admin.feedback.userInfo')}</h4>
-                <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                   <div>
                     <span className="text-gray-600">{t('admin.feedback.name')}: </span>
                     <span className="font-medium">{selectedFeedback.first_name} {selectedFeedback.last_name}</span>
@@ -739,7 +742,7 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
               </div>
 
               {/* Check Details */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="text-sm text-gray-600 mb-1">Energia</div>
                   <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${getStatusColor(selectedFeedback.energy_level, 'energy')}`}>
@@ -842,6 +845,7 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                 )}
               </div>
             </div>
+            </div> {/* end scrollable content */}
           </div>
         </div>
       )}
