@@ -78,9 +78,9 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
   const [userTotalPages, setUserTotalPages] = useState(1);
   const [userCurrentPage, setUserCurrentPage] = useState(1);
   const [userLoading, setUserLoading] = useState(false);
-  const [expandedUsers, setExpandedUsers] = useState<Set<number>>(new Set());
+  const [expandedUsers, setExpandedUsers] = useState<Record<number, boolean>>({});
   const [expandedUserFeedbacks, setExpandedUserFeedbacks] = useState<Record<number, Feedback[]>>({});
-  const [loadingUserFeedbacks, setLoadingUserFeedbacks] = useState<Set<number>>(new Set());
+  const [loadingUserFeedbacks, setLoadingUserFeedbacks] = useState<Record<number, boolean>>({});
 
   // Shared state
   const [loading, setLoading] = useState(false);
@@ -127,7 +127,7 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
       setUserTotalPages(response.data.totalPages || 1);
       setUserCurrentPage(page);
       // Clear expanded state on reload
-      setExpandedUsers(new Set());
+      setExpandedUsers({});
       setExpandedUserFeedbacks({});
     } catch (error) {
       console.error('Failed to load user summaries:', error);
@@ -143,29 +143,22 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
 
   // ─── Expand/collapse user with lazy feedback loading ───────────────────────
   const toggleUserExpand = async (userId: number) => {
-    const newExpanded = new Set(expandedUsers);
-    if (newExpanded.has(userId)) {
-      newExpanded.delete(userId);
-      setExpandedUsers(newExpanded);
+    if (expandedUsers[userId]) {
+      setExpandedUsers(prev => { const n = { ...prev }; delete n[userId]; return n; });
       return;
     }
-    newExpanded.add(userId);
-    setExpandedUsers(newExpanded);
+    setExpandedUsers(prev => ({ ...prev, [userId]: true }));
 
     // Lazy-load feedbacks for this user if not already cached
     if (!expandedUserFeedbacks[userId]) {
-      setLoadingUserFeedbacks(prev => new Set([...prev, userId]));
+      setLoadingUserFeedbacks(prev => ({ ...prev, [userId]: true }));
       try {
         const response = await apiCall(`/feedback/admin/user/${userId}`);
         setExpandedUserFeedbacks(prev => ({ ...prev, [userId]: response.data.feedbacks || [] }));
       } catch (error) {
         console.error('Failed to load user feedbacks:', error);
       } finally {
-        setLoadingUserFeedbacks(prev => {
-          const next = new Set(prev);
-          next.delete(userId);
-          return next;
-        });
+        setLoadingUserFeedbacks(prev => { const n = { ...prev }; delete n[userId]; return n; });
       }
     }
   };
@@ -479,7 +472,7 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                         </div>
                       </div>
                       <div className="ml-4">
-                        {expandedUsers.has(userSum.user_id)
+                        {expandedUsers[userSum.user_id]
                           ? React.createElement(FiChevronUp as React.ComponentType<{ className?: string }>, { className: "w-6 h-6 text-gray-400" })
                           : React.createElement(FiChevronDown as React.ComponentType<{ className?: string }>, { className: "w-6 h-6 text-gray-400" })
                         }
@@ -488,9 +481,9 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                   </div>
 
                   {/* Expanded: lazy-loaded feedbacks */}
-                  {expandedUsers.has(userSum.user_id) && (
+                  {expandedUsers[userSum.user_id] && (
                     <div className="border-t border-gray-200 bg-gray-50">
-                      {loadingUserFeedbacks.has(userSum.user_id) ? (
+                      {loadingUserFeedbacks[userSum.user_id] ? (
                         <div className="flex justify-center py-6"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div></div>
                       ) : (
                         <div className="divide-y divide-gray-200">
