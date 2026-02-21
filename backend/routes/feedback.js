@@ -564,71 +564,208 @@ router.post('/dismiss-trainer-seen', authenticateToken, (req, res) => {
   );
 });
 
-// GET /api/feedback/admin/all - Get all feedbacks (admin only)
-// Optional query param: trainerId - filter by trainer
+// GET /api/feedback/admin/all - Get all feedbacks (admin only) with pagination
+// Query params: trainerId, page, limit, search, discomfort (all|none|has_issues)
 router.get('/admin/all', authenticateToken, (req, res) => {
   const db = createDatabase();
   const trainerId = req.query.trainerId ? parseInt(req.query.trainerId) : null;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  const offset = (page - 1) * limit;
+  const search = (req.query.search || '').trim();
+  const discomfort = req.query.discomfort || 'all';
 
-  // Check if user is admin
   const checkAdminQuery = `SELECT username FROM users WHERE id = ?`;
 
   db.getCallback(checkAdminQuery, [req.user.userId], (err, user) => {
     if (err || !user || !user.username.includes('admin')) {
       db.close();
-      return res.status(403).json({
-        success: false,
-        message: 'Unauthorized - Admin access required'
-      });
+      return res.status(403).json({ success: false, message: 'Unauthorized - Admin access required' });
     }
 
-    let query;
-    let params = [];
-
+    // Trainer-only WHERE (for stats)
+    const trainerConds = [];
+    const trainerParams = [];
     if (trainerId) {
-      // Filter by trainer
-      query = `
-        SELECT
-          f.*,
-          u.username,
-          u.first_name as user_first_name,
-          u.last_name as user_last_name,
-          u.trainer_id
-        FROM user_feedbacks f
-        JOIN users u ON f.user_id = u.id
-        WHERE u.trainer_id = ? OR (u.trainer_id IS NULL AND ? = 1)
-        ORDER BY f.feedback_date DESC, f.created_at DESC
-      `;
-      params = [trainerId, trainerId];
-    } else {
-      // No filter - get all
-      query = `
-        SELECT
-          f.*,
-          u.username,
-          u.first_name as user_first_name,
-          u.last_name as user_last_name,
-          u.trainer_id
-        FROM user_feedbacks f
-        JOIN users u ON f.user_id = u.id
-        ORDER BY f.feedback_date DESC, f.created_at DESC
-      `;
+      trainerConds.push('(u.trainer_id = ? OR (u.trainer_id IS NULL AND ? = 1))');
+      trainerParams.push(trainerId, trainerId);
     }
+    const trainerWhere = trainerConds.length ? 'WHERE ' + trainerConds.join(' AND ') : '';
 
-    db.allCallback(query, params, (err, feedbacks) => {
-      db.close();
+    // Full WHERE (trainer + search + discomfort)
+    const fullConds = [...trainerConds];
+    const fullParams = [...trainerParams];
+    if (search) {
+      fullConds.push('(u.first_name LIKE ? OR u.last_name LIKE ? OR u.username LIKE ? OR u.email LIKE ?)');
+      const s = `%${search}%`;
+      fullParams.push(s, s, s, s);
+    }
+    if (discomfort === 'none') {
+      fullConds.push("f.physical_discomfort = 'none'");
+    } else if (discomfort === 'has_issues') {
+      fullConds.push("f.physical_discomfort != 'none'");
+    }
+    const fullWhere = fullConds.length ? 'WHERE ' + fullConds.join(' AND ') : '';
 
+    // Step 1: global stats (trainer filter only, ignores search/discomfort)
+    const statsQuery = `
+      SELECT
+        COUNT(*) as total,
+        SUM(CASE WHEN f.physical_discomfort != 'none' THEN 1 ELSE 0 END) as with_discomfort,
+        SUM(CASE WHEN f.motivation_level = 'low' THEN 1 ELSE 0 END) as low_motivation,
+        SUM(CASE WHEN f.workouts_completed = 'few_or_none' THEN 1 ELSE 0 END) as missed_workouts
+      FROM user_feedbacks f
+      JOIN users u ON f.user_id = u.id
+      ${trainerWhere}
+    `;
+
+    db.getCallback(statsQuery, trainerParams, (err, stats) => {
       if (err) {
-        console.error('Error fetching all feedbacks:', err);
-        return res.status(500).json({
-          success: false,
-          message: 'Failed to fetch feedbacks'
-        });
+        db.close();
+        return res.status(500).json({ success: false, message: 'Failed to fetch stats' });
       }
 
-      res.json({
-        success: true,
-        data: { feedbacks }
+      // Step 2: count matching items
+      const countQuery = `
+        SELECT COUNT(*) as count
+        FROM user_feedbacks f
+        JOIN users u ON f.user_id = u.id
+        ${fullWhere}
+      `;
+
+      db.getCallback(countQuery, fullParams, (err, countRow) => {
+        if (err) {
+          db.close();
+          return res.status(500).json({ success: false, message: 'Failed to count feedbacks' });
+        }
+
+        const total = countRow?.count || 0;
+        const totalPages = Math.max(1, Math.ceil(total / limit));
+
+        // Step 3: paginated data
+        const dataQuery = `
+          SELECT
+            f.*,
+            u.username,
+            u.first_name as user_first_name,
+            u.last_name as user_last_name,
+            u.trainer_id
+          FROM user_feedbacks f
+          JOIN users u ON f.user_id = u.id
+          ${fullWhere}
+          ORDER BY f.feedback_date DESC, f.created_at DESC
+          LIMIT ? OFFSET ?
+        `;
+
+        db.allCallback(dataQuery, [...fullParams, limit, offset], (err, feedbacks) => {
+          db.close();
+
+          if (err) {
+            console.error('Error fetching all feedbacks:', err);
+            return res.status(500).json({ success: false, message: 'Failed to fetch feedbacks' });
+          }
+
+          res.json({
+            success: true,
+            data: {
+              feedbacks,
+              total,
+              page,
+              totalPages,
+              limit,
+              stats: {
+                total: stats?.total || 0,
+                withDiscomfort: stats?.with_discomfort || 0,
+                lowMotivation: stats?.low_motivation || 0,
+                missedWorkouts: stats?.missed_workouts || 0
+              }
+            }
+          });
+        });
+      });
+    });
+  });
+});
+
+// GET /api/feedback/admin/users-summary - Paginated user list with latest feedback summary (admin only)
+// Query params: trainerId, page, limit, search, discomfort
+router.get('/admin/users-summary', authenticateToken, (req, res) => {
+  const db = createDatabase();
+  const trainerId = req.query.trainerId ? parseInt(req.query.trainerId) : null;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 15;
+  const offset = (page - 1) * limit;
+  const search = (req.query.search || '').trim();
+  const discomfort = req.query.discomfort || 'all';
+
+  const checkAdminQuery = `SELECT username FROM users WHERE id = ?`;
+  db.getCallback(checkAdminQuery, [req.user.userId], (err, user) => {
+    if (err || !user || !user.username.includes('admin')) {
+      db.close();
+      return res.status(403).json({ success: false, message: 'Unauthorized - Admin access required' });
+    }
+
+    // Only include users who have at least one feedback
+    const conds = ['EXISTS (SELECT 1 FROM user_feedbacks WHERE user_id = u.id)'];
+    const params = [];
+
+    if (trainerId) {
+      conds.push('(u.trainer_id = ? OR (u.trainer_id IS NULL AND ? = 1))');
+      params.push(trainerId, trainerId);
+    }
+    if (search) {
+      conds.push('(u.first_name LIKE ? OR u.last_name LIKE ? OR u.username LIKE ? OR u.email LIKE ?)');
+      const s = `%${search}%`;
+      params.push(s, s, s, s);
+    }
+    if (discomfort === 'none') {
+      conds.push("(SELECT physical_discomfort FROM user_feedbacks WHERE user_id = u.id ORDER BY feedback_date DESC, created_at DESC LIMIT 1) = 'none'");
+    } else if (discomfort === 'has_issues') {
+      conds.push("(SELECT physical_discomfort FROM user_feedbacks WHERE user_id = u.id ORDER BY feedback_date DESC, created_at DESC LIMIT 1) != 'none'");
+    }
+    const where = 'WHERE ' + conds.join(' AND ');
+
+    const countQuery = `SELECT COUNT(*) as count FROM users u ${where}`;
+    db.getCallback(countQuery, params, (err, countRow) => {
+      if (err) {
+        db.close();
+        return res.status(500).json({ success: false, message: 'Failed to count users' });
+      }
+
+      const total = countRow?.count || 0;
+      const totalPages = Math.max(1, Math.ceil(total / limit));
+
+      const dataQuery = `
+        SELECT
+          u.id as user_id,
+          u.username,
+          u.first_name,
+          u.last_name,
+          u.email,
+          COUNT(f.id) as total_feedbacks,
+          MAX(f.feedback_date) as last_feedback_date,
+          (SELECT energy_level FROM user_feedbacks WHERE user_id = u.id ORDER BY feedback_date DESC, created_at DESC LIMIT 1) as last_energy_level,
+          (SELECT motivation_level FROM user_feedbacks WHERE user_id = u.id ORDER BY feedback_date DESC, created_at DESC LIMIT 1) as last_motivation_level,
+          (SELECT physical_discomfort FROM user_feedbacks WHERE user_id = u.id ORDER BY feedback_date DESC, created_at DESC LIMIT 1) as last_physical_discomfort,
+          (SELECT current_weight FROM user_feedbacks WHERE user_id = u.id ORDER BY feedback_date DESC, created_at DESC LIMIT 1) as last_current_weight
+        FROM users u
+        JOIN user_feedbacks f ON f.user_id = u.id
+        ${where}
+        GROUP BY u.id
+        ORDER BY MAX(f.feedback_date) DESC
+        LIMIT ? OFFSET ?
+      `;
+
+      db.allCallback(dataQuery, [...params, limit, offset], (err, users) => {
+        db.close();
+        if (err) {
+          console.error('Error fetching user summaries:', err);
+          return res.status(500).json({ success: false, message: 'Failed to fetch user summaries' });
+        }
+        res.json({
+          success: true,
+          data: { users: users || [], total, page, totalPages }
+        });
       });
     });
   });
