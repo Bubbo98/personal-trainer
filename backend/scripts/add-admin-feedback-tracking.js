@@ -10,23 +10,25 @@ console.log('🔄 Creating admin_feedback_seen table for tracking unread feedbac
 
 async function migrate() {
   try {
-    // Create admin_feedback_seen table
+    // Create admin_feedback_seen table with per-trainer tracking
     await client.execute(`
       CREATE TABLE IF NOT EXISTS admin_feedback_seen (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        admin_user_id INTEGER NOT NULL UNIQUE,
+        admin_user_id INTEGER NOT NULL,
+        trainer_id INTEGER NOT NULL DEFAULT 0,
         last_seen_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (admin_user_id) REFERENCES users(id) ON DELETE CASCADE
+        FOREIGN KEY (admin_user_id) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE(admin_user_id, trainer_id)
       )
     `);
     console.log('✅ admin_feedback_seen table created');
 
-    // Create index on admin_user_id
+    // Create composite index
     try {
       await client.execute(`
-        CREATE INDEX IF NOT EXISTS idx_admin_feedback_seen_user_id ON admin_feedback_seen(admin_user_id)
+        CREATE INDEX IF NOT EXISTS idx_admin_feedback_seen_user_trainer ON admin_feedback_seen(admin_user_id, trainer_id)
       `);
-      console.log('✅ Created index on admin_user_id');
+      console.log('✅ Created index on (admin_user_id, trainer_id)');
     } catch (err) {
       console.log('⚠️  Index already exists or error:', err.message);
     }

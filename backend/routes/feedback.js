@@ -398,18 +398,24 @@ router.post('/admin/mark-seen', authenticateToken, (req, res) => {
       });
     }
 
-    // Use trainer-specific key if trainerId provided
-    const seenKey = trainerId ? `${adminUserId}_${trainerId}` : `${adminUserId}`;
+    // Mark all unseen feedbacks as seen for this trainer
+    let updateQuery;
+    let params = [];
 
-    // Insert or update the last_seen_at timestamp
-    const upsertQuery = `
-      INSERT INTO admin_feedback_seen (admin_user_id, last_seen_at)
-      VALUES (?, CURRENT_TIMESTAMP)
-      ON CONFLICT(admin_user_id)
-      DO UPDATE SET last_seen_at = CURRENT_TIMESTAMP
-    `;
+    if (trainerId) {
+      updateQuery = `
+        UPDATE user_feedbacks SET trainer_seen_at = CURRENT_TIMESTAMP
+        WHERE trainer_seen_at IS NULL AND user_id IN (
+          SELECT id FROM users WHERE trainer_id = ? OR (trainer_id IS NULL AND ? = 1)
+        )
+      `;
+      params = [trainerId, trainerId];
+    } else {
+      updateQuery = `UPDATE user_feedbacks SET trainer_seen_at = CURRENT_TIMESTAMP WHERE trainer_seen_at IS NULL`;
+      params = [];
+    }
 
-    db.runCallback(upsertQuery, [seenKey], function(err) {
+    db.runCallback(updateQuery, params, function(err) {
       db.close();
 
       if (err) {

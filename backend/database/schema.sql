@@ -160,4 +160,3 @@ CREATE INDEX IF NOT EXISTS idx_user_feedbacks_user ON user_feedbacks(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_feedbacks_date ON user_feedbacks(feedback_date);
 CREATE INDEX IF NOT EXISTS idx_users_trainer ON users(trainer_id);
 CREATE INDEX IF NOT EXISTS idx_trainers_active ON trainers(is_active);
-CREATE INDEX IF NOT EXISTS idx_admin_feedback_seen ON admin_feedback_seen(last_seen_at);
