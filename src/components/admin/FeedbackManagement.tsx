@@ -372,20 +372,33 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {feedbacks.map((feedback) => (
+                    {feedbacks.map((feedback) => {
+                      const isNew = !feedback.trainer_seen_at;
+                      return (
                       <tr
                         key={feedback.id}
-                        className={`hover:bg-gray-50 cursor-pointer transition-colors ${feedback.physical_discomfort === 'significant' ? 'bg-red-50' : ''}`}
+                        className={`hover:bg-gray-50 cursor-pointer transition-colors ${isNew ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''} ${feedback.physical_discomfort === 'significant' && !isNew ? 'bg-red-50' : ''}`}
                         onClick={() => {
                           setSelectedFeedback(feedback);
-                          apiCall(`/feedback/admin/${feedback.id}/mark-seen`, { method: 'POST' })
-                            .then(() => { if (onFeedbacksSeen) onFeedbacksSeen(); })
-                            .catch(err => console.error('Error marking feedback as seen:', err));
+                          if (isNew) {
+                            apiCall(`/feedback/admin/${feedback.id}/mark-seen`, { method: 'POST' })
+                              .then(() => {
+                                feedback.trainer_seen_at = new Date().toISOString();
+                                setFeedbacks([...feedbacks]);
+                                if (onFeedbacksSeen) onFeedbacksSeen();
+                              })
+                              .catch(err => console.error('Error marking feedback as seen:', err));
+                          }
                         }}
                       >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(feedback.feedback_date)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <div className="flex items-center gap-2">
+                            {isNew && <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white uppercase">Nuovo</span>}
+                            {formatDate(feedback.feedback_date)}
+                          </div>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{feedback.user_first_name} {feedback.user_last_name}</div>
+                          <div className={`text-sm ${isNew ? 'font-bold text-gray-900' : 'font-medium text-gray-900'}`}>{feedback.user_first_name} {feedback.user_last_name}</div>
                           <div className="text-xs text-gray-500">{feedback.email}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -412,7 +425,8 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                           </div>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -487,22 +501,31 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                         <div className="flex justify-center py-6"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div></div>
                       ) : (
                         <div className="divide-y divide-gray-200">
-                          {(expandedUserFeedbacks[userSum.user_id] || []).map((feedback) => (
+                          {(expandedUserFeedbacks[userSum.user_id] || []).map((feedback) => {
+                            const isNew = !feedback.trainer_seen_at;
+                            return (
                             <div
                               key={feedback.id}
-                              className="p-4 hover:bg-gray-100 cursor-pointer transition-colors"
+                              className={`p-4 hover:bg-gray-100 cursor-pointer transition-colors ${isNew ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}`}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedFeedback(feedback);
-                                apiCall(`/feedback/admin/${feedback.id}/mark-seen`, { method: 'POST' })
-                                  .then(() => { if (onFeedbacksSeen) onFeedbacksSeen(); })
-                                  .catch(err => console.error('Error marking feedback as seen:', err));
+                                if (isNew) {
+                                  apiCall(`/feedback/admin/${feedback.id}/mark-seen`, { method: 'POST' })
+                                    .then(() => {
+                                      feedback.trainer_seen_at = new Date().toISOString();
+                                      setExpandedUserFeedbacks(prev => ({ ...prev }));
+                                      if (onFeedbacksSeen) onFeedbacksSeen();
+                                    })
+                                    .catch(err => console.error('Error marking feedback as seen:', err));
+                                }
                               }}
                             >
                               <div className="flex items-start justify-between">
                                 <div className="flex-1">
                                   <div className="flex items-center space-x-3 mb-2">
-                                    <span className="text-sm font-medium text-gray-900">{formatDate(feedback.feedback_date)}</span>
+                                    {isNew && <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white uppercase">Nuovo</span>}
+                                    <span className={`text-sm ${isNew ? 'font-bold' : 'font-medium'} text-gray-900`}>{formatDate(feedback.feedback_date)}</span>
                                     {feedback.physical_discomfort !== 'none' && (
                                       <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(feedback.physical_discomfort, 'discomfort')}`}>{getDiscomfortLabel(feedback.physical_discomfort)}</span>
                                     )}
@@ -520,7 +543,8 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                                 </button>
                               </div>
                             </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </div>

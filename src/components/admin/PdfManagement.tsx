@@ -14,6 +14,7 @@ interface PdfInfo {
   durationMonths?: number;
   durationDays?: number;
   expirationDate?: string;
+  visibleFrom?: string;
 }
 
 interface Props {
@@ -34,6 +35,8 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
   const [showExtendForm, setShowExtendForm] = useState(false);
   const [extendMonths, setExtendMonths] = useState(0);
   const [extendDays, setExtendDays] = useState(0);
+  const [visibleFrom, setVisibleFrom] = useState('');
+  const [updatingVisibleFrom, setUpdatingVisibleFrom] = useState(false);
 
   useEffect(() => {
     loadPdfInfo();
@@ -87,6 +90,9 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
       formData.append('pdf', selectedFile);
       formData.append('durationMonths', durationMonths.toString());
       formData.append('durationDays', durationDays.toString());
+      if (visibleFrom) {
+        formData.append('visibleFrom', new Date(visibleFrom).toISOString());
+      }
 
       const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3002/api'}/pdf/admin/upload/${userId}`, {
         method: 'POST',
@@ -212,6 +218,32 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
     }
   };
 
+  const handleUpdateVisibleFrom = async (newVisibleFrom: string | null) => {
+    try {
+      setUpdatingVisibleFrom(true);
+      const token = localStorage.getItem('admin_auth_token');
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3002/api'}/pdf/admin/visible-from/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ visibleFrom: newVisibleFrom })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        loadPdfInfo();
+      } else {
+        throw new Error(data.error || 'Aggiornamento fallito');
+      }
+    } catch (error) {
+      alert(`Errore: ${error instanceof Error ? error.message : 'Aggiornamento fallito'}`);
+    } finally {
+      setUpdatingVisibleFrom(false);
+    }
+  };
+
   const getDaysUntilExpiration = (expirationDate: string): number => {
     const now = new Date();
     const expiry = new Date(expirationDate);
@@ -297,6 +329,28 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
                       </p>
                     </div>
                   )}
+
+                  {/* Visible-from lock status */}
+                  {pdfInfo.visibleFrom && new Date(pdfInfo.visibleFrom) > new Date() ? (
+                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">
+                        Bloccata — visibile dal {new Date(pdfInfo.visibleFrom).toLocaleDateString('it-IT')}
+                      </span>
+                      <button
+                        onClick={() => handleUpdateVisibleFrom(null)}
+                        disabled={updatingVisibleFrom}
+                        className="text-xs text-gray-500 hover:text-red-600 underline"
+                      >
+                        Sblocca ora
+                      </button>
+                    </div>
+                  ) : pdfInfo.visibleFrom ? (
+                    <div className="mt-2">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                        Sbloccata dal {new Date(pdfInfo.visibleFrom).toLocaleDateString('it-IT')}
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
               </div>
               <div className="flex space-x-2">
@@ -368,6 +422,40 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
               </div>
             )}
           </div>
+          {/* Change visible-from on existing PDF */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <h5 className="font-semibold text-gray-900 mb-3">Modifica data di sblocco</h5>
+            <div className="space-y-2">
+              <input
+                type="date"
+                key={pdfInfo.visibleFrom || 'none'}
+                defaultValue={pdfInfo.visibleFrom ? pdfInfo.visibleFrom.slice(0, 10) : ''}
+                id={`visible-from-edit-${userId}`}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const input = document.getElementById(`visible-from-edit-${userId}`) as HTMLInputElement;
+                    const val = input?.value;
+                    handleUpdateVisibleFrom(val ? new Date(val).toISOString() : null);
+                  }}
+                  disabled={updatingVisibleFrom}
+                  className="flex-1 px-3 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500"
+                >
+                  {updatingVisibleFrom ? 'Salvataggio...' : 'Salva data sblocco'}
+                </button>
+                <button
+                  onClick={() => handleUpdateVisibleFrom(null)}
+                  disabled={updatingVisibleFrom}
+                  className="px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+                >
+                  Sblocca
+                </button>
+              </div>
+              <p className="text-xs text-gray-400">Lascia vuoto per rendere la scheda subito visibile</p>
+            </div>
+          </div>
         </>
       ) : (
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
@@ -427,6 +515,23 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Visibile dall'utente dal (opzionale)
+            </label>
+            <input
+              type="date"
+              value={visibleFrom}
+              onChange={(e) => setVisibleFrom(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+            />
+            {visibleFrom && (
+              <p className="text-xs text-amber-600 mt-1">
+                L'utente non vedrà la scheda fino al {new Date(visibleFrom).toLocaleDateString('it-IT')}
+              </p>
+            )}
           </div>
 
           {selectedFile && (
