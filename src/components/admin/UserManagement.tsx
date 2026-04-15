@@ -352,7 +352,7 @@ const UserManagement: React.FC = () => {
             setCreateUserForm(prev => ({ ...prev, trainerId: activeTrainerId }));
             setShowCreateUser(true);
           }}
-          className="bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 flex items-center space-x-2"
+          className="bg-gray-900 text-white px-4 py-2.5 rounded-xl hover:bg-gray-800 transition-colors flex items-center space-x-2"
         >
           {React.createElement(FiPlus as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
           <span>{t('admin.users.newUser')}</span>
@@ -448,7 +448,7 @@ const UserManagement: React.FC = () => {
                 placeholder={t('dashboard.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors"
               />
             </div>
             {searchTerm && (
@@ -475,55 +475,55 @@ const UserManagement: React.FC = () => {
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.users.firstName')}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('admin.users.firstName')}</label>
                   <input
                     type="text"
                     required
                     value={createUserForm.firstName}
                     onChange={(e) => setCreateUserForm(prev => ({ ...prev, firstName: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                    className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.users.lastName')}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('admin.users.lastName')}</label>
                   <input
                     type="text"
                     required
                     value={createUserForm.lastName}
                     onChange={(e) => setCreateUserForm(prev => ({ ...prev, lastName: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                    className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.users.username')}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('admin.users.username')}</label>
                 <input
                   type="text"
                   required
                   value={createUserForm.username}
                   onChange={(e) => setCreateUserForm(prev => ({ ...prev, username: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                  className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email (opzionale)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email (opzionale)</label>
                 <input
                   type="email"
                   value={createUserForm.email}
                   onChange={(e) => setCreateUserForm(prev => ({ ...prev, email: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                  className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                   placeholder="email@esempio.com"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Personal Trainer</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Personal Trainer</label>
                 <select
                   value={createUserForm.trainerId}
                   onChange={(e) => setCreateUserForm(prev => ({ ...prev, trainerId: Number(e.target.value) }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                  className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                 >
                   {trainers.map(trainer => (
                     <option key={trainer.id} value={trainer.id}>
@@ -539,7 +539,7 @@ const UserManagement: React.FC = () => {
                   id="isPaying"
                   checked={createUserForm.isPaying}
                   onChange={(e) => setCreateUserForm(prev => ({ ...prev, isPaying: e.target.checked }))}
-                  className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-2 focus:ring-gray-800"
+                  className="w-4 h-4 rounded border-gray-300 accent-gray-900 focus:ring-2 focus:ring-gray-900 cursor-pointer"
                 />
                 <label htmlFor="isPaying" className="text-sm font-medium text-gray-700">
                   Utente pagante
@@ -550,13 +550,13 @@ const UserManagement: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowCreateUser(false)}
-                  className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300"
+                  className="flex-1 bg-gray-100 text-gray-700 py-2.5 px-4 rounded-xl hover:bg-gray-200 transition-colors"
                 >
                   {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-gray-900 text-white py-2 px-4 rounded-lg hover:bg-gray-800"
+                  className="flex-1 bg-gray-900 text-white py-2.5 px-4 rounded-xl hover:bg-gray-800 transition-colors"
                 >
                   {t('admin.users.newUser')}
                 </button>
@@ -583,41 +583,41 @@ const UserManagement: React.FC = () => {
             <form onSubmit={handleUpdateUser} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Nome</label>
                   <input
                     type="text"
                     value={updateUserForm.firstName}
                     onChange={(e) => setUpdateUserForm(prev => ({ ...prev, firstName: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                    className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Cognome</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Cognome</label>
                   <input
                     type="text"
                     value={updateUserForm.lastName}
                     onChange={(e) => setUpdateUserForm(prev => ({ ...prev, lastName: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                    className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
                 <input
                   type="email"
                   value={updateUserForm.email}
                   onChange={(e) => setUpdateUserForm(prev => ({ ...prev, email: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                  className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Personal Trainer</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Personal Trainer</label>
                 <select
                   value={updateUserForm.trainerId}
                   onChange={(e) => setUpdateUserForm(prev => ({ ...prev, trainerId: Number(e.target.value) }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                  className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                 >
                   {trainers.map(trainer => (
                     <option key={trainer.id} value={trainer.id}>
@@ -633,14 +633,14 @@ const UserManagement: React.FC = () => {
                   id="isPayingEdit"
                   checked={updateUserForm.isPaying}
                   onChange={(e) => setUpdateUserForm(prev => ({ ...prev, isPaying: e.target.checked }))}
-                  className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-2 focus:ring-gray-800"
+                  className="w-4 h-4 rounded border-gray-300 accent-gray-900 focus:ring-2 focus:ring-gray-900 cursor-pointer"
                 />
                 <label htmlFor="isPayingEdit" className="text-sm font-medium text-gray-700">
                   Utente pagante
                 </label>
               </div>
 
-              <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-600">
+              <div className="bg-gray-50 p-3 rounded-xl text-sm text-gray-600">
                 <strong>Username:</strong> {editingUser.username}
               </div>
 
@@ -648,13 +648,13 @@ const UserManagement: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setEditingUser(null)}
-                  className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300"
+                  className="flex-1 bg-gray-100 text-gray-700 py-2.5 px-4 rounded-xl hover:bg-gray-200 transition-colors"
                 >
                   Annulla
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-gray-900 text-white py-2 px-4 rounded-lg hover:bg-gray-800"
+                  className="flex-1 bg-gray-900 text-white py-2.5 px-4 rounded-xl hover:bg-gray-800 transition-colors"
                 >
                   Salva Modifiche
                 </button>
@@ -666,7 +666,7 @@ const UserManagement: React.FC = () => {
 
       {/* Success Message */}
       {copiedLink && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg flex items-center space-x-2">
+        <div className="bg-green-50 border border-green-300 text-green-700 px-4 py-3 rounded-xl flex items-center gap-2">
           {React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
           <span>{t('admin.users.accessLinkGenerated')}</span>
         </div>

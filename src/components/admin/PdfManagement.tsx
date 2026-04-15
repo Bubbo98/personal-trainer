@@ -276,7 +276,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
 
   if (loading) {
     return (
-      <div className="p-4 bg-gray-50 rounded-lg">
+      <div className="p-4 bg-gray-50 rounded-xl">
         <p className="text-gray-600">{t('admin.loading') || 'Caricamento...'}</p>
       </div>
     );
@@ -286,7 +286,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
     <div className="space-y-4">
       {pdfInfo ? (
         <>
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="bg-white border border-gray-200 rounded-xl p-4">
             <div className="flex items-start justify-between">
               <div className="flex items-start space-x-3">
                 {React.createElement(FiFile as React.ComponentType<{ className?: string }>, { className: "w-8 h-8 text-red-600 flex-shrink-0 mt-1" })}
@@ -373,7 +373,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
           </div>
 
           {/* Extend Duration Form */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="bg-white border border-gray-200 rounded-xl p-4">
             <button
               onClick={() => setShowExtendForm(!showExtendForm)}
               className="w-full text-left font-semibold text-gray-900 mb-2"
@@ -388,22 +388,22 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Mesi (+/-)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Mesi (+/-)</label>
                     <input
                       type="number"
                       value={extendMonths}
                       onChange={(e) => setExtendMonths(parseInt(e.target.value) || 0)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                       placeholder="0"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Giorni (+/-)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Giorni (+/-)</label>
                     <input
                       type="number"
                       value={extendDays}
                       onChange={(e) => setExtendDays(parseInt(e.target.value) || 0)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                       placeholder="0"
                     />
                   </div>
@@ -423,7 +423,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
             )}
           </div>
           {/* Change visible-from on existing PDF */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="bg-white border border-gray-200 rounded-xl p-4">
             <h5 className="font-semibold text-gray-900 mb-3">Modifica data di sblocco</h5>
             <div className="space-y-2">
               <input
@@ -431,7 +431,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
                 key={pdfInfo.visibleFrom || 'none'}
                 defaultValue={pdfInfo.visibleFrom ? pdfInfo.visibleFrom.slice(0, 10) : ''}
                 id={`visible-from-edit-${userId}`}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm"
+                className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow text-sm"
               />
               <div className="flex gap-2">
                 <button
@@ -441,14 +441,14 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
                     handleUpdateVisibleFrom(val ? new Date(val).toISOString() : null);
                   }}
                   disabled={updatingVisibleFrom}
-                  className="flex-1 px-3 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500"
+                  className="flex-1 px-3 py-2.5 rounded-xl text-sm font-medium bg-gray-900 text-white hover:bg-gray-800 transition-colors disabled:bg-gray-300 disabled:text-gray-500"
                 >
                   {updatingVisibleFrom ? 'Salvataggio...' : 'Salva data sblocco'}
                 </button>
                 <button
                   onClick={() => handleUpdateVisibleFrom(null)}
                   disabled={updatingVisibleFrom}
-                  className="px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+                  className="px-3 py-2.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors disabled:opacity-50"
                 >
                   Sblocca
                 </button>
@@ -458,13 +458,13 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
           </div>
         </>
       ) : (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
           {React.createElement(FiFile as React.ComponentType<{ className?: string }>, { className: "w-12 h-12 text-gray-400 mx-auto mb-2" })}
           <p className="text-gray-600">{t('admin.pdf.noPdf') || 'Nessuna scheda caricata per questo utente'}</p>
         </div>
       )}
 
-      <div className="border border-gray-200 rounded-lg p-4 bg-white">
+      <div className="border border-gray-200 rounded-xl p-4 bg-white">
         <h4 className="font-semibold text-gray-900 mb-3">
           {pdfInfo
             ? (t('admin.pdf.replacePdf') || 'Sostituisci scheda')
@@ -473,7 +473,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
 
         <div className="space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5.5">
               {t('admin.pdf.selectFile') || 'Seleziona file PDF (max 10MB)'}
             </label>
             <input
@@ -492,7 +492,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Durata (mesi)
               </label>
               <input
@@ -500,11 +500,11 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
                 min="0"
                 value={durationMonths}
                 onChange={(e) => setDurationMonths(parseInt(e.target.value) || 0)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Durata (giorni)
               </label>
               <input
@@ -512,20 +512,20 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
                 min="0"
                 value={durationDays}
                 onChange={(e) => setDurationDays(parseInt(e.target.value) || 0)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Visibile dall'utente dal (opzionale)
             </label>
             <input
               type="date"
               value={visibleFrom}
               onChange={(e) => setVisibleFrom(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+              className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
             />
             {visibleFrom && (
               <p className="text-xs text-amber-600 mt-1">

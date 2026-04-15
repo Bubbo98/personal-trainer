@@ -26,7 +26,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           value={searchQuery}
           onChange={(e) => onSearch(e.target.value)}
           placeholder={t('dashboard.searchPlaceholder')}
-          className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent text-gray-900 placeholder-gray-500"
+          className="block w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent text-gray-900 placeholder-gray-400"
         />
         {searchQuery && (
           <button

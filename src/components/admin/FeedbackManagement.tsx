@@ -285,26 +285,26 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
 
       {/* Statistics */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white rounded-xl shadow p-4">
           <div className="text-sm text-gray-600">Totale Check</div>
           <div className="text-2xl font-bold text-gray-900 mt-1">{serverStats.total}</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white rounded-xl shadow p-4">
           <div className="text-sm text-gray-600">Con Dolori/Fastidi</div>
           <div className="text-2xl font-bold text-orange-600 mt-1">{serverStats.withDiscomfort}</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white rounded-xl shadow p-4">
           <div className="text-sm text-gray-600">Motivazione Bassa</div>
           <div className="text-2xl font-bold text-red-600 mt-1">{serverStats.lowMotivation}</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white rounded-xl shadow p-4">
           <div className="text-sm text-gray-600">Allenamenti Saltati</div>
           <div className="text-2xl font-bold text-red-600 mt-1">{serverStats.missedWorkouts}</div>
         </div>
       </div>
 
       {/* View Toggle */}
-      <div className="flex items-center justify-center space-x-2 bg-white rounded-lg shadow p-1">
+      <div className="flex items-center justify-center space-x-2 bg-white rounded-xl shadow p-1">
         <button
           onClick={() => handleViewModeChange('timeline')}
           className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-colors ${viewMode === 'timeline' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
@@ -332,7 +332,7 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
             placeholder={t('admin.feedback.searchUser')}
             value={searchTerm}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors"
           />
         </div>
         <div className="flex items-center space-x-2">
@@ -340,7 +340,7 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
           <select
             value={filterDiscomfort}
             onChange={(e) => handleDiscomfortChange(e.target.value as any)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+            className="appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
           >
             <option value="all">Tutti</option>
             <option value="none">Senza dolori</option>
@@ -505,20 +505,20 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                         </div>
                         <div className="text-xs text-gray-500 mb-3 truncate">{userSum.username} · {userSum.email}</div>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                          <div className="px-3 py-2 rounded-lg bg-gray-50">
+                          <div className="px-3 py-2 rounded-xl bg-gray-50">
                             <div className="text-xs text-gray-500 mb-1">Energia</div>
                             <span className={`text-xs font-bold inline-block px-2 py-0.5 rounded ${getStatusColor(userSum.last_energy_level, 'energy')}`}>{getEnergyLabel(userSum.last_energy_level)}</span>
                           </div>
-                          <div className="px-3 py-2 rounded-lg bg-gray-50">
+                          <div className="px-3 py-2 rounded-xl bg-gray-50">
                             <div className="text-xs text-gray-500 mb-1">Motivazione</div>
                             <span className={`text-xs font-bold inline-block px-2 py-0.5 rounded ${getStatusColor(userSum.last_motivation_level, 'motivation')}`}>{getMotivationLabel(userSum.last_motivation_level)}</span>
                           </div>
-                          <div className="px-3 py-2 rounded-lg bg-gray-50">
+                          <div className="px-3 py-2 rounded-xl bg-gray-50">
                             <div className="text-xs text-gray-500 mb-1">Ultimo check</div>
                             <div className="text-xs font-medium text-gray-900">{formatDate(userSum.last_feedback_date)}</div>
                           </div>
                           {userSum.last_current_weight && (
-                            <div className="px-3 py-2 rounded-lg bg-blue-50">
+                            <div className="px-3 py-2 rounded-xl bg-blue-50">
                               <div className="text-xs text-gray-500 mb-1">Peso</div>
                               <div className="text-xs font-bold text-blue-800">{userSum.last_current_weight} kg</div>
                             </div>
@@ -624,7 +624,7 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
             <div className="overflow-y-auto flex-1 p-6">
               <div className="space-y-6">
                 {/* User Info */}
-                <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="bg-gray-50 p-4 rounded-xl">
                   <h4 className="font-semibold text-gray-900 mb-2">{t('admin.feedback.userInfo')}</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                     <div><span className="text-gray-600">{t('admin.feedback.name')}: </span><span className="font-medium">{selectedFeedback.first_name} {selectedFeedback.last_name}</span></div>
@@ -636,23 +636,23 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
 
                 {/* Check Details */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="bg-gray-50 p-4 rounded-xl">
                     <div className="text-sm text-gray-600 mb-1">Energia</div>
                     <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${getStatusColor(selectedFeedback.energy_level, 'energy')}`}>{getEnergyLabel(selectedFeedback.energy_level)}</span>
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="bg-gray-50 p-4 rounded-xl">
                     <div className="text-sm text-gray-600 mb-1">Allenamenti</div>
                     <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${getStatusColor(selectedFeedback.workouts_completed, 'workouts')}`}>{getWorkoutsLabel(selectedFeedback.workouts_completed)}</span>
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="bg-gray-50 p-4 rounded-xl">
                     <div className="text-sm text-gray-600 mb-1">Piano Alimentare</div>
                     <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${getStatusColor(selectedFeedback.meal_plan_followed, 'meal')}`}>{getMealPlanLabel(selectedFeedback.meal_plan_followed)}</span>
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="bg-gray-50 p-4 rounded-xl">
                     <div className="text-sm text-gray-600 mb-1">Qualità Sonno</div>
                     <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${getStatusColor(selectedFeedback.sleep_quality, 'sleep')}`}>{getSleepLabel(selectedFeedback.sleep_quality)}</span>
                   </div>
-                  <div className={`p-4 rounded-lg ${selectedFeedback.physical_discomfort === 'none' ? 'bg-green-50' : selectedFeedback.physical_discomfort === 'minor' ? 'bg-yellow-50' : 'bg-red-50'}`}>
+                  <div className={`p-4 rounded-xl ${selectedFeedback.physical_discomfort === 'none' ? 'bg-green-50' : selectedFeedback.physical_discomfort === 'minor' ? 'bg-yellow-50' : 'bg-red-50'}`}>
                     <div className="text-sm text-gray-600 mb-1">Dolori/Fastidi</div>
                     <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${getStatusColor(selectedFeedback.physical_discomfort, 'discomfort')}`}>{getDiscomfortLabel(selectedFeedback.physical_discomfort)}</span>
                     {selectedFeedback.discomfort_details && <p className="mt-2 text-sm text-gray-800 bg-white bg-opacity-50 p-2 rounded">{selectedFeedback.discomfort_details}</p>}
@@ -680,21 +680,21 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                       );
                     })()}
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="bg-gray-50 p-4 rounded-xl">
                     <div className="text-sm text-gray-600 mb-1">Motivazione</div>
                     <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${getStatusColor(selectedFeedback.motivation_level, 'motivation')}`}>{getMotivationLabel(selectedFeedback.motivation_level)}</span>
                   </div>
                 </div>
 
                 {selectedFeedback.current_weight && (
-                  <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="bg-blue-50 p-4 rounded-xl">
                     <div className="text-sm text-gray-600 mb-1">Peso Attuale</div>
                     <div className="text-2xl font-bold text-blue-800">{selectedFeedback.current_weight} kg</div>
                   </div>
                 )}
 
                 {selectedFeedback.weekly_highlights && (
-                  <div className="bg-green-50 p-4 rounded-lg">
+                  <div className="bg-green-50 p-4 rounded-xl">
                     <h4 className="font-semibold text-gray-900 mb-2">Cosa è andato bene questa settimana</h4>
                     <p className="text-gray-800">{selectedFeedback.weekly_highlights}</p>
                   </div>

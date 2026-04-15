@@ -281,7 +281,7 @@ const VideoManagement: React.FC = () => {
         <h2 className="text-2xl font-bold text-gray-900">{t('admin.videos.title')}</h2>
         <button
           onClick={() => setShowCreateVideo(true)}
-          className="bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 flex items-center space-x-2"
+          className="bg-gray-900 text-white px-4 py-2.5 rounded-xl hover:bg-gray-800 transition-colors flex items-center space-x-2"
         >
           {React.createElement(FiPlus as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
           <span>{t('admin.videos.newVideo')}</span>
@@ -299,14 +299,14 @@ const VideoManagement: React.FC = () => {
             placeholder="Cerca per titolo..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors"
           />
         </div>
 
         <select
           value={muscleGroupFilter}
           onChange={(e) => { setPage(1); setMuscleGroupFilter(e.target.value); }}
-          className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 text-sm"
+          className="w-full sm:w-auto appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow text-sm"
         >
           <option value="">Tutti i gruppi muscolari</option>
           {MUSCLE_GROUPS.map(g => (
@@ -335,35 +335,35 @@ const VideoManagement: React.FC = () => {
 
             <form onSubmit={handleCreateVideo} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.videos.videoTitle')}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('admin.videos.videoTitle')}</label>
                 <input
                   type="text"
                   required
                   value={createVideoForm.title}
                   onChange={(e) => setCreateVideoForm(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                  className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                   placeholder={t('admin.videos.titlePlaceholder')}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.videos.description')}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('admin.videos.description')}</label>
                 <textarea
                   value={createVideoForm.description}
                   onChange={(e) => setCreateVideoForm(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                  className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                   rows={3}
                   placeholder={t('admin.videos.descriptionPlaceholder')}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.videos.category')}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('admin.videos.category')}</label>
                 <select
                   required
                   value={createVideoForm.category}
                   onChange={(e) => setCreateVideoForm(prev => ({ ...prev, category: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                  className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                 >
                   <option value="">{t('admin.videos.selectCategory')}</option>
                   <option value="palestra">{t('admin.videos.categories.palestra')}</option>
@@ -372,11 +372,11 @@ const VideoManagement: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Gruppo muscolare (opzionale)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Gruppo muscolare (opzionale)</label>
                 <select
                   value={createVideoForm.muscleGroup}
                   onChange={(e) => setCreateVideoForm(prev => ({ ...prev, muscleGroup: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                  className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                 >
                   <option value="">Nessuno</option>
                   {MUSCLE_GROUPS.map(g => (
@@ -387,7 +387,7 @@ const VideoManagement: React.FC = () => {
 
               {/* Video File Upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin.videos.videoFile')}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5.5">{t('admin.videos.videoFile')}</label>
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <input
@@ -401,7 +401,7 @@ const VideoManagement: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleUploadVideo}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+                        className="bg-blue-600 text-white px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2"
                       >
                         {React.createElement(FiUpload as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
                         <span>{t('admin.videos.upload')}</span>
@@ -449,26 +449,26 @@ const VideoManagement: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.videos.duration')}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('admin.videos.duration')}</label>
                   <input
                     type="number"
                     required
                     min="0"
                     value={createVideoForm.duration}
                     onChange={(e) => setCreateVideoForm(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                    className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                   />
                   <div className="text-xs text-gray-500 mt-1">
                     {t('admin.videos.autoDetected')}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.videos.thumbnailPath')}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('admin.videos.thumbnailPath')}</label>
                   <input
                     type="text"
                     value={createVideoForm.thumbnailPath}
                     onChange={(e) => setCreateVideoForm(prev => ({ ...prev, thumbnailPath: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                    className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                     placeholder={t('admin.videos.thumbnailPlaceholder')}
                   />
                 </div>
@@ -478,13 +478,13 @@ const VideoManagement: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowCreateVideo(false)}
-                  className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300"
+                  className="flex-1 bg-gray-100 text-gray-700 py-2.5 px-4 rounded-xl hover:bg-gray-200 transition-colors"
                 >
                   {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-gray-900 text-white py-2 px-4 rounded-lg hover:bg-gray-800"
+                  className="flex-1 bg-gray-900 text-white py-2.5 px-4 rounded-xl hover:bg-gray-800 transition-colors"
                 >
                   {t('admin.videos.newVideo')}
                 </button>
@@ -545,21 +545,21 @@ const VideoManagement: React.FC = () => {
               <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => handlePreviewVideo(video)}
-                  className="bg-blue-600 text-white text-xs py-2 px-2 rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-1"
+                  className="bg-blue-600 text-white text-xs py-2.5 px-2 rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center"
                   title="Anteprima"
                 >
                   {React.createElement(FiPlay as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
                 </button>
                 <button
                   onClick={() => handleEditVideo(video)}
-                  className="bg-green-600 text-white text-xs py-2 px-2 rounded-lg hover:bg-green-700 flex items-center justify-center space-x-1"
+                  className="bg-green-600 text-white text-xs py-2.5 px-2 rounded-xl hover:bg-green-700 transition-colors flex items-center justify-center"
                   title="Modifica"
                 >
                   {React.createElement(FiEdit as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
                 </button>
                 <button
                   onClick={() => handleDeleteVideo(video.id, video.title)}
-                  className="bg-red-600 text-white text-xs py-2 px-2 rounded-lg hover:bg-red-700 flex items-center justify-center space-x-1"
+                  className="bg-red-600 text-white text-xs py-2.5 px-2 rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center"
                   title="Elimina"
                 >
                   {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
@@ -610,45 +610,45 @@ const VideoManagement: React.FC = () => {
 
             <form onSubmit={handleUpdateVideo} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Titolo *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Titolo *</label>
                 <input
                   type="text"
                   required
                   value={editForm.title}
                   onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                  className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                   placeholder="Nome del video"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Descrizione</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Descrizione</label>
                 <textarea
                   value={editForm.description}
                   onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                  className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                   rows={3}
                   placeholder="Descrizione del video"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Thumbnail Path</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Thumbnail Path</label>
                 <input
                   type="text"
                   value={editForm.thumbnailPath}
                   onChange={(e) => setEditForm(prev => ({ ...prev, thumbnailPath: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                  className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                   placeholder="categoria/thumb.jpg"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Gruppo muscolare (opzionale)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Gruppo muscolare (opzionale)</label>
                 <select
                   value={editForm.muscleGroup}
                   onChange={(e) => setEditForm(prev => ({ ...prev, muscleGroup: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                  className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                 >
                   <option value="">Nessuno</option>
                   {MUSCLE_GROUPS.map(g => (
@@ -673,13 +673,13 @@ const VideoManagement: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setEditingVideo(null)}
-                  className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300"
+                  className="flex-1 bg-gray-100 text-gray-700 py-2.5 px-4 rounded-xl hover:bg-gray-200 transition-colors"
                 >
                   {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-gray-900 text-white py-2 px-4 rounded-lg hover:bg-gray-800"
+                  className="flex-1 bg-gray-900 text-white py-2.5 px-4 rounded-xl hover:bg-gray-800 transition-colors"
                 >
                   Salva Modifiche
                 </button>

@@ -75,7 +75,7 @@ const SortableVideoItem: React.FC<{
     <div
       ref={setNodeRef}
       style={style}
-      className="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center justify-between"
+      className="bg-gray-50 border border-gray-200 rounded-xl p-3 flex items-center justify-between"
     >
       <div className="flex items-center space-x-3 flex-1">
         <button
@@ -96,7 +96,7 @@ const SortableVideoItem: React.FC<{
       </div>
       <button
         onClick={onRemove}
-        className="ml-2 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+        className="ml-2 p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
       >
         {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
       </button>
@@ -343,7 +343,7 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
         <button
           onClick={handleAddDay}
           disabled={loading}
-          className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2.5 rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {React.createElement(FiPlus as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
           <span>Aggiungi Giorno</span>
@@ -376,7 +376,7 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
                   <div className="flex items-center space-x-3 flex-1">
                     <button
                       onClick={() => toggleDay(day.id)}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
                     >
                       {isExpanded
                         ? React.createElement(FiChevronUp as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })
@@ -390,7 +390,7 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
                           type="text"
                           value={editDayName}
                           onChange={(e) => setEditDayName(e.target.value)}
-                          className="flex-1 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                          className="flex-1 px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors"
                           placeholder="Nome giorno"
                         />
                         <button
@@ -432,7 +432,7 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
 
                   <button
                     onClick={() => handleDeleteDay(day.id)}
-                    className="ml-2 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className="ml-2 p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                   >
                     {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
                   </button>
@@ -490,7 +490,7 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
                             placeholder="Cerca video..."
                             value={videoSearchTerm}
                             onChange={(e) => setVideoSearchTerm(e.target.value)}
-                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                            className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors"
                           />
                         </div>
 
@@ -504,7 +504,7 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
                               <button
                                 key={video.id}
                                 onClick={() => handleAssignVideo(day.id, video.id)}
-                                className="w-full text-left bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg p-3 transition-colors"
+                                className="w-full text-left bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl p-3 transition-colors"
                               >
                                 <h6 className="font-medium text-gray-900 text-sm">{video.title}</h6>
                                 <div className="text-xs text-gray-500 space-x-2 mt-1">
@@ -520,7 +520,7 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
                     ) : (
                       <button
                         onClick={() => setShowAddVideo(day.id)}
-                        className="w-full mt-2 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors"
+                        className="w-full mt-2 py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors"
                       >
                         + Aggiungi Video
                       </button>

@@ -159,7 +159,7 @@ const UserDetail: React.FC = () => {
       <div className="flex items-center space-x-4">
         <button
           onClick={() => navigate('/admin')}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
           title="Torna agli utenti"
         >
           {React.createElement(FiArrowLeft as React.ComponentType<{ className?: string }>, { className: "w-6 h-6" })}
@@ -243,7 +243,7 @@ const UserDetail: React.FC = () => {
                 placeholder="Cerca video..."
                 value={videoSearchTerm}
                 onChange={(e) => setVideoSearchTerm(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors"
               />
             </div>
             {videoSearchTerm && (
@@ -277,7 +277,7 @@ const UserDetail: React.FC = () => {
                     </div>
                     <button
                       onClick={() => handleRevokeVideo(video.id)}
-                      className="w-full mt-3 bg-red-600 text-white text-sm py-2 px-3 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2"
+                      className="w-full mt-3 bg-red-600 text-white text-sm py-2.5 px-3 rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
                     >
                       {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
                       <span>Revoca Accesso</span>
@@ -313,7 +313,7 @@ const UserDetail: React.FC = () => {
                     </div>
                     <button
                       onClick={() => handleAssignVideo(video.id)}
-                      className="w-full bg-green-600 text-white text-sm py-2 px-3 rounded-lg hover:bg-green-700 transition-colors"
+                      className="w-full bg-green-600 text-white text-sm py-2.5 px-3 rounded-xl hover:bg-green-700 transition-colors"
                     >
                       Assegna Video
                     </button>

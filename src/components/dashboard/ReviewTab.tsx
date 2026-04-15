@@ -109,7 +109,7 @@ const ReviewTab: React.FC = () => {
         {!review && !showReviewForm && (
           <button
             onClick={() => setShowReviewForm(true)}
-            className="bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors flex items-center space-x-2"
+            className="bg-gray-900 text-white px-4 py-2.5 rounded-xl hover:bg-gray-800 transition-colors flex items-center space-x-2"
           >
             {React.createElement(FiStar as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
             <span>Lascia una recensione</span>
@@ -169,7 +169,7 @@ const ReviewTab: React.FC = () => {
       ) : showReviewForm ? (
         <form onSubmit={handleReviewSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5.5">
               Valutazione
             </label>
             <div className="flex items-center space-x-1">
@@ -190,27 +190,27 @@ const ReviewTab: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5.5">
               Titolo (opzionale)
             </label>
             <input
               type="text"
               value={reviewFormData.title}
               onChange={(e) => setReviewFormData(prev => ({ ...prev, title: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+              className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow focus:border-transparent"
               placeholder="Titolo della recensione..."
               maxLength={200}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5.5">
               Commento *
             </label>
             <textarea
               value={reviewFormData.comment}
               onChange={(e) => setReviewFormData(prev => ({ ...prev, comment: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+              className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow focus:border-transparent"
               rows={4}
               placeholder="Condividi la tua esperienza con gli allenamenti di Joshua..."
               required
@@ -229,7 +229,7 @@ const ReviewTab: React.FC = () => {
                 setShowReviewForm(false);
                 setReviewFormData({ rating: 5, title: '', comment: '' });
               }}
-              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-2.5 text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
               disabled={reviewLoading}
             >
               {t('dashboard.cancel')}
@@ -237,7 +237,7 @@ const ReviewTab: React.FC = () => {
             <button
               type="submit"
               disabled={reviewLoading || reviewFormData.comment.length < 10}
-              className="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              className="px-6 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
               {reviewLoading && (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>

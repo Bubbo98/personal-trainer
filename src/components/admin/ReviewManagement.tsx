@@ -154,7 +154,7 @@ const ReviewManagement: React.FC = () => {
                   {!review.isApproved ? (
                     <button
                       onClick={() => handleApproveReview(review.id, true)}
-                      className="bg-green-600 text-white px-3 py-2 text-sm rounded-lg hover:bg-green-700 flex items-center justify-center space-x-1 flex-1 sm:flex-initial"
+                      className="bg-green-600 text-white px-3 py-2.5 text-sm rounded-xl hover:bg-green-700 transition-colors flex items-center justify-center gap-1 flex-1 sm:flex-initial"
                     >
                       {React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
                       <span>{t('admin.reviews.approve')}</span>
@@ -162,7 +162,7 @@ const ReviewManagement: React.FC = () => {
                   ) : (
                     <button
                       onClick={() => handleApproveReview(review.id, false)}
-                      className="bg-yellow-600 text-white px-3 py-2 text-sm rounded-lg hover:bg-yellow-700 flex items-center justify-center space-x-1 flex-1 sm:flex-initial"
+                      className="bg-yellow-600 text-white px-3 py-2.5 text-sm rounded-xl hover:bg-yellow-700 transition-colors flex items-center justify-center gap-1 flex-1 sm:flex-initial"
                     >
                       {React.createElement(FiX as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
                       <span>{t('admin.reviews.unapprove')}</span>
@@ -174,7 +174,7 @@ const ReviewManagement: React.FC = () => {
                     !review.isFeatured ? (
                       <button
                         onClick={() => handleFeatureReview(review.id, true)}
-                        className="bg-blue-600 text-white px-3 py-2 text-sm rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-1 flex-1 sm:flex-initial"
+                        className="bg-blue-600 text-white px-3 py-2.5 text-sm rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-1 flex-1 sm:flex-initial"
                       >
                         {React.createElement(FiStar as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
                         <span>{t('admin.reviews.toggleFeatured')}</span>
@@ -182,7 +182,7 @@ const ReviewManagement: React.FC = () => {
                     ) : (
                       <button
                         onClick={() => handleFeatureReview(review.id, false)}
-                        className="bg-gray-600 text-white px-3 py-2 text-sm rounded-lg hover:bg-gray-700 flex items-center justify-center space-x-1 flex-1 sm:flex-initial"
+                        className="bg-gray-600 text-white px-3 py-2.5 text-sm rounded-xl hover:bg-gray-700 transition-colors flex items-center justify-center gap-1 flex-1 sm:flex-initial"
                       >
                         {React.createElement(FiStar as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
                         <span>{t('admin.reviews.toggleFeatured')}</span>
@@ -194,7 +194,7 @@ const ReviewManagement: React.FC = () => {
                 {/* Delete button */}
                 <button
                   onClick={() => handleDeleteReview(review.id, `${review.user.firstName} ${review.user.lastName}`)}
-                  className="bg-red-600 text-white px-3 py-2 text-sm rounded-lg hover:bg-red-700 flex items-center justify-center space-x-1 w-full sm:w-auto"
+                  className="bg-red-600 text-white px-3 py-2.5 text-sm rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-1 w-full sm:w-auto"
                 >
                   {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
                   <span>{t('common.delete')}</span>

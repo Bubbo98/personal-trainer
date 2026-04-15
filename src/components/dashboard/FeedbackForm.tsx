@@ -315,7 +315,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
                   value={formData.muscularNotes}
                   onChange={(e) => setFormData(prev => ({ ...prev, muscularNotes: e.target.value }))}
                   rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors"
                   placeholder={t("dashboard.feedback.checkin.discomfortNotesPlaceholder")}
                 />
               </div>
@@ -354,7 +354,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
                   value={formData.articularNotes}
                   onChange={(e) => setFormData(prev => ({ ...prev, articularNotes: e.target.value }))}
                   rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors"
                   placeholder={t("dashboard.feedback.checkin.discomfortNotesPlaceholder")}
                 />
               </div>

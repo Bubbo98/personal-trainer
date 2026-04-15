@@ -57,7 +57,7 @@ const AnalyticsManagement: React.FC = () => {
               href={vercelProjectUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-md"
+              className="inline-flex items-center space-x-2 bg-gray-900 text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-colors font-medium shadow-md"
             >
               <span>Visualizza Dashboard Completa</span>
               {React.createElement(FiExternalLink as React.ComponentType<{ className?: string }>, {
@@ -73,7 +73,7 @@ const AnalyticsManagement: React.FC = () => {
         {features.map((feature, index) => (
           <div key={index} className="bg-white rounded-xl p-6 shadow-sm">
             <div className="flex items-center space-x-3 mb-3">
-              <div className="p-3 bg-blue-100 rounded-lg">
+              <div className="p-3 bg-gray-100 rounded-xl">
                 {React.createElement(feature.icon as React.ComponentType<{ className?: string }>, {
                   className: "w-6 h-6 text-blue-600"
                 })}
@@ -167,7 +167,7 @@ const AnalyticsManagement: React.FC = () => {
           href={vercelProjectUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center space-x-2 bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-lg text-lg"
+          className="inline-flex items-center space-x-2 bg-gray-900 text-white px-8 py-4 rounded-xl hover:bg-gray-800 transition-colors font-medium shadow-lg text-lg"
         >
           <span>Apri Dashboard Analytics</span>
           {React.createElement(FiExternalLink as React.ComponentType<{ className?: string }>, {
