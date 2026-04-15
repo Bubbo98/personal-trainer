@@ -510,8 +510,17 @@ const VideoManagement: React.FC = () => {
         ) : (
           videos.map((video) => (
           <div key={video.id} className="bg-white rounded-xl shadow-lg overflow-hidden">
-            <div className="aspect-video bg-gray-200 flex items-center justify-center">
-              {React.createElement(FiVideo as React.ComponentType<{ className?: string }>, { className: "w-12 h-12 text-gray-400" })}
+            <div className="relative aspect-video bg-gray-200 flex items-center justify-center">
+              {video.thumbnailPath ? (
+                <img
+                  src={`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:3001'}/thumbnails/${video.thumbnailPath}`}
+                  alt={video.title}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+              ) : (
+                React.createElement(FiVideo as React.ComponentType<{ className?: string }>, { className: "w-12 h-12 text-gray-400" })
+              )}
             </div>
 
             <div className="p-3 sm:p-4">
