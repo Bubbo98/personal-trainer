@@ -357,7 +357,51 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
           ) : (
             <>
               {loading && <div className="flex justify-center py-3"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-900"></div></div>}
-              <div className="overflow-x-auto">
+
+              {/* Mobile card list */}
+              <div className="block md:hidden divide-y divide-gray-200">
+                {feedbacks.map((feedback) => {
+                  const isNew = !feedback.trainer_seen_at;
+                  return (
+                    <div
+                      key={feedback.id}
+                      className={`p-4 cursor-pointer active:bg-gray-50 transition-colors ${isNew ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''} ${feedback.physical_discomfort === 'significant' && !isNew ? 'bg-red-50' : ''}`}
+                      onClick={() => {
+                        setSelectedFeedback(feedback);
+                        if (isNew) {
+                          apiCall(`/feedback/admin/${feedback.id}/mark-seen`, { method: 'POST' })
+                            .then(() => { feedback.trainer_seen_at = new Date().toISOString(); setFeedbacks([...feedbacks]); if (onFeedbacksSeen) onFeedbacksSeen(); })
+                            .catch(err => console.error('Error marking feedback as seen:', err));
+                        }
+                      }}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {isNew && <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white uppercase">Nuovo</span>}
+                            <span className={`font-semibold text-gray-900 text-sm ${isNew ? 'text-blue-900' : ''}`}>{feedback.user_first_name} {feedback.user_last_name}</span>
+                            {feedback.trainer_seen_at && <span className="text-green-500 text-xs font-medium">✓</span>}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">{formatDate(feedback.feedback_date)}</p>
+                        </div>
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteFeedback(feedback.id); }} className="text-red-500 hover:text-red-700 p-1.5 ml-2 flex-shrink-0">
+                          {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-x-2 gap-y-2 text-xs">
+                        <div><p className="text-gray-500 mb-0.5">Energia</p><span className={`px-1.5 py-0.5 rounded font-medium ${getStatusColor(feedback.energy_level, 'energy')}`}>{getEnergyLabel(feedback.energy_level)}</span></div>
+                        <div><p className="text-gray-500 mb-0.5">Allenamenti</p><span className={`px-1.5 py-0.5 rounded font-medium ${getStatusColor(feedback.workouts_completed, 'workouts')}`}>{getWorkoutsLabel(feedback.workouts_completed)}</span></div>
+                        <div><p className="text-gray-500 mb-0.5">Motivazione</p><span className={`px-1.5 py-0.5 rounded font-medium ${getStatusColor(feedback.motivation_level, 'motivation')}`}>{getMotivationLabel(feedback.motivation_level)}</span></div>
+                        <div><p className="text-gray-500 mb-0.5">Dolori</p><span className={`px-1.5 py-0.5 rounded font-medium ${getStatusColor(feedback.physical_discomfort, 'discomfort')}`}>{getDiscomfortLabel(feedback.physical_discomfort)}</span></div>
+                        {feedback.current_weight && <div><p className="text-gray-500 mb-0.5">Peso</p><span className="font-semibold text-gray-900">{feedback.current_weight} kg</span></div>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
@@ -382,11 +426,7 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                           setSelectedFeedback(feedback);
                           if (isNew) {
                             apiCall(`/feedback/admin/${feedback.id}/mark-seen`, { method: 'POST' })
-                              .then(() => {
-                                feedback.trainer_seen_at = new Date().toISOString();
-                                setFeedbacks([...feedbacks]);
-                                if (onFeedbacksSeen) onFeedbacksSeen();
-                              })
+                              .then(() => { feedback.trainer_seen_at = new Date().toISOString(); setFeedbacks([...feedbacks]); if (onFeedbacksSeen) onFeedbacksSeen(); })
                               .catch(err => console.error('Error marking feedback as seen:', err));
                           }
                         }}
@@ -449,46 +489,46 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                 <div key={userSum.user_id} className="bg-white rounded-xl shadow-lg overflow-hidden">
                   {/* User Header */}
                   <div
-                    className={`p-6 cursor-pointer hover:bg-gray-50 transition-colors ${userSum.last_physical_discomfort === 'significant' ? 'bg-red-50' : ''}`}
+                    className={`p-4 cursor-pointer active:bg-gray-50 transition-colors ${userSum.last_physical_discomfort === 'significant' ? 'bg-red-50' : ''}`}
                     onClick={() => toggleUserExpand(userSum.user_id)}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="text-xl font-bold text-gray-900">{userSum.first_name} {userSum.last_name}</h3>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center flex-wrap gap-2 mb-1">
+                          <h3 className="text-base font-bold text-gray-900">{userSum.first_name} {userSum.last_name}</h3>
                           {userSum.last_physical_discomfort !== 'none' && (
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(userSum.last_physical_discomfort, 'discomfort')}`}>
+                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(userSum.last_physical_discomfort, 'discomfort')}`}>
                               {getDiscomfortLabel(userSum.last_physical_discomfort)}
                             </span>
                           )}
-                          <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">{userSum.total_feedbacks} check</span>
+                          <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">{userSum.total_feedbacks} check</span>
                         </div>
-                        <div className="text-sm text-gray-600 mb-3">{userSum.username} • {userSum.email}</div>
-                        <div className="flex flex-wrap gap-4">
-                          <div className="px-4 py-2 rounded-lg bg-gray-50">
-                            <div className="text-xs text-gray-600">Ultima Energia</div>
-                            <div className={`text-sm font-bold inline-block px-2 py-0.5 rounded mt-1 ${getStatusColor(userSum.last_energy_level, 'energy')}`}>{getEnergyLabel(userSum.last_energy_level)}</div>
+                        <div className="text-xs text-gray-500 mb-3 truncate">{userSum.username} · {userSum.email}</div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          <div className="px-3 py-2 rounded-lg bg-gray-50">
+                            <div className="text-xs text-gray-500 mb-1">Energia</div>
+                            <span className={`text-xs font-bold inline-block px-2 py-0.5 rounded ${getStatusColor(userSum.last_energy_level, 'energy')}`}>{getEnergyLabel(userSum.last_energy_level)}</span>
                           </div>
-                          <div className="px-4 py-2 rounded-lg bg-gray-50">
-                            <div className="text-xs text-gray-600">Ultima Motivazione</div>
-                            <div className={`text-sm font-bold inline-block px-2 py-0.5 rounded mt-1 ${getStatusColor(userSum.last_motivation_level, 'motivation')}`}>{getMotivationLabel(userSum.last_motivation_level)}</div>
+                          <div className="px-3 py-2 rounded-lg bg-gray-50">
+                            <div className="text-xs text-gray-500 mb-1">Motivazione</div>
+                            <span className={`text-xs font-bold inline-block px-2 py-0.5 rounded ${getStatusColor(userSum.last_motivation_level, 'motivation')}`}>{getMotivationLabel(userSum.last_motivation_level)}</span>
                           </div>
-                          <div className="px-4 py-2 rounded-lg bg-gray-50">
-                            <div className="text-xs text-gray-600">Ultimo Check</div>
-                            <div className="text-sm font-medium text-gray-900">{formatDate(userSum.last_feedback_date)}</div>
+                          <div className="px-3 py-2 rounded-lg bg-gray-50">
+                            <div className="text-xs text-gray-500 mb-1">Ultimo check</div>
+                            <div className="text-xs font-medium text-gray-900">{formatDate(userSum.last_feedback_date)}</div>
                           </div>
                           {userSum.last_current_weight && (
-                            <div className="px-4 py-2 rounded-lg bg-blue-50">
-                              <div className="text-xs text-gray-600">Ultimo Peso</div>
-                              <div className="text-sm font-bold text-blue-800">{userSum.last_current_weight} kg</div>
+                            <div className="px-3 py-2 rounded-lg bg-blue-50">
+                              <div className="text-xs text-gray-500 mb-1">Peso</div>
+                              <div className="text-xs font-bold text-blue-800">{userSum.last_current_weight} kg</div>
                             </div>
                           )}
                         </div>
                       </div>
-                      <div className="ml-4">
+                      <div className="flex-shrink-0 mt-1">
                         {expandedUsers[userSum.user_id]
-                          ? React.createElement(FiChevronUp as React.ComponentType<{ className?: string }>, { className: "w-6 h-6 text-gray-400" })
-                          : React.createElement(FiChevronDown as React.ComponentType<{ className?: string }>, { className: "w-6 h-6 text-gray-400" })
+                          ? React.createElement(FiChevronUp as React.ComponentType<{ className?: string }>, { className: "w-5 h-5 text-gray-400" })
+                          : React.createElement(FiChevronDown as React.ComponentType<{ className?: string }>, { className: "w-5 h-5 text-gray-400" })
                         }
                       </div>
                     </div>
@@ -531,11 +571,11 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                                     )}
                                     {feedback.trainer_seen_at && <span className="text-green-500 text-xs font-medium">✓ Visto</span>}
                                   </div>
-                                  <div className="flex flex-wrap gap-4 text-sm">
-                                    <div><span className="text-gray-600">Energia: </span><span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(feedback.energy_level, 'energy')}`}>{getEnergyLabel(feedback.energy_level)}</span></div>
-                                    <div><span className="text-gray-600">Allenamenti: </span><span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(feedback.workouts_completed, 'workouts')}`}>{getWorkoutsLabel(feedback.workouts_completed)}</span></div>
-                                    <div><span className="text-gray-600">Sonno: </span><span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(feedback.sleep_quality, 'sleep')}`}>{getSleepLabel(feedback.sleep_quality)}</span></div>
-                                    {feedback.current_weight && <div><span className="text-gray-600">Peso: </span><span className="font-medium">{feedback.current_weight} kg</span></div>}
+                                  <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-x-4 gap-y-1.5 sm:gap-4 text-xs sm:text-sm mt-1">
+                                    <div><span className="text-gray-500">Energia: </span><span className={`px-1.5 py-0.5 rounded font-medium ${getStatusColor(feedback.energy_level, 'energy')}`}>{getEnergyLabel(feedback.energy_level)}</span></div>
+                                    <div><span className="text-gray-500">Allenamenti: </span><span className={`px-1.5 py-0.5 rounded font-medium ${getStatusColor(feedback.workouts_completed, 'workouts')}`}>{getWorkoutsLabel(feedback.workouts_completed)}</span></div>
+                                    <div><span className="text-gray-500">Sonno: </span><span className={`px-1.5 py-0.5 rounded font-medium ${getStatusColor(feedback.sleep_quality, 'sleep')}`}>{getSleepLabel(feedback.sleep_quality)}</span></div>
+                                    {feedback.current_weight && <div><span className="text-gray-500">Peso: </span><span className="font-semibold text-gray-900">{feedback.current_weight} kg</span></div>}
                                   </div>
                                 </div>
                                 <button onClick={(e) => { e.stopPropagation(); handleDeleteFeedback(feedback.id, feedback.user_id); }} className="text-red-600 hover:text-red-800 p-2 ml-4" title={t('admin.feedback.deleteFeedback')}>
