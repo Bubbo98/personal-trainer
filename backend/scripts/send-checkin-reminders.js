@@ -20,7 +20,7 @@ async function findUsersNeedingReminder() {
   // Find users who:
   // 1. Have a PDF updated more than 1 week ago
   // 2. Either have no feedback OR last feedback was 2+ weeks ago
-  // 3. Have an email address stored in their feedbacks (we use the most recent one)
+  // 3. Have an email (from users table, fallback to last feedback email)
   const query = `
     SELECT DISTINCT
       u.id as user_id,
@@ -28,12 +28,15 @@ async function findUsersNeedingReminder() {
       u.username,
       COALESCE(t.name, 'Joshua') as trainer_name,
       upf.updated_at as pdf_updated_at,
-      (
-        SELECT uf.email
-        FROM user_feedbacks uf
-        WHERE uf.user_id = u.id
-        ORDER BY uf.created_at DESC
-        LIMIT 1
+      COALESCE(
+        u.email,
+        (
+          SELECT uf.email
+          FROM user_feedbacks uf
+          WHERE uf.user_id = u.id
+          ORDER BY uf.created_at DESC
+          LIMIT 1
+        )
       ) as last_known_email,
       (
         SELECT MAX(uf.created_at)
@@ -45,6 +48,7 @@ async function findUsersNeedingReminder() {
     LEFT JOIN trainers t ON u.trainer_id = t.id
     WHERE
       upf.updated_at <= ?
+      AND u.is_active = 1
       AND u.username NOT LIKE '%admin%'
   `;
 
