@@ -171,7 +171,7 @@ const VideoManagement: React.FC = () => {
   const handleCreateVideo = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await apiCall('/admin/videos', {
+      await apiCall('/admin/videos', {
         method: 'POST',
         body: JSON.stringify(createVideoForm)
       });

@@ -338,67 +338,48 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) =
           <h3 className="text-xl font-bold text-gray-900 mb-4">{t('dashboard.feedback.previousFeedbacks')}</h3>
           <div className="space-y-4">
             {feedbacks.map((feedback) => (
-              <div key={feedback.id} className="bg-white rounded-lg shadow-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h4 className="text-lg font-semibold text-gray-900">
+              <div key={feedback.id} className="bg-white rounded-xl shadow-md overflow-hidden">
+                {/* Card header */}
+                <div className="px-4 py-4 border-b border-gray-100 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h4 className="font-semibold text-gray-900 truncate">
                       {t('dashboard.feedback.details.feedbackOf')} {formatDate(feedback.feedback_date)}
                     </h4>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-xs text-gray-400 mt-0.5">
                       {t('dashboard.feedback.details.submittedOn')} {formatDate(feedback.created_at)}
                     </p>
                   </div>
                   {feedback.current_weight && (
-                    <div className="text-right">
-                      <p className="text-sm text-gray-500">{t('dashboard.feedback.checkin.currentWeight')}</p>
-                      <p className="text-xl font-bold text-gray-900">{feedback.current_weight} kg</p>
+                    <div className="flex-shrink-0 text-right">
+                      <p className="text-xs text-gray-400">{t('dashboard.feedback.checkin.currentWeight')}</p>
+                      <p className="text-xl font-bold text-gray-900 leading-tight">{feedback.current_weight} kg</p>
                     </div>
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-600 font-medium mb-1">{t('dashboard.feedback.checkin.energyLabel')}</p>
-                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getStatusColor(feedback.energy_level, 'energy')}`}>
-                      {getEnergyLabel(feedback.energy_level)}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-gray-600 font-medium mb-1">{t('dashboard.feedback.checkin.workoutsLabel')}</p>
-                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getStatusColor(feedback.workouts_completed, 'workouts')}`}>
-                      {getWorkoutsLabel(feedback.workouts_completed)}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-gray-600 font-medium mb-1">{t('dashboard.feedback.checkin.mealPlanLabel')}</p>
-                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getStatusColor(feedback.meal_plan_followed, 'meal')}`}>
-                      {getMealPlanLabel(feedback.meal_plan_followed)}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-gray-600 font-medium mb-1">{t('dashboard.feedback.checkin.sleepLabel')}</p>
-                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getStatusColor(feedback.sleep_quality, 'sleep')}`}>
-                      {getSleepLabel(feedback.sleep_quality)}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-gray-600 font-medium mb-1">{t('dashboard.feedback.checkin.discomfortLabel')}</p>
-                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getStatusColor(feedback.physical_discomfort, 'discomfort')}`}>
-                      {getDiscomfortLabel(feedback.physical_discomfort)}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-gray-600 font-medium mb-1">{t('dashboard.feedback.checkin.motivationLabel')}</p>
-                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getStatusColor(feedback.motivation_level, 'motivation')}`}>
-                      {getMotivationLabel(feedback.motivation_level)}
-                    </span>
-                  </div>
+                {/* Metrics */}
+                <div className="px-4 py-4 grid grid-cols-2 gap-x-4 gap-y-3">
+                  {[
+                    { label: t('dashboard.feedback.checkin.energyLabel'), value: getEnergyLabel(feedback.energy_level), color: getStatusColor(feedback.energy_level, 'energy') },
+                    { label: t('dashboard.feedback.checkin.workoutsLabel'), value: getWorkoutsLabel(feedback.workouts_completed), color: getStatusColor(feedback.workouts_completed, 'workouts') },
+                    { label: t('dashboard.feedback.checkin.mealPlanLabel'), value: getMealPlanLabel(feedback.meal_plan_followed), color: getStatusColor(feedback.meal_plan_followed, 'meal') },
+                    { label: t('dashboard.feedback.checkin.sleepLabel'), value: getSleepLabel(feedback.sleep_quality), color: getStatusColor(feedback.sleep_quality, 'sleep') },
+                    { label: t('dashboard.feedback.checkin.discomfortLabel'), value: getDiscomfortLabel(feedback.physical_discomfort), color: getStatusColor(feedback.physical_discomfort, 'discomfort') },
+                    { label: t('dashboard.feedback.checkin.motivationLabel'), value: getMotivationLabel(feedback.motivation_level), color: getStatusColor(feedback.motivation_level, 'motivation') },
+                  ].map((metric) => (
+                    <div key={metric.label}>
+                      <p className="text-xs text-gray-500 mb-1">{metric.label}</p>
+                      <span className={`inline-block px-2 py-1 rounded-lg text-xs font-semibold ${metric.color}`}>
+                        {metric.value}
+                      </span>
+                    </div>
+                  ))}
                 </div>
 
                 {feedback.weekly_highlights && (
-                  <div className="mt-4">
-                    <p className="text-gray-600 font-medium mb-1">{t('dashboard.feedback.checkin.weeklyHighlightsLabel')}</p>
-                    <p className="text-gray-700 bg-gray-50 p-3 rounded">{feedback.weekly_highlights}</p>
+                  <div className="px-4 pb-4">
+                    <p className="text-xs text-gray-500 mb-1">{t('dashboard.feedback.checkin.weeklyHighlightsLabel')}</p>
+                    <p className="text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded-lg">{feedback.weekly_highlights}</p>
                   </div>
                 )}
               </div>
