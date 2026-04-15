@@ -14,7 +14,14 @@ import { apiCall, formatDate, formatDuration } from '../../utils/adminUtils';
 import { Video, CreateVideoForm } from '../../types/admin';
 
 const MUSCLE_GROUPS = ['Polpaccio','Quadricipite','Femorale','Gluteo','Lombare','Dorsale','Trapezio','Pettorale','Spalle','Bicipite','Tricipite','Addome'];
-const PAGE_SIZE = 20;
+
+// Responsive page size: fewer cards on smaller screens
+const getPageSize = () => {
+  if (typeof window === 'undefined') return 20;
+  if (window.innerWidth < 768) return 6;   // mobile: 1 col
+  if (window.innerWidth < 1024) return 12; // tablet: 2 cols
+  return 20;                               // desktop: 3 cols
+};
 
 const VideoManagement: React.FC = () => {
   const { t } = useTranslation();
@@ -23,6 +30,7 @@ const VideoManagement: React.FC = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
+  const [pageSize] = useState(getPageSize);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [muscleGroupFilter, setMuscleGroupFilter] = useState('');
@@ -52,7 +60,7 @@ const VideoManagement: React.FC = () => {
   const loadVideos = useCallback(async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) });
+      const params = new URLSearchParams({ page: String(page), limit: String(pageSize) });
       if (search) params.append('search', search);
       if (muscleGroupFilter) params.append('muscleGroup', muscleGroupFilter);
       const response = await apiCall(`/admin/videos?${params}`);
@@ -64,7 +72,7 @@ const VideoManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, search, muscleGroupFilter]);
+  }, [page, search, muscleGroupFilter, pageSize]);
 
   useEffect(() => {
     loadVideos();
@@ -281,8 +289,8 @@ const VideoManagement: React.FC = () => {
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-md">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
+        <div className="relative w-full sm:flex-1 sm:min-w-[200px] sm:max-w-md">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             {React.createElement(FiSearch as React.ComponentType<{ className?: string }>, { className: "w-4 h-4 text-gray-400" })}
           </div>
@@ -298,7 +306,7 @@ const VideoManagement: React.FC = () => {
         <select
           value={muscleGroupFilter}
           onChange={(e) => { setPage(1); setMuscleGroupFilter(e.target.value); }}
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 text-sm"
+          className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 text-sm"
         >
           <option value="">Tutti i gruppi muscolari</option>
           {MUSCLE_GROUPS.map(g => (
@@ -306,7 +314,7 @@ const VideoManagement: React.FC = () => {
           ))}
         </select>
 
-        <div className="text-sm text-gray-500 ml-auto">
+        <div className="text-sm text-gray-500 sm:ml-auto">
           {totalCount} video{(search || muscleGroupFilter) ? ' trovati' : ' totali'}
         </div>
       </div>
@@ -506,9 +514,9 @@ const VideoManagement: React.FC = () => {
               {React.createElement(FiVideo as React.ComponentType<{ className?: string }>, { className: "w-12 h-12 text-gray-400" })}
             </div>
 
-            <div className="p-4">
+            <div className="p-3 sm:p-4">
               <div className="mb-2">
-                <h3 className="font-bold text-lg text-gray-900 mb-1">{video.title}</h3>
+                <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-1 line-clamp-2">{video.title}</h3>
                 <p className="text-sm text-gray-600 line-clamp-2 whitespace-pre-wrap">{video.description}</p>
               </div>
 
@@ -530,7 +538,7 @@ const VideoManagement: React.FC = () => {
                 <span>{t('admin.videos.createdAt')}: {formatDate(video.createdAt)}</span>
               </div>
 
-              <div className="text-xs text-gray-500 bg-gray-100 rounded p-2 mb-3">
+              <div className="hidden sm:block text-xs text-gray-500 bg-gray-100 rounded p-2 mb-3">
                 <strong>File:</strong> {video.filePath}
               </div>
 
