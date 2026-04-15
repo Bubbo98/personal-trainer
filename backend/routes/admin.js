@@ -775,49 +775,97 @@ router.get('/videos/:id/preview', async (req, res) => {
 });
 
 // GET /api/admin/videos
-// Get all videos (admin view)
+// Get all videos (admin view) — supports optional pagination and filters
+// Query params: page, limit (pagination), search (title), muscleGroup
+// Without page param: returns all videos (backward compatible)
 router.get('/videos', (req, res) => {
+    const { page, limit, search, muscleGroup } = req.query;
+    const isPaginated = page !== undefined;
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20));
+    const offset = (pageNum - 1) * limitNum;
+
+    // Build dynamic WHERE conditions
+    const conditions = ['v.is_active = 1'];
+    const filterParams = [];
+
+    if (search) {
+        conditions.push('v.title LIKE ?');
+        filterParams.push(`%${search}%`);
+    }
+    if (muscleGroup) {
+        conditions.push('v.muscle_group = ?');
+        filterParams.push(muscleGroup);
+    }
+
+    const whereClause = conditions.join(' AND ');
     const db = createDatabase();
 
-    db.allCallback(`
-        SELECT
-            v.*,
-            COUNT(uvp.user_id) as user_count
-        FROM videos v
-        LEFT JOIN user_video_permissions uvp ON v.id = uvp.video_id AND uvp.is_active = 1
-        WHERE v.is_active = 1
-        GROUP BY v.id
-        ORDER BY v.created_at DESC
-    `, [], (err, videos) => {
-        db.close();
+    // Step 1: get total count matching the filters
+    db.getCallback(
+        `SELECT COUNT(*) as total FROM videos v WHERE ${whereClause}`,
+        filterParams,
+        (err, countRow) => {
+            if (err) {
+                db.close();
+                console.error('Database error (count):', err.message);
+                return res.status(500).json({ success: false, error: 'Database error' });
+            }
 
-        if (err) {
-            console.error('Database error:', err.message);
-            return res.status(500).json({
-                success: false,
-                error: 'Database error'
+            const total = Number(countRow?.total || 0);
+
+            // Step 2: get video rows, with optional LIMIT/OFFSET
+            const dataParams = [...filterParams];
+            let dataQuery = `
+                SELECT
+                    v.*,
+                    COUNT(uvp.user_id) as user_count
+                FROM videos v
+                LEFT JOIN user_video_permissions uvp ON v.id = uvp.video_id AND uvp.is_active = 1
+                WHERE ${whereClause}
+                GROUP BY v.id
+                ORDER BY v.created_at DESC
+            `;
+
+            if (isPaginated) {
+                dataQuery += ` LIMIT ? OFFSET ?`;
+                dataParams.push(limitNum, offset);
+            }
+
+            db.allCallback(dataQuery, dataParams, (err, videos) => {
+                db.close();
+
+                if (err) {
+                    console.error('Database error (data):', err.message);
+                    return res.status(500).json({ success: false, error: 'Database error' });
+                }
+
+                const responseData = {
+                    videos: videos.map(video => ({
+                        id: video.id,
+                        title: video.title,
+                        description: video.description,
+                        filePath: video.file_path,
+                        duration: video.duration,
+                        thumbnailPath: video.thumbnail_path,
+                        category: video.category,
+                        muscleGroup: video.muscle_group || null,
+                        createdAt: video.created_at,
+                        updatedAt: video.updated_at,
+                        userCount: video.user_count
+                    })),
+                    totalCount: total
+                };
+
+                if (isPaginated) {
+                    responseData.totalPages = Math.ceil(total / limitNum);
+                    responseData.currentPage = pageNum;
+                }
+
+                res.json({ success: true, data: responseData });
             });
         }
-
-        res.json({
-            success: true,
-            data: {
-                videos: videos.map(video => ({
-                    id: video.id,
-                    title: video.title,
-                    description: video.description,
-                    filePath: video.file_path,
-                    duration: video.duration,
-                    thumbnailPath: video.thumbnail_path,
-                    category: video.category,
-                    createdAt: video.created_at,
-                    updatedAt: video.updated_at,
-                    userCount: video.user_count
-                })),
-                totalCount: videos.length
-            }
-        });
-    });
+    );
 });
 
 // POST /api/admin/videos/upload-url
@@ -882,7 +930,8 @@ router.post('/videos', (req, res) => {
         filePath,
         duration,
         thumbnailPath,
-        category
+        category,
+        muscleGroup
     } = req.body;
 
     if (!title || !filePath) {
@@ -895,9 +944,9 @@ router.post('/videos', (req, res) => {
     const db = createDatabase();
 
     db.runCallback(`
-        INSERT INTO videos (title, description, file_path, duration, thumbnail_path, category)
-        VALUES (?, ?, ?, ?, ?, ?)
-    `, [title, description || null, filePath, duration || null, thumbnailPath || null, category || null], function(err) {
+        INSERT INTO videos (title, description, file_path, duration, thumbnail_path, category, muscle_group)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [title, description || null, filePath, duration || null, thumbnailPath || null, category || null, muscleGroup || null], function(err) {
         db.close();
 
         if (err) {
@@ -920,17 +969,18 @@ router.post('/videos', (req, res) => {
                 filePath,
                 duration,
                 thumbnailPath,
-                category
+                category,
+                muscleGroup: muscleGroup || null
             }
         });
     });
 });
 
 // PUT /api/admin/videos/:id
-// Update video metadata (title, description, thumbnail)
+// Update video metadata (title, description, thumbnail, muscleGroup)
 router.put('/videos/:id', (req, res) => {
     const videoId = req.params.id;
-    const { title, description, thumbnailPath } = req.body;
+    const { title, description, thumbnailPath, muscleGroup } = req.body;
 
     if (!videoId || isNaN(videoId)) {
         return res.status(400).json({
@@ -953,9 +1003,10 @@ router.put('/videos/:id', (req, res) => {
         SET title = ?,
             description = ?,
             thumbnail_path = ?,
+            muscle_group = ?,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ? AND is_active = 1
-    `, [title, description || null, thumbnailPath || null, videoId], function(err) {
+    `, [title, description || null, thumbnailPath || null, muscleGroup || null, videoId], function(err) {
         db.close();
 
         if (err) {
@@ -982,7 +1033,8 @@ router.put('/videos/:id', (req, res) => {
                 id: parseInt(videoId),
                 title,
                 description,
-                thumbnailPath
+                thumbnailPath,
+                muscleGroup: muscleGroup || null
             }
         });
     });

@@ -13,10 +13,19 @@ import {
 import { apiCall, formatDate, formatDuration } from '../../utils/adminUtils';
 import { Video, CreateVideoForm } from '../../types/admin';
 
+const MUSCLE_GROUPS = ['Polpaccio','Quadricipite','Femorale','Gluteo','Lombare','Dorsale','Trapezio','Pettorale','Spalle','Bicipite','Tricipite','Addome'];
+const PAGE_SIZE = 20;
+
 const VideoManagement: React.FC = () => {
   const { t } = useTranslation();
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [muscleGroupFilter, setMuscleGroupFilter] = useState('');
   const [showCreateVideo, setShowCreateVideo] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -26,9 +35,9 @@ const VideoManagement: React.FC = () => {
   const [editForm, setEditForm] = useState({
     title: '',
     description: '',
-    thumbnailPath: ''
+    thumbnailPath: '',
+    muscleGroup: ''
   });
-  const [videoSearchTerm, setVideoSearchTerm] = useState('');
 
   const [createVideoForm, setCreateVideoForm] = useState<CreateVideoForm>({
     title: '',
@@ -36,24 +45,39 @@ const VideoManagement: React.FC = () => {
     filePath: '',
     duration: 0,
     category: '',
-    thumbnailPath: ''
+    thumbnailPath: '',
+    muscleGroup: ''
   });
 
   const loadVideos = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await apiCall('/admin/videos');
+      const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) });
+      if (search) params.append('search', search);
+      if (muscleGroupFilter) params.append('muscleGroup', muscleGroupFilter);
+      const response = await apiCall(`/admin/videos?${params}`);
       setVideos(response.data.videos);
+      setTotalCount(response.data.totalCount);
+      setTotalPages(response.data.totalPages || 1);
     } catch (error) {
       console.error('Failed to load videos:', error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, search, muscleGroupFilter]);
 
   useEffect(() => {
     loadVideos();
   }, [loadVideos]);
+
+  // Debounce search input → trigger server-side search and reset to page 1
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      setSearch(searchInput);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -152,17 +176,19 @@ const VideoManagement: React.FC = () => {
         body: JSON.stringify(createVideoForm)
       });
 
-      setVideos(prev => [{ ...response.data, userCount: 0, updatedAt: new Date().toISOString() }, ...prev]);
       setCreateVideoForm({
         title: '',
         description: '',
         filePath: '',
         duration: 0,
         category: '',
-        thumbnailPath: ''
+        thumbnailPath: '',
+        muscleGroup: ''
       });
       setSelectedFile(null);
       setShowCreateVideo(false);
+      setPage(1);
+      loadVideos();
       alert(t('admin.videos.videoCreatedSuccess'));
     } catch (error) {
       alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.videos.createVideoFailed')}`);
@@ -179,7 +205,7 @@ const VideoManagement: React.FC = () => {
         method: 'DELETE'
       });
 
-      setVideos(prev => prev.filter(video => video.id !== videoId));
+      loadVideos();
       alert(t('admin.videos.videoDeletedSuccess'));
     } catch (error) {
       alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.videos.deleteVideoFailed')}`);
@@ -202,7 +228,8 @@ const VideoManagement: React.FC = () => {
     setEditForm({
       title: video.title,
       description: video.description || '',
-      thumbnailPath: video.thumbnailPath || ''
+      thumbnailPath: video.thumbnailPath || '',
+      muscleGroup: video.muscleGroup || ''
     });
   };
 
@@ -219,29 +246,17 @@ const VideoManagement: React.FC = () => {
       // Update video in list
       setVideos(prev => prev.map(v =>
         v.id === editingVideo.id
-          ? { ...v, title: editForm.title, description: editForm.description, thumbnailPath: editForm.thumbnailPath }
+          ? { ...v, title: editForm.title, description: editForm.description, thumbnailPath: editForm.thumbnailPath, muscleGroup: editForm.muscleGroup || null }
           : v
       ));
 
       setEditingVideo(null);
-      setEditForm({ title: '', description: '', thumbnailPath: '' });
+      setEditForm({ title: '', description: '', thumbnailPath: '', muscleGroup: '' });
       alert('Video aggiornato con successo!');
     } catch (error) {
       alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : 'Aggiornamento fallito'}`);
     }
   };
-
-  // Filter videos based on search term
-  const filteredVideos = videos.filter(video => {
-    if (!videoSearchTerm) return true;
-
-    const searchLower = videoSearchTerm.toLowerCase();
-    return (
-      video.title.toLowerCase().includes(searchLower) ||
-      video.category.toLowerCase().includes(searchLower) ||
-      (video.description && video.description.toLowerCase().includes(searchLower))
-    );
-  });
 
   if (loading && videos.length === 0) {
     return (
@@ -265,25 +280,35 @@ const VideoManagement: React.FC = () => {
         </button>
       </div>
 
-      {/* Search Bar */}
-      <div className="flex items-center space-x-4">
-        <div className="relative flex-1 max-w-md">
+      {/* Search & Filter Bar */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px] max-w-md">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             {React.createElement(FiSearch as React.ComponentType<{ className?: string }>, { className: "w-4 h-4 text-gray-400" })}
           </div>
           <input
             type="text"
-            placeholder="Cerca video per titolo, categoria o descrizione..."
-            value={videoSearchTerm}
-            onChange={(e) => setVideoSearchTerm(e.target.value)}
+            placeholder="Cerca per titolo..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
           />
         </div>
-        {videoSearchTerm && (
-          <div className="text-sm text-gray-500">
-            {filteredVideos.length} di {videos.length} video
-          </div>
-        )}
+
+        <select
+          value={muscleGroupFilter}
+          onChange={(e) => { setPage(1); setMuscleGroupFilter(e.target.value); }}
+          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 text-sm"
+        >
+          <option value="">Tutti i gruppi muscolari</option>
+          {MUSCLE_GROUPS.map(g => (
+            <option key={g} value={g}>{g}</option>
+          ))}
+        </select>
+
+        <div className="text-sm text-gray-500 ml-auto">
+          {totalCount} video{(search || muscleGroupFilter) ? ' trovati' : ' totali'}
+        </div>
       </div>
 
       {/* Create Video Modal */}
@@ -335,6 +360,20 @@ const VideoManagement: React.FC = () => {
                   <option value="">{t('admin.videos.selectCategory')}</option>
                   <option value="palestra">{t('admin.videos.categories.palestra')}</option>
                   <option value="corpoLibero">{t('admin.videos.categories.corpoLibero')}</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Gruppo muscolare (opzionale)</label>
+                <select
+                  value={createVideoForm.muscleGroup}
+                  onChange={(e) => setCreateVideoForm(prev => ({ ...prev, muscleGroup: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                >
+                  <option value="">Nessuno</option>
+                  {MUSCLE_GROUPS.map(g => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
                 </select>
               </div>
 
@@ -449,15 +488,19 @@ const VideoManagement: React.FC = () => {
 
       {/* Videos Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredVideos.length === 0 ? (
+        {loading ? (
+          <div className="col-span-full flex justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          </div>
+        ) : videos.length === 0 ? (
           <div className="col-span-full text-center py-12 text-gray-500">
-            {videoSearchTerm
-              ? `Nessun video trovato per "${videoSearchTerm}"`
+            {(search || muscleGroupFilter)
+              ? 'Nessun video trovato con i filtri selezionati'
               : 'Nessun video disponibile'
             }
           </div>
         ) : (
-          filteredVideos.map((video) => (
+          videos.map((video) => (
           <div key={video.id} className="bg-white rounded-xl shadow-lg overflow-hidden">
             <div className="aspect-video bg-gray-200 flex items-center justify-center">
               {React.createElement(FiVideo as React.ComponentType<{ className?: string }>, { className: "w-12 h-12 text-gray-400" })}
@@ -469,12 +512,20 @@ const VideoManagement: React.FC = () => {
                 <p className="text-sm text-gray-600 line-clamp-2 whitespace-pre-wrap">{video.description}</p>
               </div>
 
-              <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
+              <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
                 <span className="capitalize">{video.category}</span>
                 <span>{formatDuration(video.duration)}</span>
               </div>
 
-              <div className="flex items-center justify-between text-xs text-gray-400 mb-4">
+              {video.muscleGroup && (
+                <div className="mb-2">
+                  <span className="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                    {video.muscleGroup}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between text-xs text-gray-400 mb-3">
                 <span>{video.userCount} {t('admin.users.tabTitle')}</span>
                 <span>{t('admin.videos.createdAt')}: {formatDate(video.createdAt)}</span>
               </div>
@@ -511,6 +562,29 @@ const VideoManagement: React.FC = () => {
           ))
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3 mt-2">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1 || loading}
+            className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            ← Precedente
+          </button>
+          <span className="text-sm text-gray-600">
+            Pagina {page} di {totalPages}
+          </span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages || loading}
+            className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Successiva →
+          </button>
+        </div>
+      )}
 
       {/* Edit Video Modal */}
       {editingVideo && (
@@ -559,6 +633,20 @@ const VideoManagement: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
                   placeholder="categoria/thumb.jpg"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Gruppo muscolare (opzionale)</label>
+                <select
+                  value={editForm.muscleGroup}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, muscleGroup: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                >
+                  <option value="">Nessuno</option>
+                  {MUSCLE_GROUPS.map(g => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="bg-gray-100 rounded p-3">

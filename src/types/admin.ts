@@ -30,6 +30,7 @@ export interface Video {
   duration: number;
   thumbnailPath?: string;
   category: string;
+  muscleGroup?: string | null;
   createdAt: string;
   updatedAt: string;
   userCount: number;
@@ -61,6 +62,7 @@ export interface CreateVideoForm {
   duration: number;
   category: string;
   thumbnailPath: string;
+  muscleGroup: string;
 }
 
 export interface Review {
