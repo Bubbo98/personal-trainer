@@ -10,7 +10,8 @@ import SearchBar from '../components/dashboard/SearchBar';
 import TrainingPlan from '../components/dashboard/TrainingPlan';
 import FeedbackTab from '../components/dashboard/FeedbackTab';
 import ReviewTab from '../components/dashboard/ReviewTab';
-import { FiGrid, FiLogOut, FiStar, FiVideo, FiFile, FiGift, FiMessageSquare, FiCheckCircle } from 'react-icons/fi';
+import WorkoutTab from '../components/dashboard/WorkoutTab';
+import { FiGrid, FiLogOut, FiStar, FiVideo, FiFile, FiGift, FiMessageSquare, FiCheckCircle, FiActivity } from 'react-icons/fi';
 import { SiInstagram, SiTiktok } from 'react-icons/si';
 
 import { Video, AuthState, VideoState } from '../types/dashboard';
@@ -52,7 +53,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
   });
 
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
-  const [activeTab, setActiveTab] = useState<'videos' | 'training-plan' | 'reviews' | 'feedback'>('training-plan');
+  const [activeTab, setActiveTab] = useState<'videos' | 'training-plan' | 'reviews' | 'feedback' | 'workout'>('training-plan');
   const [hasTrainingPlan, setHasTrainingPlan] = useState(false);
   const [trainingDays, setTrainingDays] = useState<TrainingDay[]>([]);
   const [checkInRequired, setCheckInRequired] = useState(false);
@@ -534,6 +535,21 @@ const Dashboard: React.FC<DashboardProps> = () => {
               <span className="max-[399px]:hidden text-xs sm:text-base">Recensioni</span>
             </button>
             <button
+              onClick={() => !checkInRequired && setActiveTab('workout')}
+              disabled={checkInRequired}
+              className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-3 rounded-lg font-medium transition-all ${
+                activeTab === 'workout'
+                  ? 'bg-white text-gray-900 shadow'
+                  : checkInRequired
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:text-gray-900'
+              }`}
+              title="I miei pesi"
+            >
+              {React.createElement(FiActivity as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+              <span className="max-[399px]:hidden text-xs sm:text-base">Pesi</span>
+            </button>
+            <button
               onClick={() => setActiveTab('feedback')}
               className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-3 rounded-lg font-medium transition-all ${
                 activeTab === 'feedback'
@@ -550,6 +566,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
           {/* Tab Content */}
           {activeTab === 'training-plan' ? (
             <TrainingPlan />
+          ) : activeTab === 'workout' ? (
+            <WorkoutTab />
           ) : activeTab === 'reviews' ? (
             <ReviewTab />
           ) : activeTab === 'feedback' ? (
