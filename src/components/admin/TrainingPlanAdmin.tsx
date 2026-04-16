@@ -268,9 +268,6 @@ const TrainingPlanAdmin: React.FC<Props> = ({ userId, userName }) => {
         >
           {React.createElement(FiBarChart2 as React.ComponentType<{ className?: string }>, { className: 'w-4 h-4' })}
           Storico Pesi
-          {logs.length > 0 && (
-            <span className="bg-blue-500 text-white text-xs rounded-full px-1.5 py-0.5">{logs.length}</span>
-          )}
         </button>
       </div>
 
