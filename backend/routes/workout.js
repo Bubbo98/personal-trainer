@@ -7,7 +7,16 @@ const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
 /**
  * Parse raw PDF text into days + exercises.
- * Best-effort: the admin always reviews the output.
+ *
+ * Handles the real-world format produced by pdf-parse from Italian workout PDFs:
+ *   - Exercise names can span multiple lines (table cell wrapping)
+ *   - Stats format: "sets reps rest [weight kg]"
+ *       e.g. "4 12 1.30'" / "3 30" 1.30'" / "4 15 2'" / "Low row 4 12 1.30' 20 kg"
+ *   - Rest time is the unique identifier of a stats line (ends with ' or " variant)
+ *   - Circuit exercises may have leading dash bullet
+ *
+ * Strategy: accumulate text lines as the exercise name; when a line containing
+ * a rest-time token is found, extract stats and flush the pending exercise.
  */
 function parsePdfText(text) {
   const days = [];
@@ -16,31 +25,47 @@ function parsePdfText(text) {
   let currentDay = null;
   let inWorkout = false;
   let inTable = false;
-  let currentExercise = null;
+  let pendingName = '';
 
-  const pushExercise = () => {
-    if (currentExercise && currentDay) {
-      currentExercise.name = currentExercise.name.replace(/\s+/g, ' ').trim();
-      if (currentExercise.name) {
-        currentDay.exercises.push({ ...currentExercise });
-      }
+  // All apostrophe/prime/quote variants found in Italian PDFs
+  const PRIME = "''′\u2018\u2019\u2032\u02bc\u02b9";
+  const DQUOTE = '""″\u201c\u201d\u2033';
+
+  // Detects a rest-time token anywhere in the line: digits[.,digits] + prime char
+  const REST_RE = new RegExp(`\\d+(?:[.,]\\d+)?[${PRIME}]`);
+
+  // Full stats pattern: sets  reps[optional-dquote]  rest  [weight kg]
+  const STATS_RE = new RegExp(
+    `(\\d+)\\s+` +                              // sets
+    `(\\d+[${DQUOTE}]?)\\s+` +                  // reps (optionally "30"")
+    `(\\d+(?:[.,]\\d+)?[${PRIME}][${PRIME}\\d]*)` + // rest  e.g. 1.30' or 2' or 1'30"
+    `(?:\\s+(\\d+)\\s*kg)?`,                    // optional weight
+    'i'
+  );
+
+  const flushExercise = (sets, reps, rest, notes) => {
+    const name = pendingName.replace(/\s+/g, ' ').trim();
+    if (name && currentDay) {
+      currentDay.exercises.push({ name, sets: sets || '', reps: reps || '', rest: rest || '', notes: notes || '' });
     }
-    currentExercise = null;
+    pendingName = '';
   };
 
   for (const line of lines) {
-    // Stop parsing at legend / glossary sections (not exercises)
-    if (/^LEGENDA:/i.test(line)) break;
+    // Stop at legend / glossary
+    if (/^LEGENDA/i.test(line)) break;
 
-    // Detect new day
-    const dayMatch = line.match(/^GIORNO\s+(\d+)/i);
+    // New day — capture optional subtitle e.g. "GIORNO 1 (TOTAL BODY)"
+    const dayMatch = line.match(/^GIORNO\s+(\d+)\s*(.*)$/i);
     if (dayMatch) {
-      pushExercise();
+      pendingName = '';
       inWorkout = false;
       inTable = false;
+      const num = parseInt(dayMatch[1]);
+      const subtitle = dayMatch[2].replace(/[()]/g, '').trim();
       currentDay = {
-        dayNumber: parseInt(dayMatch[1]),
-        dayName: `Giorno ${dayMatch[1]}`,
+        dayNumber: num,
+        dayName: subtitle ? `Giorno ${num} - ${subtitle}` : `Giorno ${num}`,
         exercises: [],
       };
       days.push(currentDay);
@@ -49,61 +74,46 @@ function parsePdfText(text) {
 
     if (!currentDay) continue;
 
-    // Workout section start
-    if (/^WORKOUT:/i.test(line)) { inWorkout = true; continue; }
-    if (/^WARM\s+UP/i.test(line)) { inWorkout = false; inTable = false; continue; }
-    if (/^STRETCHING/i.test(line)) { pushExercise(); inWorkout = false; inTable = false; continue; }
-
+    if (/^WORKOUT:/i.test(line))           { inWorkout = true; continue; }
+    if (/^WARM\s*UP/i.test(line))          { pendingName = ''; inWorkout = false; inTable = false; continue; }
+    if (/^STRETCHING/i.test(line))         { pendingName = ''; inWorkout = false; inTable = false; continue; }
     if (!inWorkout) continue;
 
-    // Circuit marker — free-form mode
-    if (/^CIRCUITO:/i.test(line)) { inTable = false; continue; }
+    if (/^CIRCUITO:/i.test(line))          { inTable = false; continue; }
+    if (/^ESERCIZIO\s+SERIE/i.test(line))  { inTable = true; continue; }
+    if (!inTable) continue;
 
-    // Table header
-    if (/^ESERCIZIO\s+SERIE/i.test(line)) { inTable = true; continue; }
+    // Skip standalone integers (page numbers, stray digits)
+    if (/^\d+$/.test(line)) continue;
 
-    if (inTable) {
-      // Match: "Exercise Name  sets  reps  rest" where rest ends with ' or "
-      // e.g. "Pull up 6 2 2'"  or  "Chin up 3 10 1.30'"
-      const rowMatch = line.match(
-        /^(.+?)\s{2,}(\d+)\s{2,}([\w"″′'\.+\-]+)\s{2,}([\d.'″′"]+['"″′]?)\s*$/
-      ) || line.match(
-        /^(.+)\s+(\d+)\s+([\d"″′'\.]+)\s+([\d.'″′"]+['"″′])\s*$/
-      );
-
-      if (rowMatch) {
-        pushExercise();
-        currentExercise = {
-          name: rowMatch[1].trim(),
-          sets: rowMatch[2],
-          reps: rowMatch[3],
-          rest: rowMatch[4],
-          notes: '',
-        };
-      } else if (currentExercise) {
-        // Multi-line exercise name continuation
-        currentExercise.name += ' ' + line;
-      }
-    } else {
-      // Free-form / circuit: look for bullet points
-      const bulletMatch = line.match(/^[-•]\s*(.+)/);
-      if (bulletMatch) {
-        pushExercise();
-        currentExercise = {
-          name: bulletMatch[1].trim(),
-          sets: '',
-          reps: '',
-          rest: '',
-          notes: '',
-        };
-      } else if (currentExercise && /^\d+$/.test(line)) {
-        // Standalone number after a bullet = reps
-        currentExercise.reps = (currentExercise.reps ? currentExercise.reps + ' ' : '') + line;
-      }
+    // Does this line contain a rest-time token?
+    if (!REST_RE.test(line)) {
+      // Pure text — strip leading dash/bullet (circuit format) and accumulate as name
+      const clean = line.replace(/^[-\u2013\u2022]\s*/, '').trim();
+      if (clean) pendingName = pendingName ? `${pendingName} ${clean}` : clean;
+      continue;
     }
-  }
 
-  pushExercise();
+    // Stats line — try to extract sets/reps/rest/weight
+    const statsMatch = line.match(STATS_RE);
+    if (!statsMatch) {
+      // Has a prime char but didn't match full stats — treat as name continuation
+      const clean = line.replace(/^[-\u2013\u2022]\s*/, '').trim();
+      if (clean) pendingName = pendingName ? `${pendingName} ${clean}` : clean;
+      continue;
+    }
+
+    const weightRaw = (statsMatch[4] || '').trim();
+    const notes = weightRaw ? `Peso consigliato: ${weightRaw} kg` : '';
+
+    // Text before the stats match belongs to the exercise name
+    const before = line.substring(0, statsMatch.index).replace(/^[-\u2013\u2022]\s*/, '').trim();
+    if (before) {
+      pendingName = pendingName ? `${pendingName} ${before}` : before;
+    }
+
+    flushExercise(statsMatch[1], statsMatch[2], statsMatch[3], notes);
+  }
 
   return days.filter((d) => d.exercises.length > 0);
 }
