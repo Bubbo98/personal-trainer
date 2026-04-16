@@ -274,13 +274,6 @@ const TrainingPlanAdmin: React.FC<Props> = ({ userId, userName }) => {
       {/* ── PLAN section ─────────────────────────────────────────────────── */}
       {activeSection === 'plan' && (
         <div className="space-y-4">
-          {/* Mobile notice */}
-          <div className="md:hidden bg-gray-50 border border-gray-200 text-gray-600 px-4 py-4 rounded-xl text-sm text-center">
-            <p className="font-medium text-gray-800 mb-1">Schermo troppo piccolo</p>
-            <p>Usa un computer per modificare la scheda esercizi. Puoi comunque consultare lo <button onClick={() => setActiveSection('logs')} className="text-gray-900 font-semibold underline">storico pesi</button>.</p>
-          </div>
-          {/* Desktop editing tools */}
-          <div className="hidden md:block space-y-4">
           {/* Toolbar */}
           <div className="flex flex-wrap gap-2">
             <button
@@ -425,7 +418,6 @@ const TrainingPlanAdmin: React.FC<Props> = ({ userId, userName }) => {
               )}
             </div>
           ))}
-          </div>{/* end desktop-only wrapper */}
         </div>
       )}
 
