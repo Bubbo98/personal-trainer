@@ -33,17 +33,6 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onPlay }) => {
           />
         )}
 
-        {/* Play Button Overlay */}
-        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 hover:bg-opacity-30 transition-all">
-          <button
-            onClick={() => onPlay(video)}
-            className="bg-gray-900 text-white p-4 rounded-full hover:bg-gray-800 transition-colors shadow-lg hover:scale-110 transform"
-            aria-label={`${t('dashboard.playVideo')} ${video.title}`}
-          >
-            {React.createElement(FiPlay as React.ComponentType<{ className?: string }>, { className: "w-8 h-8 ml-1" })}
-          </button>
-        </div>
-
         <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-sm">
           {formatDuration(video.duration)}
         </div>
@@ -58,12 +47,20 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onPlay }) => {
             {video.description}
           </p>
         )}
-        <div className="flex items-center justify-between text-sm text-gray-500">
+        <div className="flex items-center justify-between text-sm text-gray-500 mt-1">
           <span className="capitalize font-medium">{video.category}</span>
           {(video.addedAt || video.grantedAt) && (
             <span>{getLocalizedText.addedOn} {formatDate(video.addedAt || video.grantedAt!)}</span>
           )}
         </div>
+        <button
+          onClick={() => onPlay(video)}
+          className="mt-3 w-full flex items-center justify-center gap-2 bg-gray-900 text-white py-2.5 rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
+          aria-label={`${t('dashboard.playVideo')} ${video.title}`}
+        >
+          {React.createElement(FiPlay as React.ComponentType<{ className?: string }>, { className: "w-4 h-4 ml-0.5" })}
+          Guarda video
+        </button>
       </div>
     </div>
   );
