@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const pdfParse = require('pdf-parse');
 const { createDatabase } = require('../utils/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
@@ -133,6 +132,7 @@ router.post('/admin/parse-pdf/:userId', authenticateToken, requireAdmin, async (
 
       try {
         const buffer = Buffer.from(row.file_data, 'base64');
+        const pdfParse = require('pdf-parse');
         const parsed = await pdfParse(buffer);
         const days = parsePdfText(parsed.text);
 
