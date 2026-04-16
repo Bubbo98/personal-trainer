@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiSave, FiChevronDown, FiChevronUp, FiCheck } from 'react-icons/fi';
-import { apiCall, STORAGE_KEY } from '../../utils/dashboardUtils';
+import { FiSave, FiChevronDown, FiChevronUp, FiCheck, FiClock } from 'react-icons/fi';
+import { apiCall } from '../../utils/dashboardUtils';
 
 interface Exercise {
   id: number;
@@ -15,12 +15,16 @@ interface Exercise {
 }
 
 interface ExerciseLog {
+  id: number;
   exercise_id: number;
   week_start: string;
-  weight: string;
-  sets_done: string;
-  reps_done: string;
-  notes: string;
+  weight: string | null;
+  sets_done: number | null;
+  reps_done: string | null;
+  notes: string | null;
+  exercise_name: string | null;
+  day_number_snapshot: number | null;
+  day_name_snapshot: string | null;
 }
 
 interface LogDraft {
@@ -33,43 +37,50 @@ interface LogDraft {
 /** Returns the Monday of the current week as YYYY-MM-DD */
 function getCurrentWeekStart(): string {
   const today = new Date();
-  const day = today.getDay(); // 0=Sun, 1=Mon...
-  const diff = (day === 0 ? -6 : 1 - day);
+  const day = today.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
   const monday = new Date(today);
   monday.setDate(today.getDate() + diff);
   return monday.toISOString().slice(0, 10);
 }
 
+function formatWeekLabel(weekStart: string): string {
+  return new Date(weekStart + 'T12:00:00').toLocaleDateString('it-IT', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
 const WorkoutTab: React.FC = () => {
   const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [logs, setLogs] = useState<ExerciseLog[]>([]);
   const [drafts, setDrafts] = useState<Record<number, LogDraft>>({});
+  const [pastLogs, setPastLogs] = useState<ExerciseLog[]>([]);
   const [saving, setSaving] = useState<Record<number, boolean>>({});
   const [saved, setSaved] = useState<Record<number, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [expandedDays, setExpandedDays] = useState<Record<number, boolean>>({});
+  const [expandedPastWeeks, setExpandedPastWeeks] = useState<Record<string, boolean>>({});
   const weekStart = getCurrentWeekStart();
 
   const loadData = useCallback(async () => {
-    const token = localStorage.getItem(STORAGE_KEY);
-    const headers = { Authorization: `Bearer ${token}` };
-
     try {
       setLoading(true);
-      const [planRes, logsRes] = await Promise.all([
-        apiCall('/workout/plan', { headers }),
-        apiCall(`/workout/logs?weekStart=${weekStart}`, { headers }),
+      const [planRes, currentLogsRes, allLogsRes] = await Promise.all([
+        apiCall('/workout/plan'),
+        apiCall(`/workout/logs?weekStart=${weekStart}`),
+        apiCall('/workout/logs'),
       ]);
 
       const exList: Exercise[] = planRes.data?.exercises || [];
-      const logList: ExerciseLog[] = logsRes.data?.logs || [];
+      const currentLogList: ExerciseLog[] = currentLogsRes.data?.logs || [];
+      const allLogList: ExerciseLog[] = allLogsRes.data?.logs || [];
 
       setExercises(exList);
-      setLogs(logList);
 
-      // Pre-fill drafts from existing logs
+      // Pre-fill drafts from current week logs
       const initial: Record<number, LogDraft> = {};
-      for (const log of logList) {
+      for (const log of currentLogList) {
         initial[log.exercise_id] = {
           weight: log.weight || '',
           sets_done: log.sets_done != null ? String(log.sets_done) : '',
@@ -78,6 +89,9 @@ const WorkoutTab: React.FC = () => {
         };
       }
       setDrafts(initial);
+
+      // Past logs = all logs excluding current week
+      setPastLogs(allLogList.filter((l) => l.week_start !== weekStart));
 
       // Expand all days by default
       const exp: Record<number, boolean> = {};
@@ -94,7 +108,7 @@ const WorkoutTab: React.FC = () => {
     loadData();
   }, [loadData]);
 
-  // Group exercises by day
+  // Group current-plan exercises by day
   const days = exercises.reduce<Record<number, { dayName: string; exercises: Exercise[] }>>(
     (acc, ex) => {
       if (!acc[ex.day_number]) {
@@ -105,32 +119,48 @@ const WorkoutTab: React.FC = () => {
     },
     {}
   );
-  const sortedDayNumbers = Object.keys(days)
-    .map(Number)
-    .sort((a, b) => a - b);
+  const sortedDayNumbers = Object.keys(days).map(Number).sort((a, b) => a - b);
+
+  // Group past logs: week → day → logs
+  const pastByWeek = pastLogs.reduce<Record<string, ExerciseLog[]>>((acc, log) => {
+    if (!acc[log.week_start]) acc[log.week_start] = [];
+    acc[log.week_start].push(log);
+    return acc;
+  }, {});
+  const pastWeeks = Object.keys(pastByWeek).sort((a, b) => (a > b ? -1 : 1));
+
+  // Resolve exercise name for a log (snapshot or current plan)
+  const resolveExerciseName = (log: ExerciseLog): string => {
+    if (log.exercise_name) return log.exercise_name;
+    const ex = exercises.find((e) => e.id === log.exercise_id);
+    return ex?.name || 'Esercizio sconosciuto';
+  };
+
+  const resolveDayName = (log: ExerciseLog): string => {
+    if (log.day_name_snapshot) return log.day_name_snapshot;
+    const ex = exercises.find((e) => e.id === log.exercise_id);
+    return ex?.day_name || `Giorno ${log.day_number_snapshot ?? '?'}`;
+  };
 
   const updateDraft = (exerciseId: number, field: keyof LogDraft, value: string) => {
     setDrafts((prev) => ({
       ...prev,
-      [exerciseId]: { ...(prev[exerciseId] || { weight: '', sets_done: '', reps_done: '', notes: '' }), [field]: value },
+      [exerciseId]: {
+        ...(prev[exerciseId] || { weight: '', sets_done: '', reps_done: '', notes: '' }),
+        [field]: value,
+      },
     }));
   };
 
   const handleSave = async (exerciseId: number) => {
     const draft = drafts[exerciseId];
     if (!draft) return;
-
-    // Skip if all fields empty
     if (!draft.weight && !draft.sets_done && !draft.reps_done && !draft.notes) return;
-
-    const token = localStorage.getItem(STORAGE_KEY);
 
     try {
       setSaving((prev) => ({ ...prev, [exerciseId]: true }));
-
       await apiCall('/workout/logs', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           exerciseId,
           weekStart,
@@ -140,7 +170,6 @@ const WorkoutTab: React.FC = () => {
           notes: draft.notes || null,
         }),
       });
-
       setSaved((prev) => ({ ...prev, [exerciseId]: true }));
       setTimeout(() => setSaved((prev) => ({ ...prev, [exerciseId]: false })), 2000);
     } catch (err) {
@@ -159,7 +188,7 @@ const WorkoutTab: React.FC = () => {
     );
   }
 
-  if (exercises.length === 0) {
+  if (exercises.length === 0 && pastLogs.length === 0) {
     return (
       <div className="max-w-2xl mx-auto">
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center">
@@ -173,22 +202,21 @@ const WorkoutTab: React.FC = () => {
     );
   }
 
-  const weekLabel = new Date(weekStart + 'T12:00:00').toLocaleDateString('it-IT', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-
   return (
     <div className="max-w-3xl mx-auto space-y-4">
-      {/* Week header */}
+
+      {/* ── Settimana corrente ───────────────────────────────────────────── */}
       <div className="bg-gray-900 text-white rounded-xl px-5 py-4">
         <p className="text-xs text-gray-400 uppercase tracking-widest mb-0.5">Settimana corrente</p>
-        <p className="font-semibold">Dal {weekLabel}</p>
-        <p className="text-xs text-gray-400 mt-1">
-          Compila i pesi che hai usato — tutto è facoltativo.
-        </p>
+        <p className="font-semibold">Dal {formatWeekLabel(weekStart)}</p>
+        <p className="text-xs text-gray-400 mt-1">Compila i pesi che hai usato — tutto è facoltativo.</p>
       </div>
+
+      {exercises.length === 0 && (
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-center text-gray-500 text-sm">
+          Nessuna scheda attiva al momento.
+        </div>
+      )}
 
       {sortedDayNumbers.map((dayNum) => {
         const { dayName, exercises: dayExercises } = days[dayNum];
@@ -196,7 +224,6 @@ const WorkoutTab: React.FC = () => {
 
         return (
           <div key={dayNum} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-            {/* Day header */}
             <button
               onClick={() => setExpandedDays((prev) => ({ ...prev, [dayNum]: !isExpanded }))}
               className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
@@ -219,33 +246,16 @@ const WorkoutTab: React.FC = () => {
 
                   return (
                     <div key={ex.id} className="px-5 py-4">
-                      {/* Exercise info */}
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <p className="font-medium text-gray-900">{ex.name}</p>
                           <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-0.5">
-                            {ex.sets && (
-                              <span className="text-xs text-gray-500">
-                                Serie: <span className="font-medium text-gray-700">{ex.sets}</span>
-                              </span>
-                            )}
-                            {ex.reps && (
-                              <span className="text-xs text-gray-500">
-                                Reps: <span className="font-medium text-gray-700">{ex.reps}</span>
-                              </span>
-                            )}
-                            {ex.rest && (
-                              <span className="text-xs text-gray-500">
-                                Recupero: <span className="font-medium text-gray-700">{ex.rest}</span>
-                              </span>
-                            )}
+                            {ex.sets && <span className="text-xs text-gray-500">Serie: <span className="font-medium text-gray-700">{ex.sets}</span></span>}
+                            {ex.reps && <span className="text-xs text-gray-500">Reps: <span className="font-medium text-gray-700">{ex.reps}</span></span>}
+                            {ex.rest && <span className="text-xs text-gray-500">Recupero: <span className="font-medium text-gray-700">{ex.rest}</span></span>}
                           </div>
-                          {ex.notes && (
-                            <p className="text-xs text-gray-400 mt-0.5 italic">{ex.notes}</p>
-                          )}
+                          {ex.notes && <p className="text-xs text-gray-400 mt-0.5 italic">{ex.notes}</p>}
                         </div>
-
-                        {/* Save button */}
                         <button
                           onClick={() => handleSave(ex.id)}
                           disabled={isSaving || isSaved}
@@ -262,40 +272,27 @@ const WorkoutTab: React.FC = () => {
                         </button>
                       </div>
 
-                      {/* Log inputs */}
                       <div className="grid grid-cols-3 gap-2">
                         <div>
                           <label className="block text-xs text-gray-400 mb-1">Peso (kg)</label>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={draft.weight}
+                          <input type="text" inputMode="decimal" value={draft.weight}
                             onChange={(e) => updateDraft(ex.id, 'weight', e.target.value)}
                             placeholder="es. 70"
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                          />
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent" />
                         </div>
                         <div>
                           <label className="block text-xs text-gray-400 mb-1">Serie fatte</label>
-                          <input
-                            type="number"
-                            inputMode="numeric"
-                            value={draft.sets_done}
+                          <input type="number" inputMode="numeric" value={draft.sets_done}
                             onChange={(e) => updateDraft(ex.id, 'sets_done', e.target.value)}
                             placeholder={ex.sets || '—'}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                          />
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent" />
                         </div>
                         <div>
                           <label className="block text-xs text-gray-400 mb-1">Reps fatte</label>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={draft.reps_done}
+                          <input type="text" inputMode="numeric" value={draft.reps_done}
                             onChange={(e) => updateDraft(ex.id, 'reps_done', e.target.value)}
                             placeholder={ex.reps || '—'}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                          />
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent" />
                         </div>
                       </div>
                     </div>
@@ -306,6 +303,80 @@ const WorkoutTab: React.FC = () => {
           </div>
         );
       })}
+
+      {/* ── Storico settimane precedenti ─────────────────────────────────── */}
+      {pastWeeks.length > 0 && (
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center gap-2 text-gray-500">
+            {React.createElement(FiClock as React.ComponentType<{ className?: string }>, { className: 'w-4 h-4' })}
+            <span className="text-sm font-semibold uppercase tracking-wide">Storico settimane precedenti</span>
+          </div>
+
+          {pastWeeks.map((week) => {
+            const weekLogs = pastByWeek[week];
+            const isExpanded = expandedPastWeeks[week] === true;
+
+            // Group logs by day
+            const byDay = weekLogs.reduce<Record<string, ExerciseLog[]>>((acc, log) => {
+              const key = String(log.day_number_snapshot ?? log.exercise_id);
+              if (!acc[key]) acc[key] = [];
+              acc[key].push(log);
+              return acc;
+            }, {});
+
+            return (
+              <div key={week} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setExpandedPastWeeks((prev) => ({ ...prev, [week]: !isExpanded }))}
+                  className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors"
+                >
+                  <div>
+                    <span className="font-medium text-gray-700">Dal {formatWeekLabel(week)}</span>
+                    <span className="text-xs text-gray-400 ml-3">{weekLogs.length} esercizi registrati</span>
+                  </div>
+                  {isExpanded
+                    ? React.createElement(FiChevronUp as React.ComponentType<{ className?: string }>, { className: 'w-4 h-4 text-gray-400' })
+                    : React.createElement(FiChevronDown as React.ComponentType<{ className?: string }>, { className: 'w-4 h-4 text-gray-400' })}
+                </button>
+
+                {isExpanded && (
+                  <div className="divide-y divide-gray-100">
+                    {Object.entries(byDay)
+                      .sort(([a], [b]) => Number(a) - Number(b))
+                      .map(([, dayLogs]) => (
+                        <div key={dayLogs[0].exercise_id} className="px-5 py-3">
+                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                            {resolveDayName(dayLogs[0])}
+                          </p>
+                          <div className="space-y-2">
+                            {dayLogs.map((log) => (
+                              <div key={log.id} className="flex flex-wrap items-baseline gap-x-4 gap-y-0.5 text-sm">
+                                <span className="font-medium text-gray-900 min-w-[140px]">
+                                  {resolveExerciseName(log)}
+                                </span>
+                                {log.weight && (
+                                  <span className="font-semibold text-gray-900">{log.weight} kg</span>
+                                )}
+                                {log.sets_done != null && (
+                                  <span className="text-gray-500">
+                                    {log.sets_done} serie{log.reps_done ? ` × ${log.reps_done} reps` : ''}
+                                  </span>
+                                )}
+                                {!log.weight && log.sets_done == null && (
+                                  <span className="text-gray-400 italic text-xs">nessun dato</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
