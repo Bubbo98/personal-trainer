@@ -56,8 +56,9 @@ const WorkoutTab: React.FC = () => {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [drafts, setDrafts] = useState<Record<number, LogDraft>>({});
   const [pastLogs, setPastLogs] = useState<ExerciseLog[]>([]);
-  const [saving, setSaving] = useState<Record<number, boolean>>({});
-  const [saved, setSaved] = useState<Record<number, boolean>>({});
+  const [dirty, setDirty] = useState<Record<number, boolean>>({});
+  const [savingAll, setSavingAll] = useState(false);
+  const [allSaved, setAllSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [expandedDays, setExpandedDays] = useState<Record<number, boolean>>({});
   const [expandedPastWeeks, setExpandedPastWeeks] = useState<Record<string, boolean>>({});
@@ -150,33 +151,46 @@ const WorkoutTab: React.FC = () => {
         [field]: value,
       },
     }));
+    setDirty((prev) => ({ ...prev, [exerciseId]: true }));
   };
 
-  const handleSave = async (exerciseId: number) => {
-    const draft = drafts[exerciseId];
-    if (!draft) return;
-    if (!draft.weight && !draft.sets_done && !draft.reps_done && !draft.notes) return;
+  const dirtyIds = Object.entries(dirty)
+    .filter(([, v]) => v)
+    .map(([k]) => Number(k));
+
+  const handleSaveAll = async () => {
+    const toSave = dirtyIds.filter((id) => {
+      const d = drafts[id];
+      return d && (d.weight || d.sets_done || d.reps_done || d.notes);
+    });
+    if (toSave.length === 0) return;
 
     try {
-      setSaving((prev) => ({ ...prev, [exerciseId]: true }));
-      await apiCall('/workout/logs', {
-        method: 'POST',
-        body: JSON.stringify({
-          exerciseId,
-          weekStart,
-          weight: draft.weight || null,
-          setsDone: draft.sets_done ? parseInt(draft.sets_done) : null,
-          repsDone: draft.reps_done || null,
-          notes: draft.notes || null,
-        }),
-      });
-      setSaved((prev) => ({ ...prev, [exerciseId]: true }));
-      setTimeout(() => setSaved((prev) => ({ ...prev, [exerciseId]: false })), 2000);
+      setSavingAll(true);
+      await Promise.all(
+        toSave.map((exerciseId) => {
+          const draft = drafts[exerciseId];
+          return apiCall('/workout/logs', {
+            method: 'POST',
+            body: JSON.stringify({
+              exerciseId,
+              weekStart,
+              weight: draft.weight || null,
+              setsDone: draft.sets_done ? parseInt(draft.sets_done) : null,
+              repsDone: draft.reps_done || null,
+              notes: draft.notes || null,
+            }),
+          });
+        })
+      );
+      setDirty({});
+      setAllSaved(true);
+      setTimeout(() => setAllSaved(false), 2500);
     } catch (err) {
-      console.error('Failed to save log:', err);
+      console.error('Failed to save logs:', err);
       alert('Errore nel salvataggio. Riprova.');
     } finally {
-      setSaving((prev) => ({ ...prev, [exerciseId]: false }));
+      setSavingAll(false);
     }
   };
 
@@ -202,6 +216,25 @@ const WorkoutTab: React.FC = () => {
     );
   }
 
+  const SaveAllButton = () => (
+    <button
+      onClick={handleSaveAll}
+      disabled={savingAll || allSaved || dirtyIds.length === 0}
+      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+        allSaved
+          ? 'bg-green-100 text-green-700'
+          : dirtyIds.length === 0
+          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+          : 'bg-gray-900 text-white hover:bg-gray-800'
+      }`}
+    >
+      {allSaved
+        ? React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: 'w-4 h-4' })
+        : React.createElement(FiSave as React.ComponentType<{ className?: string }>, { className: 'w-4 h-4' })}
+      {allSaved ? 'Salvato!' : savingAll ? 'Salvataggio...' : dirtyIds.length > 0 ? `Salva tutto (${dirtyIds.length})` : 'Salva tutto'}
+    </button>
+  );
+
   return (
     <div className="max-w-3xl mx-auto space-y-4">
 
@@ -211,6 +244,12 @@ const WorkoutTab: React.FC = () => {
         <p className="font-semibold">Dal {formatWeekLabel(weekStart)}</p>
         <p className="text-xs text-gray-400 mt-1">Compila i pesi che hai usato — tutto è facoltativo.</p>
       </div>
+
+      {exercises.length > 0 && (
+        <div className="flex justify-end">
+          <SaveAllButton />
+        </div>
+      )}
 
       {exercises.length === 0 && (
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-center text-gray-500 text-sm">
@@ -241,35 +280,17 @@ const WorkoutTab: React.FC = () => {
               <div className="divide-y divide-gray-100">
                 {dayExercises.map((ex) => {
                   const draft = drafts[ex.id] || { weight: '', sets_done: '', reps_done: '', notes: '' };
-                  const isSaving = saving[ex.id];
-                  const isSaved = saved[ex.id];
 
                   return (
                     <div key={ex.id} className="px-5 py-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <p className="font-medium text-gray-900">{ex.name}</p>
-                          <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-0.5">
-                            {ex.sets && <span className="text-xs text-gray-500">Serie: <span className="font-medium text-gray-700">{ex.sets}</span></span>}
-                            {ex.reps && <span className="text-xs text-gray-500">Reps: <span className="font-medium text-gray-700">{ex.reps}</span></span>}
-                            {ex.rest && <span className="text-xs text-gray-500">Recupero: <span className="font-medium text-gray-700">{ex.rest}</span></span>}
-                          </div>
-                          {ex.notes && <p className="text-xs text-gray-400 mt-0.5 italic">{ex.notes}</p>}
+                      <div className="mb-3">
+                        <p className="font-medium text-gray-900">{ex.name}</p>
+                        <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-0.5">
+                          {ex.sets && <span className="text-xs text-gray-500">Serie: <span className="font-medium text-gray-700">{ex.sets}</span></span>}
+                          {ex.reps && <span className="text-xs text-gray-500">Reps: <span className="font-medium text-gray-700">{ex.reps}</span></span>}
+                          {ex.rest && <span className="text-xs text-gray-500">Recupero: <span className="font-medium text-gray-700">{ex.rest}</span></span>}
                         </div>
-                        <button
-                          onClick={() => handleSave(ex.id)}
-                          disabled={isSaving || isSaved}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex-shrink-0 ml-3 ${
-                            isSaved
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50'
-                          }`}
-                        >
-                          {isSaved
-                            ? React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: 'w-3.5 h-3.5' })
-                            : React.createElement(FiSave as React.ComponentType<{ className?: string }>, { className: 'w-3.5 h-3.5' })}
-                          {isSaved ? 'Salvato' : isSaving ? '...' : 'Salva'}
-                        </button>
+                        {ex.notes && <p className="text-xs text-gray-400 mt-0.5 italic">{ex.notes}</p>}
                       </div>
 
                       <div className="grid grid-cols-3 gap-2">
@@ -303,6 +324,12 @@ const WorkoutTab: React.FC = () => {
           </div>
         );
       })}
+
+      {exercises.length > 0 && (
+        <div className="flex justify-end">
+          <SaveAllButton />
+        </div>
+      )}
 
       {/* ── Storico settimane precedenti ─────────────────────────────────── */}
       {pastWeeks.length > 0 && (
