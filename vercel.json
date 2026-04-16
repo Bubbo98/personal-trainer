@@ -1,17 +1,4 @@
 {
-  "redirects": [
-    {
-      "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "esercizifacili.com"
-        }
-      ],
-      "destination": "https://www.esercizifacili.com/:path*",
-      "permanent": true
-    }
-  ],
   "builds": [
     {
       "src": "package.json",
@@ -34,21 +21,7 @@
       }
     }
   ],
-  "crons": [
-    {
-      "path": "/api/cron/send-reminders",
-      "schedule": "0 7 * * *"
-    }
-  ],
   "rewrites": [
-    {
-      "source": "/sitemap.xml",
-      "destination": "/backend/server.js"
-    },
-    {
-      "source": "/robots.txt",
-      "destination": "/backend/server.js"
-    },
     {
       "source": "/api/(.*)",
       "destination": "/backend/server.js"
