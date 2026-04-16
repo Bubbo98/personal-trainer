@@ -510,12 +510,12 @@ const VideoManagement: React.FC = () => {
         ) : (
           videos.map((video) => (
           <div key={video.id} className="bg-white rounded-xl shadow-lg overflow-hidden">
-            <div className="relative aspect-video bg-gray-200 flex items-center justify-center">
+            <div className="relative aspect-video bg-gray-100 flex items-center justify-center">
               {video.thumbnailPath ? (
                 <img
                   src={`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:3001'}/thumbnails/${video.thumbnailPath}`}
                   alt={video.title}
-                  className="absolute inset-0 w-full h-full object-cover"
+                  className="absolute inset-0 w-full h-full object-contain"
                   onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
               ) : (

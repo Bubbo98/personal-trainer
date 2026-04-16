@@ -19,13 +19,13 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onPlay }) => {
 
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-      <div className="relative aspect-video bg-gray-200">
+      <div className="relative aspect-video bg-gray-100">
         {/* Thumbnail Image */}
         {thumbnailUrl && (
           <img
             src={thumbnailUrl}
             alt={video.title}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-contain"
             onError={(e) => {
               // Hide image if it fails to load
               e.currentTarget.style.display = 'none';
