@@ -174,34 +174,39 @@ router.post('/admin/plan/:userId', authenticateToken, requireAdmin, async (req, 
 
   const db = createDatabase();
 
-  // Delete existing plan
-  await new Promise((resolve, reject) => {
-    db.runCallback(
-      'DELETE FROM training_exercises WHERE user_id = ?',
-      [userId],
-      (err) => (err ? reject(err) : resolve())
-    );
-  });
+  try {
+    // Delete existing plan (FK cascade is OFF in SQLite/Turso by default — logs are preserved)
+    await new Promise((resolve, reject) => {
+      db.runCallback(
+        'DELETE FROM training_exercises WHERE user_id = ?',
+        [userId],
+        (err) => (err ? reject(err) : resolve())
+      );
+    });
 
-  // Insert new exercises
-  let orderIndex = 0;
-  for (const day of days) {
-    for (const ex of day.exercises || []) {
-      await new Promise((resolve, reject) => {
-        db.runCallback(
-          `INSERT INTO training_exercises (user_id, day_number, day_name, order_index, name, sets, reps, rest, notes)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [userId, day.dayNumber, day.dayName || `Giorno ${day.dayNumber}`, orderIndex++,
-           ex.name, ex.sets || '', ex.reps || '', ex.rest || '', ex.notes || ''],
-          (err) => (err ? reject(err) : resolve())
-        );
-      });
+    // Insert new exercises
+    for (const day of days) {
+      let orderIndex = 0;
+      for (const ex of day.exercises || []) {
+        await new Promise((resolve, reject) => {
+          db.runCallback(
+            `INSERT INTO training_exercises (user_id, day_number, day_name, order_index, name, sets, reps, rest, notes)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [userId, day.dayNumber, day.dayName || `Giorno ${day.dayNumber}`, orderIndex++,
+             ex.name, ex.sets || '', ex.reps || '', ex.rest || '', ex.notes || ''],
+            (err) => (err ? reject(err) : resolve())
+          );
+        });
+      }
     }
-    orderIndex = 0; // reset per day
-  }
 
-  db.close();
-  res.json({ success: true, message: 'Training plan saved' });
+    db.close();
+    res.json({ success: true, message: 'Training plan saved' });
+  } catch (err) {
+    db.close();
+    console.error('Error saving training plan:', err);
+    res.status(500).json({ success: false, error: 'Failed to save training plan' });
+  }
 });
 
 // DELETE /api/workout/admin/plan/:userId
@@ -225,18 +230,20 @@ router.get('/admin/logs/:userId', authenticateToken, requireAdmin, (req, res) =>
   const { userId } = req.params;
   const db = createDatabase();
 
+  // LEFT JOIN so logs survive even if the exercise was deleted from the plan.
+  // Falls back to snapshot columns when the exercise no longer exists.
   const query = `
     SELECT
       el.*,
-      te.name AS exercise_name,
-      te.day_number,
-      te.day_name,
+      COALESCE(te.name, el.exercise_name)           AS exercise_name,
+      COALESCE(te.day_number, el.day_number_snapshot) AS day_number,
+      COALESCE(te.day_name,   el.day_name_snapshot)   AS day_name,
       te.sets AS planned_sets,
       te.reps AS planned_reps
     FROM exercise_logs el
-    JOIN training_exercises te ON el.exercise_id = te.id
+    LEFT JOIN training_exercises te ON el.exercise_id = te.id
     WHERE el.user_id = ?
-    ORDER BY el.week_start DESC, te.day_number, te.order_index
+    ORDER BY el.week_start DESC, COALESCE(te.day_number, el.day_number_snapshot), COALESCE(te.order_index, 0)
   `;
 
   db.allCallback(query, [userId], (err, logs) => {
@@ -295,9 +302,9 @@ router.post('/logs', authenticateToken, (req, res) => {
 
   const db = createDatabase();
 
-  // Verify the exercise belongs to this user
+  // Fetch exercise info (verify ownership + grab snapshot data)
   db.getCallback(
-    'SELECT id FROM training_exercises WHERE id = ? AND user_id = ?',
+    'SELECT id, name, day_number, day_name FROM training_exercises WHERE id = ? AND user_id = ?',
     [exerciseId, userId],
     (err, ex) => {
       if (err || !ex) {
@@ -306,15 +313,21 @@ router.post('/logs', authenticateToken, (req, res) => {
       }
 
       db.runCallback(
-        `INSERT INTO exercise_logs (user_id, exercise_id, week_start, weight, sets_done, reps_done, notes, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        `INSERT INTO exercise_logs (user_id, exercise_id, week_start, weight, sets_done, reps_done, notes,
+           exercise_name, day_number_snapshot, day_name_snapshot, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
          ON CONFLICT(user_id, exercise_id, week_start) DO UPDATE SET
            weight = excluded.weight,
            sets_done = excluded.sets_done,
            reps_done = excluded.reps_done,
            notes = excluded.notes,
+           exercise_name = excluded.exercise_name,
+           day_number_snapshot = excluded.day_number_snapshot,
+           day_name_snapshot = excluded.day_name_snapshot,
            updated_at = CURRENT_TIMESTAMP`,
-        [userId, exerciseId, weekStart, weight || null, setsDone || null, repsDone || null, notes || null],
+        [userId, exerciseId, weekStart,
+         weight || null, setsDone || null, repsDone || null, notes || null,
+         ex.name, ex.day_number, ex.day_name || `Giorno ${ex.day_number}`],
         function (err) {
           db.close();
           if (err) {
