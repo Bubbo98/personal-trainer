@@ -488,11 +488,12 @@ const Dashboard: React.FC<DashboardProps> = () => {
           )}
 
           {/* Navigation Tabs */}
-          <div className="flex space-x-1 bg-gray-200 p-1 rounded-lg mb-8">
+          <div className="overflow-x-auto mb-8">
+            <div className="flex space-x-1 bg-gray-200 p-1 rounded-lg w-max min-w-full">
             <button
               onClick={() => !checkInRequired && setActiveTab('training-plan')}
               disabled={checkInRequired}
-              className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-3 rounded-lg font-medium transition-all ${
+              className={`flex-shrink-0 sm:flex-1 flex items-center justify-center space-x-1.5 px-3 sm:px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
                 activeTab === 'training-plan'
                   ? 'bg-white text-gray-900 shadow'
                   : checkInRequired
@@ -502,12 +503,12 @@ const Dashboard: React.FC<DashboardProps> = () => {
               title={t('dashboard.tabs.trainingPlan') || 'Scheda'}
             >
               {React.createElement(FiFile as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-              <span className="max-[399px]:hidden text-xs sm:text-base">{t('dashboard.tabs.trainingPlan') || 'Scheda'}</span>
+              <span className="text-xs sm:text-base">{t('dashboard.tabs.trainingPlan') || 'Scheda'}</span>
             </button>
             <button
               onClick={() => !checkInRequired && setActiveTab('videos')}
               disabled={checkInRequired}
-              className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-3 rounded-lg font-medium transition-all ${
+              className={`flex-shrink-0 sm:flex-1 flex items-center justify-center space-x-1.5 px-3 sm:px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
                 activeTab === 'videos'
                   ? 'bg-white text-gray-900 shadow'
                   : checkInRequired
@@ -517,12 +518,12 @@ const Dashboard: React.FC<DashboardProps> = () => {
               title={t('dashboard.tabs.videos') || 'Video'}
             >
               {React.createElement(FiVideo as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-              <span className="max-[399px]:hidden text-xs sm:text-base">{t('dashboard.tabs.videos') || 'Video'}</span>
+              <span className="text-xs sm:text-base">{t('dashboard.tabs.videos') || 'Video'}</span>
             </button>
             <button
               onClick={() => !checkInRequired && setActiveTab('reviews')}
               disabled={checkInRequired}
-              className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-3 rounded-lg font-medium transition-all ${
+              className={`flex-shrink-0 sm:flex-1 flex items-center justify-center space-x-1.5 px-3 sm:px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
                 activeTab === 'reviews'
                   ? 'bg-white text-gray-900 shadow'
                   : checkInRequired
@@ -532,12 +533,12 @@ const Dashboard: React.FC<DashboardProps> = () => {
               title="Recensioni"
             >
               {React.createElement(FiStar as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-              <span className="max-[399px]:hidden text-xs sm:text-base">Recensioni</span>
+              <span className="text-xs sm:text-base">Recensioni</span>
             </button>
             <button
               onClick={() => !checkInRequired && setActiveTab('workout')}
               disabled={checkInRequired}
-              className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-3 rounded-lg font-medium transition-all ${
+              className={`flex-shrink-0 sm:flex-1 flex items-center justify-center space-x-1.5 px-3 sm:px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
                 activeTab === 'workout'
                   ? 'bg-white text-gray-900 shadow'
                   : checkInRequired
@@ -547,11 +548,11 @@ const Dashboard: React.FC<DashboardProps> = () => {
               title="I miei pesi"
             >
               {React.createElement(FiActivity as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-              <span className="max-[399px]:hidden text-xs sm:text-base">Pesi</span>
+              <span className="text-xs sm:text-base">Pesi</span>
             </button>
             <button
               onClick={() => setActiveTab('feedback')}
-              className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-3 rounded-lg font-medium transition-all ${
+              className={`flex-shrink-0 sm:flex-1 flex items-center justify-center space-x-1.5 px-3 sm:px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
                 activeTab === 'feedback'
                   ? 'bg-white text-gray-900 shadow'
                   : 'text-gray-600 hover:text-gray-900'
@@ -559,8 +560,9 @@ const Dashboard: React.FC<DashboardProps> = () => {
               title="Check"
             >
               {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-              <span className="max-[399px]:hidden text-xs sm:text-base">{t('dashboard.tabs.feedback')}</span>
+              <span className="text-xs sm:text-base">{t('dashboard.tabs.feedback')}</span>
             </button>
+            </div>
           </div>
 
           {/* Tab Content */}
