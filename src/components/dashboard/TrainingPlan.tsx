@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiDownload, FiFile, FiAlertCircle, FiClock } from 'react-icons/fi';
+import { FiDownload, FiFile, FiAlertCircle, FiClock, FiLock } from 'react-icons/fi';
 import { STORAGE_KEY } from '../../utils/dashboardUtils';
 
 interface PdfInfo {
-  originalName: string;
-  fileSize: number;
-  uploadedAt: string;
-  updatedAt: string;
+  locked: boolean;
+  visibleFrom?: string;
+  originalName?: string;
+  fileSize?: number;
+  uploadedAt?: string;
+  updatedAt?: string;
   expirationDate?: string;
 }
 
@@ -164,6 +166,41 @@ const TrainingPlan: React.FC = () => {
     );
   }
 
+  if (pdfInfo.locked && pdfInfo.visibleFrom) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+            <h2 className="text-2xl font-bold text-white flex items-center">
+              <FileIcon className="w-7 h-7 mr-3" />
+              {t('dashboard.pdf.myTrainingPlan') || 'La Mia Scheda di Allenamento'}
+            </h2>
+          </div>
+          <div className="p-8 text-center">
+            {React.createElement(FiLock as React.ComponentType<{ className?: string }>, { className: "w-14 h-14 text-amber-400 mx-auto mb-4" })}
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              La tua scheda è pronta
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Il tuo personal trainer ha preparato una scheda di allenamento per te.
+              Sarà disponibile a partire dal:
+            </p>
+            <div className="inline-block bg-amber-50 border border-amber-200 rounded-xl px-6 py-3">
+              <span className="text-2xl font-bold text-amber-700">
+                {new Date(pdfInfo.visibleFrom).toLocaleDateString('it-IT', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto">
       <div className="bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
@@ -188,16 +225,16 @@ const TrainingPlan: React.FC = () => {
               <div className="space-y-1 text-sm text-gray-600">
                 <p>
                   <span className="font-medium">{t('dashboard.pdf.fileSize') || 'Dimensione'}:</span>{' '}
-                  {formatFileSize(pdfInfo.fileSize)}
+                  {formatFileSize(pdfInfo.fileSize!)}
                 </p>
                 <p>
                   <span className="font-medium">{t('dashboard.pdf.uploadedAt') || 'Caricato il'}:</span>{' '}
-                  {formatDate(pdfInfo.uploadedAt)}
+                  {formatDate(pdfInfo.uploadedAt!)}
                 </p>
                 {pdfInfo.updatedAt !== pdfInfo.uploadedAt && (
                   <p>
                     <span className="font-medium">{t('dashboard.pdf.updatedAt') || 'Aggiornato il'}:</span>{' '}
-                    {formatDate(pdfInfo.updatedAt)}
+                    {formatDate(pdfInfo.updatedAt!)}
                   </p>
                 )}
               </div>

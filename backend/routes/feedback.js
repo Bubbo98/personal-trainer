@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { createDatabase } = require('../utils/database');
 const { authenticateToken } = require('../middleware/auth');
+const { sendNewFeedbackNotification, sendTrainerSeenFeedbackNotification } = require('../services/emailService');
 
 // GET /api/feedback/my-feedbacks - Get all feedbacks for the authenticated user
 router.get('/my-feedbacks', authenticateToken, (req, res) => {
@@ -118,7 +119,7 @@ router.get('/should-show', authenticateToken, (req, res) => {
   });
 });
 
-// POST /api/feedback - Submit a new feedback
+// POST /api/feedback - Submit a new weekly check
 router.post('/', authenticateToken, (req, res) => {
   const db = createDatabase();
   const userId = req.user.userId;
@@ -126,55 +127,94 @@ router.post('/', authenticateToken, (req, res) => {
     firstName,
     lastName,
     email,
-    trainingSatisfaction,
+    energyLevel,
+    workoutsCompleted,
+    mealPlanFollowed,
+    sleepQuality,
+    physicalDiscomfort,
+    discomfortDetails,
+    muscularZones,
+    muscularNotes,
+    articularZones,
+    articularNotes,
     motivationLevel,
-    difficulties,
-    nutritionQuality,
-    sleepHours,
-    recoveryImproved,
-    feelsSupported,
-    supportImprovement
+    weeklyHighlights,
+    currentWeight
   } = req.body;
 
   // Validation
-  if (!firstName || !lastName || !email) {
+  if (!firstName || !lastName) {
     db.close();
     return res.status(400).json({
       success: false,
-      message: 'Nome, cognome ed email sono obbligatori'
+      message: 'Nome e cognome sono obbligatori'
     });
   }
 
-  if (trainingSatisfaction < 1 || trainingSatisfaction > 10) {
+  // Validate energy level
+  if (!['high', 'medium', 'low'].includes(energyLevel)) {
     db.close();
     return res.status(400).json({
       success: false,
-      message: 'La soddisfazione deve essere tra 1 e 10'
+      message: 'Valore non valido per il livello di energia'
     });
   }
 
-  if (motivationLevel < 1 || motivationLevel > 10) {
+  // Validate workouts completed
+  if (!['all', 'almost_all', 'few_or_none'].includes(workoutsCompleted)) {
     db.close();
     return res.status(400).json({
       success: false,
-      message: 'Il livello di motivazione deve essere tra 1 e 10'
+      message: 'Valore non valido per gli allenamenti completati'
     });
   }
 
-  if (!['ottima', 'buona', 'da_migliorare', 'difficolta'].includes(nutritionQuality)) {
+  // Validate meal plan followed
+  if (!['completely', 'mostly', 'sometimes', 'no'].includes(mealPlanFollowed)) {
     db.close();
     return res.status(400).json({
       success: false,
-      message: 'Valore non valido per la qualità dell\'alimentazione'
+      message: 'Valore non valido per il piano alimentare'
     });
   }
 
-  if (typeof recoveryImproved !== 'boolean' || typeof feelsSupported !== 'boolean') {
+  // Validate sleep quality
+  if (!['excellent', 'good', 'fair', 'poor'].includes(sleepQuality)) {
     db.close();
     return res.status(400).json({
       success: false,
-      message: 'I campi di recupero e supporto devono essere booleani'
+      message: 'Valore non valido per la qualita del sonno'
     });
+  }
+
+  // Validate physical discomfort
+  if (!['none', 'minor', 'significant'].includes(physicalDiscomfort)) {
+    db.close();
+    return res.status(400).json({
+      success: false,
+      message: 'Valore non valido per i fastidi fisici'
+    });
+  }
+
+  // Validate motivation level
+  if (!['very_high', 'good', 'medium', 'low'].includes(motivationLevel)) {
+    db.close();
+    return res.status(400).json({
+      success: false,
+      message: 'Valore non valido per il livello di motivazione'
+    });
+  }
+
+  // Validate weight (optional, but if provided must be valid)
+  if (currentWeight !== undefined && currentWeight !== null && currentWeight !== '') {
+    const weight = parseFloat(currentWeight);
+    if (isNaN(weight) || weight < 20 || weight > 300) {
+      db.close();
+      return res.status(400).json({
+        success: false,
+        message: 'Peso non valido (deve essere tra 20 e 300 kg)'
+      });
+    }
   }
 
   // Get the current PDF updated date
@@ -195,25 +235,42 @@ router.post('/', authenticateToken, (req, res) => {
     const insertQuery = `
       INSERT INTO user_feedbacks (
         user_id, first_name, last_name, email, feedback_date,
-        training_satisfaction, motivation_level, difficulties,
-        nutrition_quality, sleep_hours, recovery_improved,
-        feels_supported, support_improvement, pdf_change_date
-      ) VALUES (?, ?, ?, ?, DATE('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        energy_level, workouts_completed, meal_plan_followed,
+        sleep_quality, physical_discomfort, discomfort_details, motivation_level,
+        weekly_highlights, current_weight, muscular_zones, muscular_notes,
+        articular_zones, articular_notes, pdf_change_date
+      ) VALUES (?, ?, ?, ?, DATE('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
+
+    const weightValue = currentWeight !== undefined && currentWeight !== null && currentWeight !== ''
+      ? parseFloat(currentWeight)
+      : null;
+
+    const muscularZonesValue = Array.isArray(muscularZones) && muscularZones.length > 0
+      ? JSON.stringify(muscularZones)
+      : null;
+    const articularZonesValue = Array.isArray(articularZones) && articularZones.length > 0
+      ? JSON.stringify(articularZones)
+      : null;
 
     const params = [
       userId,
       firstName,
       lastName,
-      email,
-      trainingSatisfaction,
+      email || '',
+      energyLevel,
+      workoutsCompleted,
+      mealPlanFollowed,
+      sleepQuality,
+      physicalDiscomfort,
+      discomfortDetails || null,
       motivationLevel,
-      difficulties || null,
-      nutritionQuality,
-      sleepHours,
-      recoveryImproved ? 1 : 0,
-      feelsSupported ? 1 : 0,
-      supportImprovement || null,
+      weeklyHighlights || null,
+      weightValue,
+      muscularZonesValue,
+      muscularNotes || null,
+      articularZonesValue,
+      articularNotes || null,
       pdfChangeDate
     ];
 
@@ -229,10 +286,16 @@ router.post('/', authenticateToken, (req, res) => {
 
       const feedbackId = this.lastID;
 
-      // Fetch the created feedback
-      const selectQuery = `SELECT * FROM user_feedbacks WHERE id = ?`;
+      // Fetch the created feedback with trainer info
+      const selectQuery = `
+        SELECT f.*, u.trainer_id, t.name as trainer_name
+        FROM user_feedbacks f
+        JOIN users u ON f.user_id = u.id
+        LEFT JOIN trainers t ON u.trainer_id = t.id
+        WHERE f.id = ?
+      `;
 
-      db.getCallback(selectQuery, [feedbackId], (err, feedback) => {
+      db.getCallback(selectQuery, [feedbackId], async (err, feedback) => {
         db.close();
 
         if (err) {
@@ -243,9 +306,15 @@ router.post('/', authenticateToken, (req, res) => {
           });
         }
 
+        // Send email notification to admin (async, don't wait for it)
+        // Include trainer name for email subject
+        sendNewFeedbackNotification(feedback, feedback.trainer_name || 'Joshua').catch(err => {
+          console.error('Failed to send admin notification email:', err);
+        });
+
         res.status(201).json({
           success: true,
-          message: 'Feedback submitted successfully',
+          message: 'Check submitted successfully',
           data: { feedback }
         });
       });
@@ -253,14 +322,18 @@ router.post('/', authenticateToken, (req, res) => {
   });
 });
 
-// GET /api/feedback/admin/all - Get all feedbacks (admin only)
-router.get('/admin/all', authenticateToken, (req, res) => {
+// GET /api/feedback/admin/unread-count - Get count of unread feedbacks (admin only)
+// Optional query param: trainerId - filter by trainer
+// Uses trainer_seen_at per-feedback tracking instead of bulk timestamp
+router.get('/admin/unread-count', authenticateToken, (req, res) => {
   const db = createDatabase();
+  const adminUserId = req.user.userId;
+  const trainerId = req.query.trainerId ? parseInt(req.query.trainerId) : null;
 
   // Check if user is admin
   const checkAdminQuery = `SELECT username FROM users WHERE id = ?`;
 
-  db.getCallback(checkAdminQuery, [req.user.userId], (err, user) => {
+  db.getCallback(checkAdminQuery, [adminUserId], (err, user) => {
     if (err || !user || !user.username.includes('admin')) {
       db.close();
       return res.status(403).json({
@@ -269,31 +342,436 @@ router.get('/admin/all', authenticateToken, (req, res) => {
       });
     }
 
-    const query = `
-      SELECT
-        f.*,
-        u.username,
-        u.first_name as user_first_name,
-        u.last_name as user_last_name
-      FROM user_feedbacks f
-      JOIN users u ON f.user_id = u.id
-      ORDER BY f.feedback_date DESC, f.created_at DESC
-    `;
+    let countQuery;
+    let params = [];
 
-    db.allCallback(query, [], (err, feedbacks) => {
+    if (trainerId) {
+      countQuery = `
+        SELECT COUNT(*) as count FROM user_feedbacks f
+        JOIN users u ON f.user_id = u.id
+        WHERE f.trainer_seen_at IS NULL
+          AND (u.trainer_id = ? OR (u.trainer_id IS NULL AND ? = 1))
+      `;
+      params = [trainerId, trainerId];
+    } else {
+      countQuery = `SELECT COUNT(*) as count FROM user_feedbacks WHERE trainer_seen_at IS NULL`;
+      params = [];
+    }
+
+    db.getCallback(countQuery, params, (err, countRow) => {
       db.close();
 
       if (err) {
-        console.error('Error fetching all feedbacks:', err);
+        console.error('Error counting unread feedbacks:', err);
         return res.status(500).json({
           success: false,
-          message: 'Failed to fetch feedbacks'
+          message: 'Failed to count unread feedbacks'
         });
       }
 
       res.json({
         success: true,
-        data: { feedbacks }
+        data: {
+          unreadCount: countRow?.count || 0
+        }
+      });
+    });
+  });
+});
+
+// POST /api/feedback/admin/mark-seen - Mark all feedbacks as seen (admin only)
+// Optional body param: trainerId - mark seen for specific trainer
+router.post('/admin/mark-seen', authenticateToken, (req, res) => {
+  const db = createDatabase();
+  const adminUserId = req.user.userId;
+  const { trainerId } = req.body;
+
+  // Check if user is admin
+  const checkAdminQuery = `SELECT username FROM users WHERE id = ?`;
+
+  db.getCallback(checkAdminQuery, [adminUserId], (err, user) => {
+    if (err || !user || !user.username.includes('admin')) {
+      db.close();
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized - Admin access required'
+      });
+    }
+
+    // Mark all unseen feedbacks as seen for this trainer
+    let updateQuery;
+    let params = [];
+
+    if (trainerId) {
+      updateQuery = `
+        UPDATE user_feedbacks SET trainer_seen_at = CURRENT_TIMESTAMP
+        WHERE trainer_seen_at IS NULL AND user_id IN (
+          SELECT id FROM users WHERE trainer_id = ? OR (trainer_id IS NULL AND ? = 1)
+        )
+      `;
+      params = [trainerId, trainerId];
+    } else {
+      updateQuery = `UPDATE user_feedbacks SET trainer_seen_at = CURRENT_TIMESTAMP WHERE trainer_seen_at IS NULL`;
+      params = [];
+    }
+
+    db.runCallback(updateQuery, params, function(err) {
+      db.close();
+
+      if (err) {
+        console.error('Error marking feedbacks as seen:', err);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to mark feedbacks as seen'
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Feedbacks marked as seen'
+      });
+    });
+  });
+});
+
+// POST /api/feedback/admin/:feedbackId/mark-seen - Mark a single feedback as seen by PT
+router.post('/admin/:feedbackId/mark-seen', authenticateToken, (req, res) => {
+  const db = createDatabase();
+  const adminUserId = req.user.userId;
+  const { feedbackId } = req.params;
+
+  const checkAdminQuery = `SELECT username FROM users WHERE id = ?`;
+
+  db.getCallback(checkAdminQuery, [adminUserId], (err, user) => {
+    if (err || !user || !user.username.includes('admin')) {
+      db.close();
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized - Admin access required'
+      });
+    }
+
+    // Check current state of the feedback
+    const getFeedbackQuery = `
+      SELECT f.id, f.trainer_seen_at, f.user_id, f.feedback_date,
+             u.email as user_email, u.first_name as user_first_name,
+             u.trainer_id, t.name as trainer_name
+      FROM user_feedbacks f
+      JOIN users u ON f.user_id = u.id
+      LEFT JOIN trainers t ON u.trainer_id = t.id
+      WHERE f.id = ?
+    `;
+
+    db.getCallback(getFeedbackQuery, [feedbackId], (err, feedback) => {
+      if (err || !feedback) {
+        db.close();
+        return res.status(404).json({
+          success: false,
+          message: 'Feedback not found'
+        });
+      }
+
+      // Already seen — skip update and email
+      if (feedback.trainer_seen_at) {
+        db.close();
+        return res.json({ success: true });
+      }
+
+      // Mark as seen
+      db.runCallback(
+        `UPDATE user_feedbacks SET trainer_seen_at = CURRENT_TIMESTAMP WHERE id = ? AND trainer_seen_at IS NULL`,
+        [feedbackId],
+        function(err) {
+          db.close();
+
+          if (err) {
+            console.error('Error marking feedback as seen:', err);
+            return res.status(500).json({
+              success: false,
+              message: 'Failed to mark feedback as seen'
+            });
+          }
+
+          // Send email notification if user has an email
+          if (feedback.user_email) {
+            const trainerName = feedback.trainer_name || 'Il tuo PT';
+            sendTrainerSeenFeedbackNotification(
+              feedback.user_email,
+              feedback.user_first_name || 'Utente',
+              trainerName,
+              feedback.feedback_date
+            ).catch(emailErr => {
+              console.error('Failed to send trainer-seen email:', emailErr);
+            });
+          }
+
+          res.json({ success: true });
+        }
+      );
+    });
+  });
+});
+
+// GET /api/feedback/trainer-seen-notification - Get unseen "PT read your check" notifications (user auth)
+router.get('/trainer-seen-notification', authenticateToken, (req, res) => {
+  const db = createDatabase();
+  const userId = req.user.userId;
+
+  const query = `
+    SELECT id, feedback_date, trainer_seen_at
+    FROM user_feedbacks
+    WHERE user_id = ?
+      AND trainer_seen_at IS NOT NULL
+      AND user_dismissed_trainer_seen = 0
+    ORDER BY trainer_seen_at DESC
+  `;
+
+  db.allCallback(query, [userId], (err, notifications) => {
+    db.close();
+
+    if (err) {
+      console.error('Error fetching trainer-seen notifications:', err);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch notifications'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: { notifications: notifications || [] }
+    });
+  });
+});
+
+// POST /api/feedback/dismiss-trainer-seen - Dismiss all "PT seen" notifications for user
+router.post('/dismiss-trainer-seen', authenticateToken, (req, res) => {
+  const db = createDatabase();
+  const userId = req.user.userId;
+
+  db.runCallback(
+    `UPDATE user_feedbacks
+     SET user_dismissed_trainer_seen = 1
+     WHERE user_id = ? AND trainer_seen_at IS NOT NULL AND user_dismissed_trainer_seen = 0`,
+    [userId],
+    function(err) {
+      db.close();
+
+      if (err) {
+        console.error('Error dismissing trainer-seen notifications:', err);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to dismiss notifications'
+        });
+      }
+
+      res.json({ success: true });
+    }
+  );
+});
+
+// GET /api/feedback/admin/all - Get all feedbacks (admin only) with pagination
+// Query params: trainerId, page, limit, search, discomfort (all|none|has_issues)
+router.get('/admin/all', authenticateToken, (req, res) => {
+  const db = createDatabase();
+  const trainerId = req.query.trainerId ? parseInt(req.query.trainerId) : null;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  const offset = (page - 1) * limit;
+  const search = (req.query.search || '').trim();
+  const discomfort = req.query.discomfort || 'all';
+
+  const checkAdminQuery = `SELECT username FROM users WHERE id = ?`;
+
+  db.getCallback(checkAdminQuery, [req.user.userId], (err, user) => {
+    if (err || !user || !user.username.includes('admin')) {
+      db.close();
+      return res.status(403).json({ success: false, message: 'Unauthorized - Admin access required' });
+    }
+
+    // Trainer-only WHERE (for stats)
+    const trainerConds = [];
+    const trainerParams = [];
+    if (trainerId) {
+      trainerConds.push('(u.trainer_id = ? OR (u.trainer_id IS NULL AND ? = 1))');
+      trainerParams.push(trainerId, trainerId);
+    }
+    const trainerWhere = trainerConds.length ? 'WHERE ' + trainerConds.join(' AND ') : '';
+
+    // Full WHERE (trainer + search + discomfort)
+    const fullConds = [...trainerConds];
+    const fullParams = [...trainerParams];
+    if (search) {
+      fullConds.push('(u.first_name LIKE ? OR u.last_name LIKE ? OR u.username LIKE ? OR u.email LIKE ?)');
+      const s = `%${search}%`;
+      fullParams.push(s, s, s, s);
+    }
+    if (discomfort === 'none') {
+      fullConds.push("f.physical_discomfort = 'none'");
+    } else if (discomfort === 'has_issues') {
+      fullConds.push("f.physical_discomfort != 'none'");
+    }
+    const fullWhere = fullConds.length ? 'WHERE ' + fullConds.join(' AND ') : '';
+
+    // Step 1: global stats (trainer filter only, ignores search/discomfort)
+    const statsQuery = `
+      SELECT
+        COUNT(*) as total,
+        SUM(CASE WHEN f.physical_discomfort != 'none' THEN 1 ELSE 0 END) as with_discomfort,
+        SUM(CASE WHEN f.motivation_level = 'low' THEN 1 ELSE 0 END) as low_motivation,
+        SUM(CASE WHEN f.workouts_completed = 'few_or_none' THEN 1 ELSE 0 END) as missed_workouts
+      FROM user_feedbacks f
+      JOIN users u ON f.user_id = u.id
+      ${trainerWhere}
+    `;
+
+    db.getCallback(statsQuery, trainerParams, (err, stats) => {
+      if (err) {
+        db.close();
+        return res.status(500).json({ success: false, message: 'Failed to fetch stats' });
+      }
+
+      // Step 2: count matching items
+      const countQuery = `
+        SELECT COUNT(*) as count
+        FROM user_feedbacks f
+        JOIN users u ON f.user_id = u.id
+        ${fullWhere}
+      `;
+
+      db.getCallback(countQuery, fullParams, (err, countRow) => {
+        if (err) {
+          db.close();
+          return res.status(500).json({ success: false, message: 'Failed to count feedbacks' });
+        }
+
+        const total = countRow?.count || 0;
+        const totalPages = Math.max(1, Math.ceil(total / limit));
+
+        // Step 3: paginated data
+        const dataQuery = `
+          SELECT
+            f.*,
+            u.username,
+            u.first_name as user_first_name,
+            u.last_name as user_last_name,
+            u.trainer_id
+          FROM user_feedbacks f
+          JOIN users u ON f.user_id = u.id
+          ${fullWhere}
+          ORDER BY f.feedback_date DESC, f.created_at DESC
+          LIMIT ? OFFSET ?
+        `;
+
+        db.allCallback(dataQuery, [...fullParams, limit, offset], (err, feedbacks) => {
+          db.close();
+
+          if (err) {
+            console.error('Error fetching all feedbacks:', err);
+            return res.status(500).json({ success: false, message: 'Failed to fetch feedbacks' });
+          }
+
+          res.json({
+            success: true,
+            data: {
+              feedbacks,
+              total,
+              page,
+              totalPages,
+              limit,
+              stats: {
+                total: stats?.total || 0,
+                withDiscomfort: stats?.with_discomfort || 0,
+                lowMotivation: stats?.low_motivation || 0,
+                missedWorkouts: stats?.missed_workouts || 0
+              }
+            }
+          });
+        });
+      });
+    });
+  });
+});
+
+// GET /api/feedback/admin/users-summary - Paginated user list with latest feedback summary (admin only)
+// Query params: trainerId, page, limit, search, discomfort
+router.get('/admin/users-summary', authenticateToken, (req, res) => {
+  const db = createDatabase();
+  const trainerId = req.query.trainerId ? parseInt(req.query.trainerId) : null;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 15;
+  const offset = (page - 1) * limit;
+  const search = (req.query.search || '').trim();
+  const discomfort = req.query.discomfort || 'all';
+
+  const checkAdminQuery = `SELECT username FROM users WHERE id = ?`;
+  db.getCallback(checkAdminQuery, [req.user.userId], (err, user) => {
+    if (err || !user || !user.username.includes('admin')) {
+      db.close();
+      return res.status(403).json({ success: false, message: 'Unauthorized - Admin access required' });
+    }
+
+    // Only include users who have at least one feedback
+    const conds = ['EXISTS (SELECT 1 FROM user_feedbacks WHERE user_id = u.id)'];
+    const params = [];
+
+    if (trainerId) {
+      conds.push('(u.trainer_id = ? OR (u.trainer_id IS NULL AND ? = 1))');
+      params.push(trainerId, trainerId);
+    }
+    if (search) {
+      conds.push('(u.first_name LIKE ? OR u.last_name LIKE ? OR u.username LIKE ? OR u.email LIKE ?)');
+      const s = `%${search}%`;
+      params.push(s, s, s, s);
+    }
+    if (discomfort === 'none') {
+      conds.push("(SELECT physical_discomfort FROM user_feedbacks WHERE user_id = u.id ORDER BY feedback_date DESC, created_at DESC LIMIT 1) = 'none'");
+    } else if (discomfort === 'has_issues') {
+      conds.push("(SELECT physical_discomfort FROM user_feedbacks WHERE user_id = u.id ORDER BY feedback_date DESC, created_at DESC LIMIT 1) != 'none'");
+    }
+    const where = 'WHERE ' + conds.join(' AND ');
+
+    const countQuery = `SELECT COUNT(*) as count FROM users u ${where}`;
+    db.getCallback(countQuery, params, (err, countRow) => {
+      if (err) {
+        db.close();
+        return res.status(500).json({ success: false, message: 'Failed to count users' });
+      }
+
+      const total = countRow?.count || 0;
+      const totalPages = Math.max(1, Math.ceil(total / limit));
+
+      const dataQuery = `
+        SELECT
+          u.id as user_id,
+          u.username,
+          u.first_name,
+          u.last_name,
+          u.email,
+          COUNT(f.id) as total_feedbacks,
+          MAX(f.feedback_date) as last_feedback_date,
+          (SELECT energy_level FROM user_feedbacks WHERE user_id = u.id ORDER BY feedback_date DESC, created_at DESC LIMIT 1) as last_energy_level,
+          (SELECT motivation_level FROM user_feedbacks WHERE user_id = u.id ORDER BY feedback_date DESC, created_at DESC LIMIT 1) as last_motivation_level,
+          (SELECT physical_discomfort FROM user_feedbacks WHERE user_id = u.id ORDER BY feedback_date DESC, created_at DESC LIMIT 1) as last_physical_discomfort,
+          (SELECT current_weight FROM user_feedbacks WHERE user_id = u.id ORDER BY feedback_date DESC, created_at DESC LIMIT 1) as last_current_weight
+        FROM users u
+        JOIN user_feedbacks f ON f.user_id = u.id
+        ${where}
+        GROUP BY u.id
+        ORDER BY MAX(f.feedback_date) DESC
+        LIMIT ? OFFSET ?
+      `;
+
+      db.allCallback(dataQuery, [...params, limit, offset], (err, users) => {
+        db.close();
+        if (err) {
+          console.error('Error fetching user summaries:', err);
+          return res.status(500).json({ success: false, message: 'Failed to fetch user summaries' });
+        }
+        res.json({
+          success: true,
+          data: { users: users || [], total, page, totalPages }
+        });
       });
     });
   });

@@ -1,6 +1,19 @@
 -- Personal Trainer App Database Schema
 -- SQLite Database for User Authentication and Video Access Control
 
+-- Trainers table - stores personal trainer information
+CREATE TABLE IF NOT EXISTS trainers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    email VARCHAR(255),
+    is_active BOOLEAN DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert default trainers (Joshua and Denise)
+INSERT OR IGNORE INTO trainers (name, email) VALUES ('Joshua', NULL);
+INSERT OR IGNORE INTO trainers (name, email) VALUES ('Denise', NULL);
+
 -- Users table - stores user credentials and info
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -10,11 +23,14 @@ CREATE TABLE IF NOT EXISTS users (
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     is_active BOOLEAN DEFAULT 1,
+    is_paying BOOLEAN DEFAULT 1,
+    trainer_id INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     last_login DATETIME,
     login_token VARCHAR(500),
-    token_expires_at DATETIME
+    token_expires_at DATETIME,
+    FOREIGN KEY (trainer_id) REFERENCES trainers(id)
 );
 
 -- Videos table - stores video metadata
@@ -90,7 +106,7 @@ CREATE TABLE IF NOT EXISTS user_pdf_files (
     UNIQUE(user_id) -- One PDF per user
 );
 
--- User Feedbacks - stores coaching feedback forms
+-- User Feedbacks - stores weekly check-in forms
 CREATE TABLE IF NOT EXISTS user_feedbacks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
@@ -98,23 +114,37 @@ CREATE TABLE IF NOT EXISTS user_feedbacks (
     last_name VARCHAR(100) NOT NULL,
     email VARCHAR(255) NOT NULL,
     feedback_date DATE NOT NULL,
-    training_satisfaction INTEGER NOT NULL CHECK (training_satisfaction >= 1 AND training_satisfaction <= 10),
-    motivation_level INTEGER NOT NULL CHECK (motivation_level >= 1 AND motivation_level <= 10),
-    difficulties TEXT,
-    nutrition_quality VARCHAR(50) NOT NULL CHECK (nutrition_quality IN ('ottima', 'buona', 'da_migliorare', 'difficolta')),
-    sleep_hours INTEGER NOT NULL,
-    recovery_improved BOOLEAN NOT NULL,
-    feels_supported BOOLEAN NOT NULL,
-    support_improvement TEXT,
+    -- Weekly check-in fields (8 questions)
+    energy_level VARCHAR(20) NOT NULL CHECK (energy_level IN ('high', 'medium', 'low')),
+    workouts_completed VARCHAR(30) NOT NULL CHECK (workouts_completed IN ('all', 'almost_all', 'few_or_none')),
+    meal_plan_followed VARCHAR(30) NOT NULL CHECK (meal_plan_followed IN ('completely', 'mostly', 'sometimes', 'no')),
+    sleep_quality VARCHAR(20) NOT NULL CHECK (sleep_quality IN ('excellent', 'good', 'fair', 'poor')),
+    physical_discomfort VARCHAR(30) NOT NULL CHECK (physical_discomfort IN ('none', 'minor', 'significant')),
+    motivation_level VARCHAR(20) NOT NULL CHECK (motivation_level IN ('very_high', 'good', 'medium', 'low')),
+    weekly_highlights TEXT,
+    current_weight DECIMAL(5,2),
+    muscular_zones TEXT,     -- JSON array e.g. '["Spalla","Schiena alta"]'
+    muscular_notes TEXT,
+    articular_zones TEXT,    -- JSON array e.g. '["Ginocchio","Anca"]'
+    articular_notes TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     pdf_change_date DATETIME, -- Date when the PDF was changed that triggered this feedback
+    trainer_seen_at DATETIME, -- NULL = not yet seen by the PT
+    user_dismissed_trainer_seen INTEGER DEFAULT 0, -- 0 = user hasn't dismissed the "PT seen" notification
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Admin Feedback Seen - tracks when admin last viewed feedbacks per trainer
+CREATE TABLE IF NOT EXISTS admin_feedback_seen (
+    admin_user_id VARCHAR(255) PRIMARY KEY,
+    last_seen_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_login_token ON users(login_token);
+CREATE INDEX IF NOT EXISTS idx_users_is_paying ON users(is_paying);
 CREATE INDEX IF NOT EXISTS idx_videos_category ON videos(category);
 CREATE INDEX IF NOT EXISTS idx_user_video_permissions_user ON user_video_permissions(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_video_permissions_video ON user_video_permissions(video_id);
@@ -128,3 +158,5 @@ CREATE INDEX IF NOT EXISTS idx_reviews_rating ON reviews(rating);
 CREATE INDEX IF NOT EXISTS idx_user_pdf_files_user ON user_pdf_files(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_feedbacks_user ON user_feedbacks(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_feedbacks_date ON user_feedbacks(feedback_date);
+CREATE INDEX IF NOT EXISTS idx_users_trainer ON users(trainer_id);
+CREATE INDEX IF NOT EXISTS idx_trainers_active ON trainers(is_active);

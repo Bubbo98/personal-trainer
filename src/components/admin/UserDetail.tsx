@@ -7,11 +7,15 @@ import {
   FiFileText,
   FiCheck,
   FiSearch,
-  FiTrash2
+  FiTrash2,
+  FiCalendar,
+  FiActivity
 } from 'react-icons/fi';
 import { apiCall, formatDuration } from '../../utils/adminUtils';
 import { Video } from '../../types/admin';
 import PdfManagement from './PdfManagement';
+import TrainingDaysManager from './TrainingDaysManager';
+import TrainingPlanAdmin from './TrainingPlanAdmin';
 
 interface User {
   id: number;
@@ -22,14 +26,14 @@ interface User {
   createdAt: string;
 }
 
-type TabType = 'videos' | 'pdf';
+type TabType = 'videos' | 'trainingDays' | 'pdf' | 'workoutPlan';
 
 const UserDetail: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const [activeTab, setActiveTab] = useState<TabType>('videos');
+  const [activeTab, setActiveTab] = useState<TabType>('trainingDays');
   const [user, setUser] = useState<User | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
   const [userVideos, setUserVideos] = useState<Video[]>([]);
@@ -78,6 +82,13 @@ const UserDetail: React.FC = () => {
     loadVideos();
     loadUserVideos();
   }, [loadUser, loadVideos, loadUserVideos]);
+
+  // Reload user videos when switching to videos tab
+  useEffect(() => {
+    if (activeTab === 'videos') {
+      loadUserVideos();
+    }
+  }, [activeTab, loadUserVideos]);
 
   const handleAssignVideo = async (videoId: number) => {
     if (!userId) return;
@@ -150,7 +161,7 @@ const UserDetail: React.FC = () => {
       <div className="flex items-center space-x-4">
         <button
           onClick={() => navigate('/admin')}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
           title="Torna agli utenti"
         >
           {React.createElement(FiArrowLeft as React.ComponentType<{ className?: string }>, { className: "w-6 h-6" })}
@@ -169,6 +180,19 @@ const UserDetail: React.FC = () => {
       <div className="border-b border-gray-200">
         <nav className="flex space-x-8">
           <button
+            onClick={() => setActiveTab('trainingDays')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'trainingDays'
+                ? 'border-gray-900 text-gray-900'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center space-x-2">
+              {React.createElement(FiCalendar as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+              <span>Giorni Allenamento</span>
+            </div>
+          </button>
+          <button
             onClick={() => setActiveTab('videos')}
             className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'videos'
@@ -178,7 +202,7 @@ const UserDetail: React.FC = () => {
           >
             <div className="flex items-center space-x-2">
               {React.createElement(FiVideo as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
-              <span>Video</span>
+              <span>Video Singoli</span>
             </div>
           </button>
           <button
@@ -191,13 +215,36 @@ const UserDetail: React.FC = () => {
           >
             <div className="flex items-center space-x-2">
               {React.createElement(FiFileText as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
-              <span>Scheda Allenamento</span>
+              <span>PDF Scheda</span>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('workoutPlan')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'workoutPlan'
+                ? 'border-gray-900 text-gray-900'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center space-x-2">
+              {React.createElement(FiActivity as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+              <span>Pesi & Progressi</span>
             </div>
           </button>
         </nav>
       </div>
 
       {/* Tab Content */}
+      {activeTab === 'trainingDays' && (
+        <TrainingDaysManager
+          userId={user.id}
+          onUpdate={() => {
+            // Reload user videos when training days are updated
+            loadUserVideos();
+          }}
+        />
+      )}
+
       {activeTab === 'videos' && (
         <div className="space-y-6">
           {/* Search Bar */}
@@ -211,7 +258,7 @@ const UserDetail: React.FC = () => {
                 placeholder="Cerca video..."
                 value={videoSearchTerm}
                 onChange={(e) => setVideoSearchTerm(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800"
+                className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors"
               />
             </div>
             {videoSearchTerm && (
@@ -245,7 +292,7 @@ const UserDetail: React.FC = () => {
                     </div>
                     <button
                       onClick={() => handleRevokeVideo(video.id)}
-                      className="w-full mt-3 bg-red-600 text-white text-sm py-2 px-3 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2"
+                      className="w-full mt-3 bg-red-600 text-white text-sm py-2.5 px-3 rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
                     >
                       {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
                       <span>Revoca Accesso</span>
@@ -281,7 +328,7 @@ const UserDetail: React.FC = () => {
                     </div>
                     <button
                       onClick={() => handleAssignVideo(video.id)}
-                      className="w-full bg-green-600 text-white text-sm py-2 px-3 rounded-lg hover:bg-green-700 transition-colors"
+                      className="w-full bg-green-600 text-white text-sm py-2.5 px-3 rounded-xl hover:bg-green-700 transition-colors"
                     >
                       Assegna Video
                     </button>
@@ -296,14 +343,24 @@ const UserDetail: React.FC = () => {
       {activeTab === 'pdf' && (
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Scheda di Allenamento
+            PDF Scheda di Allenamento
           </h3>
           <PdfManagement
             userId={user.id}
             userName={`${user.firstName} ${user.lastName}`}
-            onPdfChange={() => {
-              // Reload if needed
-            }}
+            onPdfChange={() => {}}
+          />
+        </div>
+      )}
+
+      {activeTab === 'workoutPlan' && (
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Scheda Esercizi & Storico Pesi
+          </h3>
+          <TrainingPlanAdmin
+            userId={user.id}
+            userName={`${user.firstName} ${user.lastName}`}
           />
         </div>
       )}

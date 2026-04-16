@@ -5,7 +5,7 @@ const router = express.Router();
 // Generate dynamic sitemap for SEO
 router.get('/sitemap.xml', (req, res) => {
     const baseUrl = process.env.NODE_ENV === 'production'
-        ? 'https://esercizifacili.com'
+        ? 'https://www.esercizifacili.com'
         : 'http://localhost:3000';
 
     const currentDate = new Date().toISOString().split('T')[0];
@@ -17,9 +17,9 @@ router.get('/sitemap.xml', (req, res) => {
         { url: '/services', priority: '0.9', changefreq: 'monthly' },
         { url: '/contact', priority: '0.7', changefreq: 'monthly' },
         { url: '/booking', priority: '0.8', changefreq: 'weekly' },
-        { url: '/privacy', priority: '0.3', changefreq: 'yearly' },
-        { url: '/terms', priority: '0.3', changefreq: 'yearly' },
-        { url: '/cookies', priority: '0.3', changefreq: 'yearly' }
+        { url: '/privacy-policy', priority: '0.3', changefreq: 'yearly' },
+        { url: '/terms-of-service', priority: '0.3', changefreq: 'yearly' },
+        { url: '/cookie-policy', priority: '0.3', changefreq: 'yearly' }
     ];
 
     // Generate XML sitemap
@@ -51,7 +51,7 @@ router.get('/sitemap.xml', (req, res) => {
 // Generate robots.txt for search engines
 router.get('/robots.txt', (req, res) => {
     const baseUrl = process.env.NODE_ENV === 'production'
-        ? 'https://esercizifacili.com'
+        ? 'https://www.esercizifacili.com'
         : 'http://localhost:3000';
 
     let robots = 'User-agent: *\n';

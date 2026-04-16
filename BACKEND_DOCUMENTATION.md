@@ -168,11 +168,50 @@ curl -X POST http://localhost:3001/api/admin/users \
 ```
 
 #### `GET /api/admin/users`
-Lista tutti gli utenti.
+Lista tutti gli utenti con i relativi dati PDF inclusi (N+1 query optimization).
 ```bash
 curl -X GET http://localhost:3001/api/admin/users \
   -H "Authorization: Bearer ADMIN_JWT_TOKEN"
 ```
+
+**Risposta**:
+```json
+{
+  "success": true,
+  "data": {
+    "users": [
+      {
+        "id": 40,
+        "username": "mario_rossi",
+        "email": "mario@email.com",
+        "firstName": "Mario",
+        "lastName": "Rossi",
+        "isActive": 1,
+        "createdAt": "2025-01-15",
+        "lastLogin": "2025-01-20",
+        "videoCount": 5,
+        "pdf": {
+          "id": 7,
+          "userId": 40,
+          "originalName": "scheda-allenamento.pdf",
+          "fileSize": 166748,
+          "mimeType": "application/pdf",
+          "uploadedAt": "2025-10-02 12:18:29",
+          "uploadedBy": "joshua_admin",
+          "updatedAt": "2025-10-22 11:54:19",
+          "durationMonths": 2,
+          "durationDays": 27,
+          "expirationDate": "2025-12-15 10:30:00"
+        }
+      }
+    ]
+  }
+}
+```
+
+**Note**:
+- Il campo `pdf` è `null` se l'utente non ha una scheda PDF
+- Include tutti i dati PDF in una sola query (performance optimization)
 
 #### `POST /api/admin/users/:id/generate-link`
 Genera nuovo login link per utente esistente.
@@ -239,8 +278,9 @@ curl -X GET http://localhost:3001/api/pdf/admin/user/7 \
 ```
 
 #### `PUT /api/pdf/admin/extend/:userId`
-Estendi durata scheda PDF esistente.
+Estendi o riduci durata scheda PDF esistente (supporta valori negativi).
 ```bash
+# Estendi di 1 mese e 15 giorni
 curl -X PUT http://localhost:3001/api/pdf/admin/extend/7 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ADMIN_JWT_TOKEN" \
@@ -248,6 +288,28 @@ curl -X PUT http://localhost:3001/api/pdf/admin/extend/7 \
     "additionalMonths": 1,
     "additionalDays": 15
   }'
+
+# Riduci di 10 giorni
+curl -X PUT http://localhost:3001/api/pdf/admin/extend/7 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN" \
+  -d '{
+    "additionalMonths": 0,
+    "additionalDays": -10
+  }'
+```
+
+**Logica di Normalizzazione**:
+- Se `durationDays` diventa negativo, sottrae automaticamente dai mesi (30 giorni/mese)
+- Previene durate negative totali (ritorna errore 400)
+- Se `expirationDate` è `null`, ricalcola da data corrente con la durata totale
+- Altrimenti modifica la data esistente
+
+**Esempio Normalizzazione**:
+```
+Durata attuale: 3 mesi, -3 giorni
+Azione: Normalizzazione automatica
+Risultato: 2 mesi, 27 giorni
 ```
 
 #### `DELETE /api/pdf/admin/delete/:userId`
@@ -338,11 +400,13 @@ public/
 
 - ✅ **JWT Authentication** con scadenza
 - ✅ **Password hashing** con bcrypt
-- ✅ **Rate limiting** (100 req/15min)
+- ⚠️ **Rate limiting** (Disabilitato - era 100 req/15min)
 - ✅ **CORS protection**
 - ✅ **Helmet security headers**
 - ✅ **Input validation**
 - ✅ **Access logging**
+
+**Note Rate Limiting**: Il rate limiting è stato disabilitato per risolvere problemi di "Too many requests" in produzione. Se necessario in futuro, può essere riattivato decommentando le righe 56-61 in `server.js`.
 
 ### **Limitazioni Attuali**
 

@@ -23,7 +23,41 @@ const r2Client = new S3Client({
 router.use(authenticateToken);
 router.use(requireAdmin);
 
-// Generate login link token for users
+// GET /api/admin/trainers
+// Get all active trainers
+router.get('/trainers', (req, res) => {
+    const db = createDatabase();
+
+    db.allCallback(
+        'SELECT id, name, email, created_at FROM trainers WHERE is_active = 1 ORDER BY id ASC',
+        [],
+        (err, trainers) => {
+            db.close();
+
+            if (err) {
+                console.error('Database error:', err.message);
+                return res.status(500).json({
+                    success: false,
+                    error: 'Database error'
+                });
+            }
+
+            res.json({
+                success: true,
+                data: {
+                    trainers: trainers.map(t => ({
+                        id: t.id,
+                        name: t.name,
+                        email: t.email,
+                        createdAt: t.created_at
+                    }))
+                }
+            });
+        }
+    );
+});
+
+// Generate login link token for users (no expiration)
 const generateLoginLinkToken = (user) => {
     return jwt.sign(
         {
@@ -32,13 +66,12 @@ const generateLoginLinkToken = (user) => {
             email: user.email,
             type: 'login_link'
         },
-        process.env.JWT_SECRET,
-        { expiresIn: '30d' }
+        process.env.JWT_SECRET
     );
 };
 
 // POST /api/admin/users
-// Create a new user
+// Create a new user (or reactivate if previously deleted)
 router.post('/users', async (req, res) => {
     try {
         const {
@@ -46,7 +79,9 @@ router.post('/users', async (req, res) => {
             email,
             password,
             firstName,
-            lastName
+            lastName,
+            isPaying,
+            trainerId
         } = req.body;
 
         if (!username) {
@@ -59,69 +94,196 @@ router.post('/users', async (req, res) => {
         // Hash password only if provided
         const passwordHash = password ? await bcrypt.hash(password, 10) : null;
 
+        // Default to paying user if not specified
+        const isPayingValue = isPaying !== undefined ? (isPaying ? 1 : 0) : 1;
+
+        // Default to trainer 1 (Joshua) if not specified
+        const trainerIdValue = trainerId || 1;
+
         const db = createDatabase();
 
-        db.runCallback(`
-            INSERT INTO users (username, email, password_hash, first_name, last_name)
-            VALUES (?, ?, ?, ?, ?)
-        `, [username, email || null, passwordHash, firstName, lastName], function(err) {
-            if (err) {
-                db.close();
-                if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-                    return res.status(409).json({
-                        success: false,
-                        error: 'Username already exists'
-                    });
-                }
-                console.error('Database error:', err.message);
-                return res.status(500).json({
-                    success: false,
-                    error: 'Database error'
-                });
-            }
-
-            const userId = this.lastID;
-
-            // Get the created user
-            db.getCallback(
-                'SELECT id, username, email, first_name, last_name, created_at FROM users WHERE id = ?',
-                [userId],
-                (err, user) => {
+        // First check if user exists but is inactive (soft deleted)
+        db.getCallback(
+            'SELECT id, username FROM users WHERE username = ? AND is_active = 0',
+            [username],
+            (err, existingUser) => {
+                if (err) {
                     db.close();
-
-                    if (err) {
-                        console.error('Database error:', err.message);
-                        return res.status(500).json({
-                            success: false,
-                            error: 'User created but failed to retrieve details'
-                        });
-                    }
-
-                    // Generate login link token
-                    const loginToken = generateLoginLinkToken(user);
-                    const loginUrl = `https://esercizifacili.com/dashboard/${loginToken}`;
-
-                    console.log(`Admin ${req.user.username} created user: ${user.username}`);
-
-                    res.status(201).json({
-                        success: true,
-                        message: 'User created successfully',
-                        data: {
-                            user: {
-                                id: user.id,
-                                username: user.username,
-                                email: user.email,
-                                firstName: user.first_name,
-                                lastName: user.last_name,
-                                createdAt: user.created_at
-                            },
-                            loginToken,
-                            loginUrl
-                        }
+                    console.error('Database error:', err.message);
+                    return res.status(500).json({
+                        success: false,
+                        error: 'Database error'
                     });
                 }
-            );
-        });
+
+                if (existingUser) {
+                    // Reactivate the existing user with new data
+                    db.runCallback(`
+                        UPDATE users
+                        SET email = ?, password_hash = COALESCE(?, password_hash), first_name = ?, last_name = ?,
+                            is_paying = ?, trainer_id = ?, is_active = 1, updated_at = CURRENT_TIMESTAMP
+                        WHERE id = ?
+                    `, [email || null, passwordHash, firstName, lastName, isPayingValue, trainerIdValue, existingUser.id], function(err) {
+                        if (err) {
+                            db.close();
+                            // Handle UNIQUE constraint on email
+                            const isUniqueConstraint =
+                                err.code === 'SQLITE_CONSTRAINT_UNIQUE' ||
+                                err.code === 'SQLITE_CONSTRAINT' ||
+                                (err.message && err.message.toLowerCase().includes('unique')) ||
+                                (err.message && err.message.toLowerCase().includes('constraint'));
+
+                            if (isUniqueConstraint) {
+                                return res.status(409).json({
+                                    success: false,
+                                    error: 'Email already exists'
+                                });
+                            }
+                            console.error('Database error:', err.message);
+                            return res.status(500).json({
+                                success: false,
+                                error: 'Database error: ' + (err.message || 'Unknown error')
+                            });
+                        }
+
+                        // Also reactivate user's video permissions
+                        db.runCallback(
+                            'UPDATE user_video_permissions SET is_active = 1 WHERE user_id = ?',
+                            [existingUser.id],
+                            (err) => {
+                                if (err) {
+                                    console.error('Error reactivating video permissions:', err.message);
+                                }
+
+                                // Get the reactivated user with trainer info
+                                db.getCallback(
+                                    `SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.is_paying, u.trainer_id, u.created_at, t.name as trainer_name
+                                     FROM users u
+                                     LEFT JOIN trainers t ON u.trainer_id = t.id
+                                     WHERE u.id = ?`,
+                                    [existingUser.id],
+                                    (err, user) => {
+                                        db.close();
+
+                                        if (err) {
+                                            console.error('Database error:', err.message);
+                                            return res.status(500).json({
+                                                success: false,
+                                                error: 'User reactivated but failed to retrieve details'
+                                            });
+                                        }
+
+                                        // Generate login link token
+                                        const loginToken = generateLoginLinkToken(user);
+                                        const loginUrl = `https://www.esercizifacili.com/dashboard/${loginToken}`;
+
+                                        console.log(`Admin ${req.user.username} reactivated user: ${user.username}`);
+
+                                        res.status(201).json({
+                                            success: true,
+                                            message: 'User reactivated successfully',
+                                            data: {
+                                                user: {
+                                                    id: user.id,
+                                                    username: user.username,
+                                                    email: user.email,
+                                                    firstName: user.first_name,
+                                                    lastName: user.last_name,
+                                                    isPaying: Number(user.is_paying) === 1,
+                                                    trainerId: user.trainer_id,
+                                                    trainerName: user.trainer_name,
+                                                    createdAt: user.created_at
+                                                },
+                                                loginToken,
+                                                loginUrl,
+                                                reactivated: true
+                                            }
+                                        });
+                                    }
+                                );
+                            }
+                        );
+                    });
+                } else {
+                    // Create new user
+                    db.runCallback(`
+                        INSERT INTO users (username, email, password_hash, first_name, last_name, is_paying, trainer_id)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    `, [username, email || null, passwordHash, firstName, lastName, isPayingValue, trainerIdValue], function(err) {
+                        if (err) {
+                            db.close();
+                            // Handle UNIQUE constraint errors for both SQLite and Turso
+                            const isUniqueConstraint =
+                                err.code === 'SQLITE_CONSTRAINT_UNIQUE' ||
+                                err.code === 'SQLITE_CONSTRAINT' ||
+                                (err.message && err.message.toLowerCase().includes('unique')) ||
+                                (err.message && err.message.toLowerCase().includes('constraint'));
+
+                            if (isUniqueConstraint) {
+                                const isEmailError = err.message && err.message.toLowerCase().includes('email');
+                                return res.status(409).json({
+                                    success: false,
+                                    error: isEmailError ? 'Email already exists' : 'Username already exists'
+                                });
+                            }
+                            console.error('Database error:', err.message);
+                            return res.status(500).json({
+                                success: false,
+                                error: 'Database error: ' + (err.message || 'Unknown error')
+                            });
+                        }
+
+                        const userId = this.lastID;
+
+                        // Get the created user with trainer info
+                        db.getCallback(
+                            `SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.is_paying, u.trainer_id, u.created_at, t.name as trainer_name
+                             FROM users u
+                             LEFT JOIN trainers t ON u.trainer_id = t.id
+                             WHERE u.id = ?`,
+                            [userId],
+                            (err, user) => {
+                                db.close();
+
+                                if (err) {
+                                    console.error('Database error:', err.message);
+                                    return res.status(500).json({
+                                        success: false,
+                                        error: 'User created but failed to retrieve details'
+                                    });
+                                }
+
+                                // Generate login link token
+                                const loginToken = generateLoginLinkToken(user);
+                                const loginUrl = `https://www.esercizifacili.com/dashboard/${loginToken}`;
+
+                                console.log(`Admin ${req.user.username} created user: ${user.username}`);
+
+                                res.status(201).json({
+                                    success: true,
+                                    message: 'User created successfully',
+                                    data: {
+                                        user: {
+                                            id: user.id,
+                                            username: user.username,
+                                            email: user.email,
+                                            firstName: user.first_name,
+                                            lastName: user.last_name,
+                                            isPaying: Number(user.is_paying) === 1,
+                                            trainerId: user.trainer_id,
+                                            trainerName: user.trainer_name,
+                                            createdAt: user.created_at
+                                        },
+                                        loginToken,
+                                        loginUrl
+                                    }
+                                });
+                            }
+                        );
+                    });
+                }
+            }
+        );
     } catch (error) {
         console.error('Create user error:', error);
         res.status(500).json({
@@ -144,14 +306,35 @@ router.get('/users', (req, res) => {
             u.first_name,
             u.last_name,
             u.is_active,
+            u.is_paying,
+            u.trainer_id,
+            t.name as trainer_name,
             u.created_at,
             u.last_login,
-            COUNT(uvp.video_id) as video_count
+            COUNT(uvp.video_id) as video_count,
+            upf.id as pdf_id,
+            upf.original_name as pdf_original_name,
+            upf.file_size as pdf_file_size,
+            upf.mime_type as pdf_mime_type,
+            upf.uploaded_at as pdf_uploaded_at,
+            upf.uploaded_by as pdf_uploaded_by,
+            upf.updated_at as pdf_updated_at,
+            upf.duration_months as pdf_duration_months,
+            upf.duration_days as pdf_duration_days,
+            upf.expiration_date as pdf_expiration_date
         FROM users u
+        LEFT JOIN trainers t ON u.trainer_id = t.id
         LEFT JOIN user_video_permissions uvp ON u.id = uvp.user_id AND uvp.is_active = 1
+        LEFT JOIN user_pdf_files upf ON u.id = upf.user_id
         WHERE u.is_active = 1
         GROUP BY u.id
-        ORDER BY u.created_at DESC
+        ORDER BY
+            CASE
+                WHEN upf.expiration_date IS NULL THEN 1
+                ELSE 0
+            END,
+            upf.expiration_date ASC,
+            u.created_at DESC
     `, [], (err, users) => {
         db.close();
 
@@ -172,10 +355,26 @@ router.get('/users', (req, res) => {
                     email: user.email,
                     firstName: user.first_name,
                     lastName: user.last_name,
-                    isActive: user.is_active,
+                    isActive: Number(user.is_active) === 1,
+                    isPaying: Number(user.is_paying) === 1,
+                    trainerId: user.trainer_id,
+                    trainerName: user.trainer_name,
                     createdAt: user.created_at,
                     lastLogin: user.last_login,
-                    videoCount: user.video_count
+                    videoCount: user.video_count,
+                    pdf: user.pdf_id ? {
+                        id: user.pdf_id,
+                        userId: user.id,
+                        originalName: user.pdf_original_name,
+                        fileSize: user.pdf_file_size,
+                        mimeType: user.pdf_mime_type,
+                        uploadedAt: user.pdf_uploaded_at,
+                        uploadedBy: user.pdf_uploaded_by,
+                        updatedAt: user.pdf_updated_at,
+                        durationMonths: user.pdf_duration_months,
+                        durationDays: user.pdf_duration_days,
+                        expirationDate: user.pdf_expiration_date
+                    } : null
                 })),
                 totalCount: users.length
             }
@@ -279,7 +478,7 @@ router.post('/users/:id/generate-link', (req, res) => {
 
             // Generate new login token
             const loginToken = generateLoginLinkToken(user);
-            const loginUrl = `https://esercizifacili.com/dashboard/${loginToken}`;
+            const loginUrl = `https://www.esercizifacili.com/dashboard/${loginToken}`;
 
             console.log(`Admin ${req.user.username} generated login link for user: ${user.username}`);
 
@@ -342,36 +541,93 @@ router.post('/users/:userId/videos/:videoId', (req, res) => {
                         });
                     }
 
-                    // Grant permission (INSERT OR REPLACE to handle duplicates)
-                    db.runCallback(`
-                        INSERT OR REPLACE INTO user_video_permissions
-                        (user_id, video_id, granted_by, expires_at, is_active)
-                        VALUES (?, ?, ?, ?, 1)
-                    `, [userId, videoId, req.user.username, expiresAt || null], function(err) {
-                        db.close();
-
-                        if (err) {
-                            console.error('Database error:', err.message);
-                            return res.status(500).json({
-                                success: false,
-                                error: 'Database error'
-                            });
-                        }
-
-                        console.log(`Admin ${req.user.username} granted video ${videoId} access to user ${userId}`);
-
-                        res.json({
-                            success: true,
-                            message: 'Video access granted successfully',
-                            data: {
-                                userId: parseInt(userId),
-                                videoId: parseInt(videoId),
-                                expiresAt,
-                                grantedBy: req.user.username,
-                                grantedAt: new Date().toISOString()
+                    // Check if permission already exists
+                    db.getCallback(
+                        'SELECT id, is_active FROM user_video_permissions WHERE user_id = ? AND video_id = ?',
+                        [userId, videoId],
+                        (err, existingPermission) => {
+                            if (err) {
+                                db.close();
+                                return res.status(500).json({
+                                    success: false,
+                                    error: 'Database error'
+                                });
                             }
-                        });
-                    });
+
+                            if (existingPermission) {
+                                // Permission exists, update it if needed
+                                if (Number(existingPermission.is_active) === 0) {
+                                    db.runCallback(
+                                        'UPDATE user_video_permissions SET is_active = 1, granted_by = ?, expires_at = ? WHERE user_id = ? AND video_id = ?',
+                                        [req.user.username, expiresAt || null, userId, videoId],
+                                        function(err) {
+                                            db.close();
+
+                                            if (err) {
+                                                console.error('Database error:', err.message);
+                                                return res.status(500).json({
+                                                    success: false,
+                                                    error: 'Database error'
+                                                });
+                                            }
+
+                                            console.log(`Admin ${req.user.username} reactivated video ${videoId} access for user ${userId}`);
+
+                                            res.json({
+                                                success: true,
+                                                message: 'Video access granted successfully',
+                                                data: {
+                                                    userId: parseInt(userId),
+                                                    videoId: parseInt(videoId),
+                                                    expiresAt,
+                                                    grantedBy: req.user.username,
+                                                    grantedAt: new Date().toISOString()
+                                                }
+                                            });
+                                        }
+                                    );
+                                } else {
+                                    // Already has active access
+                                    db.close();
+                                    return res.status(400).json({
+                                        success: false,
+                                        error: 'User already has access to this video'
+                                    });
+                                }
+                            } else {
+                                // Create new permission
+                                db.runCallback(`
+                                    INSERT INTO user_video_permissions
+                                    (user_id, video_id, granted_by, expires_at, is_active)
+                                    VALUES (?, ?, ?, ?, 1)
+                                `, [userId, videoId, req.user.username, expiresAt || null], function(err) {
+                                    db.close();
+
+                                    if (err) {
+                                        console.error('Database error:', err.message);
+                                        return res.status(500).json({
+                                            success: false,
+                                            error: 'Database error'
+                                        });
+                                    }
+
+                                    console.log(`Admin ${req.user.username} granted video ${videoId} access to user ${userId}`);
+
+                                    res.json({
+                                        success: true,
+                                        message: 'Video access granted successfully',
+                                        data: {
+                                            userId: parseInt(userId),
+                                            videoId: parseInt(videoId),
+                                            expiresAt,
+                                            grantedBy: req.user.username,
+                                            grantedAt: new Date().toISOString()
+                                        }
+                                    });
+                                });
+                            }
+                        }
+                    );
                 }
             );
         }
@@ -392,35 +648,53 @@ router.delete('/users/:userId/videos/:videoId', (req, res) => {
 
     const db = createDatabase();
 
-    db.runCallback(
-        'UPDATE user_video_permissions SET is_active = 0 WHERE user_id = ? AND video_id = ?',
-        [userId, videoId],
-        function(err) {
+    // First, remove video from all training days for this user
+    db.runCallback(`
+        DELETE FROM training_day_videos
+        WHERE video_id = ? AND training_day_id IN (
+            SELECT id FROM user_training_days WHERE user_id = ?
+        )
+    `, [videoId, userId], function(err) {
+        if (err) {
             db.close();
-
-            if (err) {
-                console.error('Database error:', err.message);
-                return res.status(500).json({
-                    success: false,
-                    error: 'Database error'
-                });
-            }
-
-            if (this.changes === 0) {
-                return res.status(404).json({
-                    success: false,
-                    error: 'Permission not found'
-                });
-            }
-
-            console.log(`Admin ${req.user.username} revoked video ${videoId} access from user ${userId}`);
-
-            res.json({
-                success: true,
-                message: 'Video access revoked successfully'
+            console.error('Remove from training days error:', err.message);
+            return res.status(500).json({
+                success: false,
+                error: 'Database error'
             });
         }
-    );
+
+        // Then revoke general video permission
+        db.runCallback(
+            'UPDATE user_video_permissions SET is_active = 0 WHERE user_id = ? AND video_id = ?',
+            [userId, videoId],
+            function(err) {
+                db.close();
+
+                if (err) {
+                    console.error('Database error:', err.message);
+                    return res.status(500).json({
+                        success: false,
+                        error: 'Database error'
+                    });
+                }
+
+                if (this.changes === 0) {
+                    return res.status(404).json({
+                        success: false,
+                        error: 'Permission not found'
+                    });
+                }
+
+                console.log(`Admin ${req.user.username} revoked video ${videoId} access from user ${userId} and removed from all training days`);
+
+                res.json({
+                    success: true,
+                    message: 'Video access revoked successfully'
+                });
+            }
+        );
+    });
 });
 
 // GET /api/admin/videos/:id/preview
@@ -501,49 +775,97 @@ router.get('/videos/:id/preview', async (req, res) => {
 });
 
 // GET /api/admin/videos
-// Get all videos (admin view)
+// Get all videos (admin view) — supports optional pagination and filters
+// Query params: page, limit (pagination), search (title), muscleGroup
+// Without page param: returns all videos (backward compatible)
 router.get('/videos', (req, res) => {
+    const { page, limit, search, muscleGroup } = req.query;
+    const isPaginated = page !== undefined;
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20));
+    const offset = (pageNum - 1) * limitNum;
+
+    // Build dynamic WHERE conditions
+    const conditions = ['v.is_active = 1'];
+    const filterParams = [];
+
+    if (search) {
+        conditions.push('v.title LIKE ?');
+        filterParams.push(`%${search}%`);
+    }
+    if (muscleGroup) {
+        conditions.push('v.muscle_group = ?');
+        filterParams.push(muscleGroup);
+    }
+
+    const whereClause = conditions.join(' AND ');
     const db = createDatabase();
 
-    db.allCallback(`
-        SELECT
-            v.*,
-            COUNT(uvp.user_id) as user_count
-        FROM videos v
-        LEFT JOIN user_video_permissions uvp ON v.id = uvp.video_id AND uvp.is_active = 1
-        WHERE v.is_active = 1
-        GROUP BY v.id
-        ORDER BY v.created_at DESC
-    `, [], (err, videos) => {
-        db.close();
+    // Step 1: get total count matching the filters
+    db.getCallback(
+        `SELECT COUNT(*) as total FROM videos v WHERE ${whereClause}`,
+        filterParams,
+        (err, countRow) => {
+            if (err) {
+                db.close();
+                console.error('Database error (count):', err.message);
+                return res.status(500).json({ success: false, error: 'Database error' });
+            }
 
-        if (err) {
-            console.error('Database error:', err.message);
-            return res.status(500).json({
-                success: false,
-                error: 'Database error'
+            const total = Number(countRow?.total || 0);
+
+            // Step 2: get video rows, with optional LIMIT/OFFSET
+            const dataParams = [...filterParams];
+            let dataQuery = `
+                SELECT
+                    v.*,
+                    COUNT(uvp.user_id) as user_count
+                FROM videos v
+                LEFT JOIN user_video_permissions uvp ON v.id = uvp.video_id AND uvp.is_active = 1
+                WHERE ${whereClause}
+                GROUP BY v.id
+                ORDER BY v.created_at DESC
+            `;
+
+            if (isPaginated) {
+                dataQuery += ` LIMIT ? OFFSET ?`;
+                dataParams.push(limitNum, offset);
+            }
+
+            db.allCallback(dataQuery, dataParams, (err, videos) => {
+                db.close();
+
+                if (err) {
+                    console.error('Database error (data):', err.message);
+                    return res.status(500).json({ success: false, error: 'Database error' });
+                }
+
+                const responseData = {
+                    videos: videos.map(video => ({
+                        id: video.id,
+                        title: video.title,
+                        description: video.description,
+                        filePath: video.file_path,
+                        duration: video.duration,
+                        thumbnailPath: video.thumbnail_path,
+                        category: video.category,
+                        muscleGroup: video.muscle_group || null,
+                        createdAt: video.created_at,
+                        updatedAt: video.updated_at,
+                        userCount: video.user_count
+                    })),
+                    totalCount: total
+                };
+
+                if (isPaginated) {
+                    responseData.totalPages = Math.ceil(total / limitNum);
+                    responseData.currentPage = pageNum;
+                }
+
+                res.json({ success: true, data: responseData });
             });
         }
-
-        res.json({
-            success: true,
-            data: {
-                videos: videos.map(video => ({
-                    id: video.id,
-                    title: video.title,
-                    description: video.description,
-                    filePath: video.file_path,
-                    duration: video.duration,
-                    thumbnailPath: video.thumbnail_path,
-                    category: video.category,
-                    createdAt: video.created_at,
-                    updatedAt: video.updated_at,
-                    userCount: video.user_count
-                })),
-                totalCount: videos.length
-            }
-        });
-    });
+    );
 });
 
 // POST /api/admin/videos/upload-url
@@ -608,7 +930,8 @@ router.post('/videos', (req, res) => {
         filePath,
         duration,
         thumbnailPath,
-        category
+        category,
+        muscleGroup
     } = req.body;
 
     if (!title || !filePath) {
@@ -621,9 +944,9 @@ router.post('/videos', (req, res) => {
     const db = createDatabase();
 
     db.runCallback(`
-        INSERT INTO videos (title, description, file_path, duration, thumbnail_path, category)
-        VALUES (?, ?, ?, ?, ?, ?)
-    `, [title, description || null, filePath, duration || null, thumbnailPath || null, category || null], function(err) {
+        INSERT INTO videos (title, description, file_path, duration, thumbnail_path, category, muscle_group)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [title, description || null, filePath, duration || null, thumbnailPath || null, category || null, muscleGroup || null], function(err) {
         db.close();
 
         if (err) {
@@ -646,17 +969,18 @@ router.post('/videos', (req, res) => {
                 filePath,
                 duration,
                 thumbnailPath,
-                category
+                category,
+                muscleGroup: muscleGroup || null
             }
         });
     });
 });
 
 // PUT /api/admin/videos/:id
-// Update video metadata (title, description, thumbnail)
+// Update video metadata (title, description, thumbnail, muscleGroup)
 router.put('/videos/:id', (req, res) => {
     const videoId = req.params.id;
-    const { title, description, thumbnailPath } = req.body;
+    const { title, description, thumbnailPath, muscleGroup } = req.body;
 
     if (!videoId || isNaN(videoId)) {
         return res.status(400).json({
@@ -679,9 +1003,10 @@ router.put('/videos/:id', (req, res) => {
         SET title = ?,
             description = ?,
             thumbnail_path = ?,
+            muscle_group = ?,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ? AND is_active = 1
-    `, [title, description || null, thumbnailPath || null, videoId], function(err) {
+    `, [title, description || null, thumbnailPath || null, muscleGroup || null, videoId], function(err) {
         db.close();
 
         if (err) {
@@ -708,7 +1033,8 @@ router.put('/videos/:id', (req, res) => {
                 id: parseInt(videoId),
                 title,
                 description,
-                thumbnailPath
+                thumbnailPath,
+                muscleGroup: muscleGroup || null
             }
         });
     });
@@ -1008,6 +1334,136 @@ router.delete('/reviews/:id', (req, res) => {
             success: true,
             message: 'Review deleted successfully'
         });
+    });
+});
+
+// PUT /api/admin/users/:id
+// Update user details
+router.put('/users/:id', async (req, res) => {
+    const userId = req.params.id;
+    const { firstName, lastName, email, isPaying, trainerId } = req.body;
+
+    if (!userId || isNaN(userId)) {
+        return res.status(400).json({
+            success: false,
+            error: 'Valid user ID is required'
+        });
+    }
+
+    const db = createDatabase();
+
+    // Build dynamic update query based on provided fields
+    const updates = [];
+    const params = [];
+
+    if (firstName !== undefined) {
+        updates.push('first_name = ?');
+        params.push(firstName);
+    }
+    if (lastName !== undefined) {
+        updates.push('last_name = ?');
+        params.push(lastName);
+    }
+    if (email !== undefined) {
+        updates.push('email = ?');
+        // Convert empty string to null to avoid UNIQUE constraint issues
+        params.push(email === '' ? null : email);
+    }
+    if (isPaying !== undefined) {
+        updates.push('is_paying = ?');
+        params.push(isPaying ? 1 : 0);
+    }
+    if (trainerId !== undefined) {
+        updates.push('trainer_id = ?');
+        params.push(trainerId);
+    }
+
+    if (updates.length === 0) {
+        db.close();
+        return res.status(400).json({
+            success: false,
+            error: 'No fields to update'
+        });
+    }
+
+    updates.push('updated_at = CURRENT_TIMESTAMP');
+    params.push(userId);
+
+    const query = `UPDATE users SET ${updates.join(', ')} WHERE id = ? AND is_active = 1`;
+
+    db.runCallback(query, params, function(err) {
+        if (err) {
+            db.close();
+            console.error('Database error:', err.message);
+
+            const isUniqueConstraint =
+                err.code === 'SQLITE_CONSTRAINT_UNIQUE' ||
+                err.code === 'SQLITE_CONSTRAINT' ||
+                (err.message && err.message.toLowerCase().includes('unique')) ||
+                (err.message && err.message.toLowerCase().includes('constraint'));
+
+            if (isUniqueConstraint) {
+                return res.status(409).json({
+                    success: false,
+                    error: 'Email già in uso da un altro utente'
+                });
+            }
+
+            return res.status(500).json({
+                success: false,
+                error: 'Database error: ' + (err.message || 'Unknown error')
+            });
+        }
+
+        if (this.changes === 0) {
+            db.close();
+            return res.status(404).json({
+                success: false,
+                error: 'User not found or inactive'
+            });
+        }
+
+        // Return updated user with trainer info
+        db.getCallback(
+            `SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.is_paying, u.is_active, u.trainer_id, u.created_at, u.updated_at, t.name as trainer_name
+             FROM users u
+             LEFT JOIN trainers t ON u.trainer_id = t.id
+             WHERE u.id = ?`,
+            [userId],
+            (err, user) => {
+                db.close();
+
+                if (err) {
+                    console.error('Database error:', err.message);
+                    return res.status(500).json({
+                        success: false,
+                        error: 'User updated but failed to retrieve details'
+                    });
+                }
+
+                console.log(`Admin ${req.user.username} updated user: ${user.username}`);
+
+                res.json({
+                    success: true,
+                    message: 'User updated successfully',
+                    data: {
+                        user: {
+                            id: user.id,
+                            username: user.username,
+                            email: user.email,
+                            firstName: user.first_name,
+                            lastName: user.last_name,
+                            isPaying: Number(user.is_paying) === 1,
+                            isActive: Number(user.is_active) === 1,
+                            trainerId: user.trainer_id,
+                            trainerName: user.trainer_name,
+                            createdAt: user.created_at,
+                            updatedAt: user.updated_at
+                        }
+                    }
+                });
+            }
+        );
     });
 });
 

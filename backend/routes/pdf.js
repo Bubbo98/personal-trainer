@@ -32,7 +32,7 @@ const upload = multer({
 router.post('/admin/upload/:userId', authenticateToken, requireAdmin, upload.single('pdf'), async (req, res) => {
     try {
         const { userId } = req.params;
-        const { durationMonths = 2, durationDays = 0 } = req.body;
+        const { durationMonths = 2, durationDays = 0, visibleFrom = null } = req.body;
 
         if (!req.file) {
             return res.status(400).json({
@@ -88,6 +88,7 @@ router.post('/admin/upload/:userId', authenticateToken, requireAdmin, upload.sin
                             duration_months = ?,
                             duration_days = ?,
                             expiration_date = datetime('now', '+' || ? || ' months', '+' || ? || ' days'),
+                            visible_from = ?,
                             updated_at = CURRENT_TIMESTAMP
                         WHERE user_id = ?
                     `, [
@@ -100,6 +101,7 @@ router.post('/admin/upload/:userId', authenticateToken, requireAdmin, upload.sin
                         durationDays,
                         durationMonths,
                         durationDays,
+                        visibleFrom || null,
                         userId
                     ], (err) => {
                         db.close();
@@ -126,8 +128,8 @@ router.post('/admin/upload/:userId', authenticateToken, requireAdmin, upload.sin
                 } else {
                     // Insert new record with duration
                     db.runCallback(`
-                        INSERT INTO user_pdf_files (user_id, original_name, file_data, file_size, mime_type, uploaded_by, duration_months, duration_days, expiration_date)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+' || ? || ' months', '+' || ? || ' days'))
+                        INSERT INTO user_pdf_files (user_id, original_name, file_data, file_size, mime_type, uploaded_by, duration_months, duration_days, expiration_date, visible_from)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+' || ? || ' months', '+' || ? || ' days'), ?)
                     `, [
                         userId,
                         req.file.originalname,
@@ -138,7 +140,8 @@ router.post('/admin/upload/:userId', authenticateToken, requireAdmin, upload.sin
                         durationMonths,
                         durationDays,
                         durationMonths,
-                        durationDays
+                        durationDays,
+                        visibleFrom || null
                     ], (err) => {
                         db.close();
 
@@ -235,7 +238,7 @@ router.get('/admin/user/:userId', authenticateToken, requireAdmin, async (req, r
         const { userId } = req.params;
         const db = createDatabase();
 
-        db.getCallback('SELECT id, user_id, original_name, file_size, mime_type, uploaded_at, uploaded_by, updated_at, duration_months, duration_days, expiration_date FROM user_pdf_files WHERE user_id = ?', [userId], (err, pdf) => {
+        db.getCallback('SELECT id, user_id, original_name, file_size, mime_type, uploaded_at, uploaded_by, updated_at, duration_months, duration_days, expiration_date, visible_from FROM user_pdf_files WHERE user_id = ?', [userId], (err, pdf) => {
             db.close();
 
             if (err) {
@@ -266,7 +269,8 @@ router.get('/admin/user/:userId', authenticateToken, requireAdmin, async (req, r
                     updatedAt: pdf.updated_at,
                     durationMonths: pdf.duration_months,
                     durationDays: pdf.duration_days,
-                    expirationDate: pdf.expiration_date
+                    expirationDate: pdf.expiration_date,
+                    visibleFrom: pdf.visible_from
                 }
             });
         });
@@ -314,22 +318,62 @@ router.put('/admin/extend/:userId', authenticateToken, requireAdmin, async (req,
                 });
             }
 
-            // Update duration and expiration date
-            const newDurationMonths = pdf.duration_months + additionalMonths;
-            const newDurationDays = pdf.duration_days + additionalDays;
+            // Calculate new duration
+            let newDurationMonths = pdf.duration_months + additionalMonths;
+            let newDurationDays = pdf.duration_days + additionalDays;
 
-            db.runCallback(`
-                UPDATE user_pdf_files
-                SET duration_months = ?,
-                    duration_days = ?,
-                    expiration_date = datetime(expiration_date, '+' || ? || ' months', '+' || ? || ' days'),
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE user_id = ?
-            `, [
+            // Normalize: if days are negative, subtract from months
+            while (newDurationDays < 0 && newDurationMonths > 0) {
+                newDurationMonths -= 1;
+                newDurationDays += 30; // Approximate month as 30 days
+            }
+
+            // Prevent negative durations
+            if (newDurationMonths < 0 || (newDurationMonths === 0 && newDurationDays < 0)) {
+                db.close();
+                return res.status(400).json({
+                    success: false,
+                    error: 'La durata non può essere negativa. Durata attuale: ' +
+                           pdf.duration_months + ' mesi e ' + pdf.duration_days + ' giorni.'
+                });
+            }
+
+            // If expiration_date is null, calculate from now
+            // Otherwise, modify the existing date
+            let updateQuery;
+            if (!pdf.expiration_date) {
+                // Calculate new expiration from current time with total duration
+                updateQuery = `
+                    UPDATE user_pdf_files
+                    SET duration_months = ?,
+                        duration_days = ?,
+                        expiration_date = datetime('now', '+' || ? || ' months', '+' || ? || ' days'),
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE user_id = ?
+                `;
+            } else {
+                // Build the datetime modifiers correctly for positive and negative values
+                const monthsModifier = additionalMonths >= 0
+                    ? `'+${additionalMonths} months'`
+                    : `'-${Math.abs(additionalMonths)} months'`;
+                const daysModifier = additionalDays >= 0
+                    ? `'+${additionalDays} days'`
+                    : `'-${Math.abs(additionalDays)} days'`;
+
+                updateQuery = `
+                    UPDATE user_pdf_files
+                    SET duration_months = ?,
+                        duration_days = ?,
+                        expiration_date = datetime(expiration_date, ${monthsModifier}, ${daysModifier}),
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE user_id = ?
+                `;
+            }
+
+            db.runCallback(updateQuery, [
                 newDurationMonths,
                 newDurationDays,
-                additionalMonths,
-                additionalDays,
+                ...(pdf.expiration_date ? [] : [newDurationMonths, newDurationDays]),
                 userId
             ], (err) => {
                 db.close();
@@ -363,6 +407,54 @@ router.put('/admin/extend/:userId', authenticateToken, requireAdmin, async (req,
     }
 });
 
+// PUT /api/pdf/admin/visible-from/:userId
+// Set or clear the visible_from date for a user's PDF (Admin only)
+router.put('/admin/visible-from/:userId', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { visibleFrom } = req.body; // ISO date string or null to clear
+
+        const db = createDatabase();
+
+        db.getCallback('SELECT id FROM user_pdf_files WHERE user_id = ?', [userId], (err, pdf) => {
+            if (err) {
+                db.close();
+                console.error('Database error:', err.message);
+                return res.status(500).json({ success: false, error: 'Database error' });
+            }
+
+            if (!pdf) {
+                db.close();
+                return res.status(404).json({ success: false, error: 'No PDF found for this user' });
+            }
+
+            db.runCallback(
+                'UPDATE user_pdf_files SET visible_from = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
+                [visibleFrom || null, userId],
+                (err) => {
+                    db.close();
+
+                    if (err) {
+                        console.error('Database error:', err.message);
+                        return res.status(500).json({ success: false, error: 'Failed to update visible_from' });
+                    }
+
+                    console.log(`Admin ${req.user.username} set visible_from=${visibleFrom || 'null'} for user ID ${userId}`);
+
+                    res.json({
+                        success: true,
+                        message: visibleFrom ? 'Scheda bloccata fino al ' + visibleFrom : 'Scheda sbloccata',
+                        data: { visibleFrom: visibleFrom || null }
+                    });
+                }
+            );
+        });
+    } catch (error) {
+        console.error('Visible-from update error:', error.message);
+        res.status(500).json({ success: false, error: 'Failed to update visible_from' });
+    }
+});
+
 // ==================== USER ROUTES ====================
 
 // GET /api/pdf/my-pdf
@@ -372,7 +464,7 @@ router.get('/my-pdf', authenticateToken, async (req, res) => {
         const userId = req.user.userId;
         const db = createDatabase();
 
-        db.getCallback('SELECT id, original_name, file_size, mime_type, uploaded_at, updated_at, expiration_date FROM user_pdf_files WHERE user_id = ?', [userId], (err, pdf) => {
+        db.getCallback('SELECT id, original_name, file_size, mime_type, uploaded_at, updated_at, expiration_date, visible_from FROM user_pdf_files WHERE user_id = ?', [userId], (err, pdf) => {
             db.close();
 
             if (err) {
@@ -391,14 +483,27 @@ router.get('/my-pdf', authenticateToken, async (req, res) => {
                 });
             }
 
+            // If visible_from is set and is in the future, return locked state
+            if (pdf.visible_from && new Date(pdf.visible_from) > new Date()) {
+                return res.json({
+                    success: true,
+                    data: {
+                        locked: true,
+                        visibleFrom: pdf.visible_from
+                    }
+                });
+            }
+
             res.json({
                 success: true,
                 data: {
+                    locked: false,
                     originalName: pdf.original_name,
                     fileSize: pdf.file_size,
                     uploadedAt: pdf.uploaded_at,
                     updatedAt: pdf.updated_at,
-                    expirationDate: pdf.expiration_date
+                    expirationDate: pdf.expiration_date,
+                    visibleFrom: pdf.visible_from
                 }
             });
         });
@@ -435,7 +540,7 @@ router.get('/download', authenticateToken, async (req, res) => {
 
         const db = createDatabase();
 
-        db.getCallback('SELECT file_data, original_name, mime_type FROM user_pdf_files WHERE user_id = ?', [targetUserId], (err, pdf) => {
+        db.getCallback('SELECT file_data, original_name, mime_type, visible_from FROM user_pdf_files WHERE user_id = ?', [targetUserId], (err, pdf) => {
             db.close();
 
             if (err) {
@@ -450,6 +555,14 @@ router.get('/download', authenticateToken, async (req, res) => {
                 return res.status(404).json({
                     success: false,
                     error: 'No training plan available'
+                });
+            }
+
+            // Block download for non-admin users if visible_from is in the future
+            if (!isAdmin && pdf.visible_from && new Date(pdf.visible_from) > new Date()) {
+                return res.status(403).json({
+                    success: false,
+                    error: 'Training plan not yet available'
                 });
             }
 

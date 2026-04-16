@@ -16,6 +16,7 @@ const feedbackRoutes = require('./routes/feedback');
 const analyticsRoutes = require('./routes/analytics');
 const trainingDaysRoutes = require('./routes/training-days');
 const workoutRoutes = require('./routes/workout');
+const cronRoutes = require('./routes/cron');
 const { authenticateToken } = require('./middleware/auth');
 
 const app = express();
@@ -91,6 +92,7 @@ app.use('/api/pdf', pdfRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/workout', workoutRoutes);
+app.use('/api/cron', cronRoutes);
 
 // SEO Routes (sitemap.xml, robots.txt)
 app.use('/', sitemapRoutes);

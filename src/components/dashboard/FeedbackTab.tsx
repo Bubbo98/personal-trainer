@@ -11,14 +11,14 @@ interface Feedback {
   last_name: string;
   email: string;
   feedback_date: string;
-  training_satisfaction: number;
-  motivation_level: number;
-  difficulties: string | null;
-  nutrition_quality: string;
-  sleep_hours: number;
-  recovery_improved: boolean;
-  feels_supported: boolean;
-  support_improvement: string | null;
+  energy_level: string;
+  workouts_completed: string;
+  meal_plan_followed: string;
+  sleep_quality: string;
+  physical_discomfort: string;
+  motivation_level: string;
+  weekly_highlights: string | null;
+  current_weight: number | null;
   created_at: string;
   pdf_change_date: string | null;
 }
@@ -36,9 +36,10 @@ interface FeedbackTabProps {
     lastName?: string;
     email?: string;
   } | null;
+  onCheckInCompleted?: () => void;
 }
 
-const FeedbackTab: React.FC<FeedbackTabProps> = ({ user }) => {
+const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) => {
   const { t } = useTranslation();
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [feedbackStatus, setFeedbackStatus] = useState<FeedbackStatus | null>(null);
@@ -104,6 +105,11 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user }) => {
       // Reload feedback status and list
       await loadFeedbackStatus();
       await loadFeedbacks();
+
+      // Notify parent that check is completed
+      if (onCheckInCompleted) {
+        onCheckInCompleted();
+      }
     } catch (err) {
       console.error('Error submitting feedback:', err);
       setError(t('dashboard.feedback.error'));
@@ -113,8 +119,67 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user }) => {
     }
   };
 
-  const getNutritionLabel = (quality: string): string => {
-    return t(`dashboard.feedback.form.nutritionOptions.${quality}`, quality);
+  const getEnergyLabel = (level: string): string => {
+    return t(`dashboard.feedback.checkin.energyOptions.${level}`, level);
+  };
+
+  const getWorkoutsLabel = (status: string): string => {
+    return t(`dashboard.feedback.checkin.workoutsOptions.${status}`, status);
+  };
+
+  const getMealPlanLabel = (status: string): string => {
+    return t(`dashboard.feedback.checkin.mealPlanOptions.${status}`, status);
+  };
+
+  const getSleepLabel = (quality: string): string => {
+    return t(`dashboard.feedback.checkin.sleepOptions.${quality}`, quality);
+  };
+
+  const getDiscomfortLabel = (status: string): string => {
+    return t(`dashboard.feedback.checkin.discomfortOptions.${status}`, status);
+  };
+
+  const getMotivationLabel = (level: string): string => {
+    return t(`dashboard.feedback.checkin.motivationOptions.${level}`, level);
+  };
+
+  const getStatusColor = (value: string, type: 'energy' | 'workouts' | 'meal' | 'sleep' | 'discomfort' | 'motivation'): string => {
+    const colorMap: Record<string, Record<string, string>> = {
+      energy: {
+        high: 'bg-green-100 text-green-800',
+        medium: 'bg-yellow-100 text-yellow-800',
+        low: 'bg-red-100 text-red-800'
+      },
+      workouts: {
+        all: 'bg-green-100 text-green-800',
+        almost_all: 'bg-yellow-100 text-yellow-800',
+        few_or_none: 'bg-red-100 text-red-800'
+      },
+      meal: {
+        completely: 'bg-green-100 text-green-800',
+        mostly: 'bg-blue-100 text-blue-800',
+        sometimes: 'bg-yellow-100 text-yellow-800',
+        no: 'bg-red-100 text-red-800'
+      },
+      sleep: {
+        excellent: 'bg-green-100 text-green-800',
+        good: 'bg-blue-100 text-blue-800',
+        fair: 'bg-yellow-100 text-yellow-800',
+        poor: 'bg-red-100 text-red-800'
+      },
+      discomfort: {
+        none: 'bg-green-100 text-green-800',
+        minor: 'bg-yellow-100 text-yellow-800',
+        significant: 'bg-red-100 text-red-800'
+      },
+      motivation: {
+        very_high: 'bg-green-100 text-green-800',
+        good: 'bg-blue-100 text-blue-800',
+        medium: 'bg-yellow-100 text-yellow-800',
+        low: 'bg-red-100 text-red-800'
+      }
+    };
+    return colorMap[type]?.[value] || 'bg-gray-100 text-gray-800';
   };
 
   if (loading) {
@@ -240,7 +305,7 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user }) => {
                     {/* Target Date */}
                     {targetDate && (
                       <div className="mt-3 bg-white bg-opacity-50 rounded-lg p-3 border border-blue-100">
-                        <p className="text-xs text-gray-600 mb-1">Prossimo feedback disponibile il:</p>
+                        <p className="text-xs text-gray-600 mb-1">Prossimo check disponibile il:</p>
                         <p className="text-sm font-semibold text-gray-900">
                           {targetDate.toLocaleDateString('it-IT', {
                             weekday: 'long',
@@ -267,62 +332,54 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user }) => {
         );
       })()}
 
-      {/* Previous Feedbacks */}
+      {/* Previous Checks */}
       {feedbacks.length > 0 && (
         <div className="mt-8">
           <h3 className="text-xl font-bold text-gray-900 mb-4">{t('dashboard.feedback.previousFeedbacks')}</h3>
           <div className="space-y-4">
             {feedbacks.map((feedback) => (
-              <div key={feedback.id} className="bg-white rounded-lg shadow-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h4 className="text-lg font-semibold text-gray-900">
+              <div key={feedback.id} className="bg-white rounded-xl shadow-md overflow-hidden">
+                {/* Card header */}
+                <div className="px-4 py-4 border-b border-gray-100 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h4 className="font-semibold text-gray-900 truncate">
                       {t('dashboard.feedback.details.feedbackOf')} {formatDate(feedback.feedback_date)}
                     </h4>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-xs text-gray-400 mt-0.5">
                       {t('dashboard.feedback.details.submittedOn')} {formatDate(feedback.created_at)}
                     </p>
                   </div>
+                  {feedback.current_weight && (
+                    <div className="flex-shrink-0 text-right">
+                      <p className="text-xs text-gray-400">{t('dashboard.feedback.checkin.currentWeight')}</p>
+                      <p className="text-xl font-bold text-gray-900 leading-tight">{feedback.current_weight} kg</p>
+                    </div>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-600 font-medium">{t('dashboard.feedback.details.trainingSatisfaction')}:</p>
-                    <p className="text-gray-900">{feedback.training_satisfaction}/10</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600 font-medium">{t('dashboard.feedback.details.motivationLevel')}:</p>
-                    <p className="text-gray-900">{feedback.motivation_level}/10</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600 font-medium">{t('dashboard.feedback.details.nutritionQuality')}:</p>
-                    <p className="text-gray-900">{getNutritionLabel(feedback.nutrition_quality)}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600 font-medium">{t('dashboard.feedback.details.avgSleepHours')}:</p>
-                    <p className="text-gray-900">{feedback.sleep_hours} ore</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600 font-medium">{t('dashboard.feedback.details.recoveryImproved')}:</p>
-                    <p className="text-gray-900">{feedback.recovery_improved ? t('dashboard.feedback.form.yes') : t('dashboard.feedback.form.no')}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600 font-medium">{t('dashboard.feedback.details.feelsSupported')}:</p>
-                    <p className="text-gray-900">{feedback.feels_supported ? t('dashboard.feedback.form.yes') : t('dashboard.feedback.form.no')}</p>
-                  </div>
+                {/* Metrics */}
+                <div className="px-4 py-4 grid grid-cols-2 gap-x-4 gap-y-3">
+                  {[
+                    { label: t('dashboard.feedback.checkin.energyLabel'), value: getEnergyLabel(feedback.energy_level), color: getStatusColor(feedback.energy_level, 'energy') },
+                    { label: t('dashboard.feedback.checkin.workoutsLabel'), value: getWorkoutsLabel(feedback.workouts_completed), color: getStatusColor(feedback.workouts_completed, 'workouts') },
+                    { label: t('dashboard.feedback.checkin.mealPlanLabel'), value: getMealPlanLabel(feedback.meal_plan_followed), color: getStatusColor(feedback.meal_plan_followed, 'meal') },
+                    { label: t('dashboard.feedback.checkin.sleepLabel'), value: getSleepLabel(feedback.sleep_quality), color: getStatusColor(feedback.sleep_quality, 'sleep') },
+                    { label: t('dashboard.feedback.checkin.discomfortLabel'), value: getDiscomfortLabel(feedback.physical_discomfort), color: getStatusColor(feedback.physical_discomfort, 'discomfort') },
+                    { label: t('dashboard.feedback.checkin.motivationLabel'), value: getMotivationLabel(feedback.motivation_level), color: getStatusColor(feedback.motivation_level, 'motivation') },
+                  ].map((metric) => (
+                    <div key={metric.label}>
+                      <p className="text-xs text-gray-500 mb-1">{metric.label}</p>
+                      <span className={`inline-block px-2 py-1 rounded-lg text-xs font-semibold ${metric.color}`}>
+                        {metric.value}
+                      </span>
+                    </div>
+                  ))}
                 </div>
 
-                {feedback.difficulties && (
-                  <div className="mt-4">
-                    <p className="text-gray-600 font-medium mb-1">{t('dashboard.feedback.details.difficultiesFound')}:</p>
-                    <p className="text-gray-700 bg-gray-50 p-3 rounded">{feedback.difficulties}</p>
-                  </div>
-                )}
-
-                {feedback.support_improvement && (
-                  <div className="mt-4">
-                    <p className="text-gray-600 font-medium mb-1">{t('dashboard.feedback.details.improvementSuggestions')}:</p>
-                    <p className="text-gray-700 bg-gray-50 p-3 rounded">{feedback.support_improvement}</p>
+                {feedback.weekly_highlights && (
+                  <div className="px-4 pb-4">
+                    <p className="text-xs text-gray-500 mb-1">{t('dashboard.feedback.checkin.weeklyHighlightsLabel')}</p>
+                    <p className="text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded-lg">{feedback.weekly_highlights}</p>
                   </div>
                 )}
               </div>

@@ -14,9 +14,15 @@ const db = new sqlite3.Database(dbPath, (err) => {
     console.log(`Connected to SQLite database: ${dbPath}`);
 });
 
-// Update admin password
-const adminUsername = process.env.ADMIN_USERNAME || 'joshua_admin';
-const adminPassword = process.env.ADMIN_PASSWORD || 'Z7RPAu2WeKMoRwhzO75hhOkq7GtA2mFeF44Fo9MAc8';
+// Update admin password - Set these in environment variables
+const adminUsername = process.env.ADMIN_USERNAME;
+const adminPassword = process.env.ADMIN_PASSWORD;
+
+if (!adminUsername || !adminPassword) {
+    console.error('Error: ADMIN_USERNAME and ADMIN_PASSWORD must be set in environment variables');
+    process.exit(1);
+}
+
 const hashedPassword = bcrypt.hashSync(adminPassword, 10);
 
 console.log(`Updating password for user: ${adminUsername}`);

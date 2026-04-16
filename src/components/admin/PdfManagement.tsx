@@ -14,6 +14,7 @@ interface PdfInfo {
   durationMonths?: number;
   durationDays?: number;
   expirationDate?: string;
+  visibleFrom?: string;
 }
 
 interface Props {
@@ -34,6 +35,8 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
   const [showExtendForm, setShowExtendForm] = useState(false);
   const [extendMonths, setExtendMonths] = useState(0);
   const [extendDays, setExtendDays] = useState(0);
+  const [visibleFrom, setVisibleFrom] = useState('');
+  const [updatingVisibleFrom, setUpdatingVisibleFrom] = useState(false);
 
   useEffect(() => {
     loadPdfInfo();
@@ -87,6 +90,9 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
       formData.append('pdf', selectedFile);
       formData.append('durationMonths', durationMonths.toString());
       formData.append('durationDays', durationDays.toString());
+      if (visibleFrom) {
+        formData.append('visibleFrom', new Date(visibleFrom).toISOString());
+      }
 
       const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3002/api'}/pdf/admin/upload/${userId}`, {
         method: 'POST',
@@ -175,7 +181,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
 
   const handleExtend = async () => {
     if (extendMonths === 0 && extendDays === 0) {
-      alert('Devi specificare almeno mesi o giorni da aggiungere');
+      alert('Devi specificare almeno mesi o giorni da modificare');
       return;
     }
 
@@ -196,7 +202,8 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
 
       const data = await response.json();
       if (data.success) {
-        alert('Durata scheda estesa con successo');
+        const action = (extendMonths < 0 || extendDays < 0) ? 'ridotta' : 'estesa';
+        alert(`Durata scheda ${action} con successo`);
         setShowExtendForm(false);
         setExtendMonths(0);
         setExtendDays(0);
@@ -205,9 +212,35 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
         throw new Error(data.error || 'Extend failed');
       }
     } catch (error) {
-      alert(`${t('admin.errors.error') || 'Errore'}: ${error instanceof Error ? error.message : 'Estensione fallita'}`);
+      alert(`${t('admin.errors.error') || 'Errore'}: ${error instanceof Error ? error.message : 'Modifica fallita'}`);
     } finally {
       setExtending(false);
+    }
+  };
+
+  const handleUpdateVisibleFrom = async (newVisibleFrom: string | null) => {
+    try {
+      setUpdatingVisibleFrom(true);
+      const token = localStorage.getItem('admin_auth_token');
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3002/api'}/pdf/admin/visible-from/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ visibleFrom: newVisibleFrom })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        loadPdfInfo();
+      } else {
+        throw new Error(data.error || 'Aggiornamento fallito');
+      }
+    } catch (error) {
+      alert(`Errore: ${error instanceof Error ? error.message : 'Aggiornamento fallito'}`);
+    } finally {
+      setUpdatingVisibleFrom(false);
     }
   };
 
@@ -243,7 +276,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
 
   if (loading) {
     return (
-      <div className="p-4 bg-gray-50 rounded-lg">
+      <div className="p-4 bg-gray-50 rounded-xl">
         <p className="text-gray-600">{t('admin.loading') || 'Caricamento...'}</p>
       </div>
     );
@@ -253,7 +286,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
     <div className="space-y-4">
       {pdfInfo ? (
         <>
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="bg-white border border-gray-200 rounded-xl p-4">
             <div className="flex items-start justify-between">
               <div className="flex items-start space-x-3">
                 {React.createElement(FiFile as React.ComponentType<{ className?: string }>, { className: "w-8 h-8 text-red-600 flex-shrink-0 mt-1" })}
@@ -296,6 +329,28 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
                       </p>
                     </div>
                   )}
+
+                  {/* Visible-from lock status */}
+                  {pdfInfo.visibleFrom && new Date(pdfInfo.visibleFrom) > new Date() ? (
+                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">
+                        Bloccata — visibile dal {new Date(pdfInfo.visibleFrom).toLocaleDateString('it-IT')}
+                      </span>
+                      <button
+                        onClick={() => handleUpdateVisibleFrom(null)}
+                        disabled={updatingVisibleFrom}
+                        className="text-xs text-gray-500 hover:text-red-600 underline"
+                      >
+                        Sblocca ora
+                      </button>
+                    </div>
+                  ) : pdfInfo.visibleFrom ? (
+                    <div className="mt-2">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                        Sbloccata dal {new Date(pdfInfo.visibleFrom).toLocaleDateString('it-IT')}
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
               </div>
               <div className="flex space-x-2">
@@ -318,35 +373,38 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
           </div>
 
           {/* Extend Duration Form */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="bg-white border border-gray-200 rounded-xl p-4">
             <button
               onClick={() => setShowExtendForm(!showExtendForm)}
               className="w-full text-left font-semibold text-gray-900 mb-2"
             >
-              {showExtendForm ? '▼' : '▶'} Estendi Durata Scheda
+              {showExtendForm ? '▼' : '▶'} Modifica Durata Scheda
             </button>
 
             {showExtendForm && (
               <div className="space-y-3 mt-3">
+                <p className="text-sm text-gray-600 mb-2">
+                  Usa valori positivi per estendere, negativi per ridurre la durata
+                </p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Mesi da aggiungere</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Mesi (+/-)</label>
                     <input
                       type="number"
-                      min="0"
                       value={extendMonths}
                       onChange={(e) => setExtendMonths(parseInt(e.target.value) || 0)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
+                      placeholder="0"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Giorni da aggiungere</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Giorni (+/-)</label>
                     <input
                       type="number"
-                      min="0"
                       value={extendDays}
                       onChange={(e) => setExtendDays(parseInt(e.target.value) || 0)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
+                      placeholder="0"
                     />
                   </div>
                 </div>
@@ -356,23 +414,57 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
                   className={`w-full px-4 py-2 rounded-lg font-medium ${
                     extending || (extendMonths === 0 && extendDays === 0)
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-green-600 text-white hover:bg-green-700'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
                   }`}
                 >
-                  {extending ? 'Estensione in corso...' : 'Estendi Durata'}
+                  {extending ? 'Modifica in corso...' : 'Applica Modifica'}
                 </button>
               </div>
             )}
           </div>
+          {/* Change visible-from on existing PDF */}
+          <div className="bg-white border border-gray-200 rounded-xl p-4">
+            <h5 className="font-semibold text-gray-900 mb-3">Modifica data di sblocco</h5>
+            <div className="space-y-2">
+              <input
+                type="date"
+                key={pdfInfo.visibleFrom || 'none'}
+                defaultValue={pdfInfo.visibleFrom ? pdfInfo.visibleFrom.slice(0, 10) : ''}
+                id={`visible-from-edit-${userId}`}
+                className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow text-sm"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const input = document.getElementById(`visible-from-edit-${userId}`) as HTMLInputElement;
+                    const val = input?.value;
+                    handleUpdateVisibleFrom(val ? new Date(val).toISOString() : null);
+                  }}
+                  disabled={updatingVisibleFrom}
+                  className="flex-1 px-3 py-2.5 rounded-xl text-sm font-medium bg-gray-900 text-white hover:bg-gray-800 transition-colors disabled:bg-gray-300 disabled:text-gray-500"
+                >
+                  {updatingVisibleFrom ? 'Salvataggio...' : 'Salva data sblocco'}
+                </button>
+                <button
+                  onClick={() => handleUpdateVisibleFrom(null)}
+                  disabled={updatingVisibleFrom}
+                  className="px-3 py-2.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors disabled:opacity-50"
+                >
+                  Sblocca
+                </button>
+              </div>
+              <p className="text-xs text-gray-400">Lascia vuoto per rendere la scheda subito visibile</p>
+            </div>
+          </div>
         </>
       ) : (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
           {React.createElement(FiFile as React.ComponentType<{ className?: string }>, { className: "w-12 h-12 text-gray-400 mx-auto mb-2" })}
           <p className="text-gray-600">{t('admin.pdf.noPdf') || 'Nessuna scheda caricata per questo utente'}</p>
         </div>
       )}
 
-      <div className="border border-gray-200 rounded-lg p-4 bg-white">
+      <div className="border border-gray-200 rounded-xl p-4 bg-white">
         <h4 className="font-semibold text-gray-900 mb-3">
           {pdfInfo
             ? (t('admin.pdf.replacePdf') || 'Sostituisci scheda')
@@ -381,7 +473,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
 
         <div className="space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5.5">
               {t('admin.pdf.selectFile') || 'Seleziona file PDF (max 10MB)'}
             </label>
             <input
@@ -400,7 +492,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Durata (mesi)
               </label>
               <input
@@ -408,11 +500,11 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
                 min="0"
                 value={durationMonths}
                 onChange={(e) => setDurationMonths(parseInt(e.target.value) || 0)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Durata (giorni)
               </label>
               <input
@@ -420,9 +512,26 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
                 min="0"
                 value={durationDays}
                 onChange={(e) => setDurationDays(parseInt(e.target.value) || 0)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Visibile dall'utente dal (opzionale)
+            </label>
+            <input
+              type="date"
+              value={visibleFrom}
+              onChange={(e) => setVisibleFrom(e.target.value)}
+              className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
+            />
+            {visibleFrom && (
+              <p className="text-xs text-amber-600 mt-1">
+                L'utente non vedrà la scheda fino al {new Date(visibleFrom).toLocaleDateString('it-IT')}
+              </p>
+            )}
           </div>
 
           {selectedFile && (

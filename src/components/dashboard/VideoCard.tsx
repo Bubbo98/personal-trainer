@@ -60,7 +60,9 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onPlay }) => {
         )}
         <div className="flex items-center justify-between text-sm text-gray-500">
           <span className="capitalize font-medium">{video.category}</span>
-          <span>{getLocalizedText.addedOn} {formatDate(video.grantedAt)}</span>
+          {(video.addedAt || video.grantedAt) && (
+            <span>{getLocalizedText.addedOn} {formatDate(video.addedAt || video.grantedAt!)}</span>
+          )}
         </div>
       </div>
     </div>

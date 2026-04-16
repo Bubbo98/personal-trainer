@@ -10,10 +10,22 @@ import SearchBar from '../components/dashboard/SearchBar';
 import TrainingPlan from '../components/dashboard/TrainingPlan';
 import FeedbackTab from '../components/dashboard/FeedbackTab';
 import ReviewTab from '../components/dashboard/ReviewTab';
-import { FiGrid, FiLogOut, FiStar, FiVideo, FiFile, FiGift, FiMessageSquare } from 'react-icons/fi';
+import WorkoutTab from '../components/dashboard/WorkoutTab';
+import { FiGrid, FiLogOut, FiStar, FiVideo, FiFile, FiGift, FiMessageSquare, FiCheckCircle, FiActivity } from 'react-icons/fi';
+import { SiInstagram, SiTiktok } from 'react-icons/si';
 
 import { Video, AuthState, VideoState } from '../types/dashboard';
-import { STORAGE_KEY, apiCall } from '../utils/dashboardUtils';
+import { STORAGE_KEY, apiCall, formatDate } from '../utils/dashboardUtils';
+
+interface TrainingDay {
+  id: number;
+  userId: number;
+  dayNumber: number;
+  dayName: string | null;
+  createdAt: string;
+  updatedAt: string;
+  videos: Video[];
+}
 
 interface DashboardProps {}
 
@@ -41,8 +53,11 @@ const Dashboard: React.FC<DashboardProps> = () => {
   });
 
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
-  const [activeTab, setActiveTab] = useState<'videos' | 'training-plan' | 'reviews' | 'feedback'>('training-plan');
+  const [activeTab, setActiveTab] = useState<'videos' | 'training-plan' | 'reviews' | 'feedback' | 'workout'>('training-plan');
   const [hasTrainingPlan, setHasTrainingPlan] = useState(false);
+  const [trainingDays, setTrainingDays] = useState<TrainingDay[]>([]);
+  const [checkInRequired, setCheckInRequired] = useState(false);
+  const [trainerSeenNotifications, setTrainerSeenNotifications] = useState<any[]>([]);
 
   // Authentication logic
   const authenticateWithToken = useCallback(async (authToken: string) => {
@@ -115,6 +130,43 @@ const Dashboard: React.FC<DashboardProps> = () => {
     }
   }, []);
 
+  // Check if check is required
+  const checkIfCheckInRequired = useCallback(async (authToken: string) => {
+    try {
+      const response = await apiCall('/feedback/should-show', {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      const shouldShow = response.data?.shouldShow || false;
+      setCheckInRequired(shouldShow);
+      if (shouldShow) {
+        setActiveTab('feedback');
+      }
+    } catch (error) {
+      console.error('Failed to check check status:', error);
+      setCheckInRequired(false);
+    }
+  }, []);
+
+
+  // Check if PT has seen any of the user's check-ins — show banner once then auto-dismiss
+  const checkTrainerSeenNotifications = useCallback(async (authToken: string) => {
+    try {
+      const response = await apiCall('/feedback/trainer-seen-notification', {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      const notifications = response.data.notifications || [];
+      setTrainerSeenNotifications(notifications);
+      if (notifications.length > 0) {
+        // Auto-dismiss so it won't show again on next visit
+        apiCall('/feedback/dismiss-trainer-seen', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${authToken}` }
+        }).catch(err => console.error('Failed to auto-dismiss trainer seen notifications:', err));
+      }
+    } catch (error) {
+      console.error('Failed to check trainer seen notifications:', error);
+    }
+  }, []);
 
   // Load videos
   const loadVideos = useCallback(async (authToken: string) => {
@@ -148,6 +200,21 @@ const Dashboard: React.FC<DashboardProps> = () => {
     }
   }, []);
 
+  // Load training days
+  const loadTrainingDays = useCallback(async (authToken: string) => {
+    try {
+      const response = await apiCall('/videos/training-days', {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+
+      setTrainingDays(response.data.trainingDays);
+    } catch (error) {
+      console.error('Failed to load training days:', error);
+      // Don't show error, just fallback to regular videos
+      setTrainingDays([]);
+    }
+  }, []);
+
   // Initialize authentication and data loading
   useEffect(() => {
     const initializeDashboard = async () => {
@@ -157,17 +224,30 @@ const Dashboard: React.FC<DashboardProps> = () => {
         // If we have a token in the URL, use it for authentication
         if (token) {
           authToken = await authenticateWithToken(token);
+
+          // Check if there's a tab parameter in the URL
+          const urlParams = new URLSearchParams(window.location.search);
+          const tabParam = urlParams.get('tab');
+
           // Clean up URL
           navigate('/dashboard', { replace: true });
+
+          // Set the active tab if specified in URL
+          if (tabParam === 'reviews') {
+            setActiveTab('reviews');
+          }
         } else {
           // Try to use stored token
           authToken = await verifyStoredToken();
         }
 
-        // Load videos and check training plan with the authenticated token
+        // Load videos, training days, check training plan and check status with the authenticated token
         await Promise.all([
           loadVideos(authToken),
-          checkTrainingPlan(authToken)
+          loadTrainingDays(authToken),
+          checkTrainingPlan(authToken),
+          checkIfCheckInRequired(authToken),
+          checkTrainerSeenNotifications(authToken)
         ]);
       } catch (error) {
         console.error('Dashboard initialization failed:', error);
@@ -180,14 +260,14 @@ const Dashboard: React.FC<DashboardProps> = () => {
     };
 
     initializeDashboard();
-  }, [token, navigate, authenticateWithToken, verifyStoredToken, loadVideos, checkTrainingPlan]);
+  }, [token, navigate, authenticateWithToken, verifyStoredToken, loadVideos, loadTrainingDays, checkTrainingPlan, checkIfCheckInRequired, checkTrainerSeenNotifications]);
 
   // Filtered videos based on selected category and search query
   const filteredVideos = useMemo(() => {
     let videos = videoState.videos;
 
-    // Filter by category
-    if (videoState.selectedCategory) {
+    // Filter by category (skip if 'all' or null)
+    if (videoState.selectedCategory && videoState.selectedCategory !== 'all') {
       videos = videos.filter(video => video.category === videoState.selectedCategory);
     }
 
@@ -230,6 +310,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
   const handleVideoClose = useCallback(() => {
     setSelectedVideo(null);
   }, []);
+
+  useEffect(() => console.log(trainingDays), [trainingDays]);
 
   // Component styles
   const pageClassName = 'min-h-screen bg-gray-50';
@@ -328,14 +410,94 @@ const Dashboard: React.FC<DashboardProps> = () => {
             </div>
           )}
 
+          {/* Social Media Banner */}
+          {authState.user?.trainerId === 2 ? (
+            <div className="mb-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-5 shadow-lg">
+              <div className="flex items-center space-x-4">
+                <div className="flex-shrink-0">
+                  {React.createElement(SiInstagram as React.ComponentType<{ className?: string }>, { className: "w-10 h-10 text-white" })}
+                </div>
+                <div className="flex-1">
+                  <p className="text-white font-semibold text-lg">Seguimi su Instagram!</p>
+                  <p className="text-purple-100 text-sm">Contenuti esclusivi, consigli e aggiornamenti sul tuo percorso.</p>
+                </div>
+                <a
+                  href="https://www.instagram.com/lamendye?igsh=bzN6NDhscnVhMHVw"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-shrink-0 bg-white text-purple-600 font-semibold px-4 py-2 rounded-lg hover:bg-purple-50 transition-colors text-sm"
+                >
+                  @lamendye
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div className="mb-6 bg-gradient-to-r from-gray-900 to-gray-700 rounded-xl p-5 shadow-lg">
+              <div className="flex items-center space-x-4">
+                <div className="flex-shrink-0">
+                  {React.createElement(SiTiktok as React.ComponentType<{ className?: string }>, { className: "w-10 h-10 text-white" })}
+                </div>
+                <div className="flex-1">
+                  <p className="text-white font-semibold text-lg">Seguimi su TikTok!</p>
+                  <p className="text-gray-300 text-sm">Video, tips e motivazione per i tuoi allenamenti.</p>
+                </div>
+                <a
+                  href="https://www.tiktok.com/@jd.push.pull?_r=1&_t=ZN-945Y5lf6Dbi"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-shrink-0 bg-white text-gray-900 font-semibold px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors text-sm"
+                >
+                  @jd.push.pull
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* Trainer Seen Notification Banner */}
+          {trainerSeenNotifications.length > 0 && (
+            <div className="mb-6 bg-green-50 border-2 border-green-400 rounded-xl p-4">
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  {React.createElement(FiCheckCircle as React.ComponentType<{ className?: string }>, { className: "w-8 h-8 text-green-500" })}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-green-800">Il tuo PT ha visto il tuo check!</h3>
+                  <p className="text-green-700 text-sm">
+                    {trainerSeenNotifications.length === 1
+                      ? `Check del ${formatDate(trainerSeenNotifications[0].feedback_date)} letto dal tuo PT.`
+                      : `${trainerSeenNotifications.length} tuoi check letti dal tuo PT.`}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Check Required Banner */}
+          {checkInRequired && (
+            <div className="mb-6 bg-orange-50 border-2 border-orange-400 rounded-xl p-4">
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-8 h-8 text-orange-500" })}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-orange-800">Check settimanale richiesto</h3>
+                  <p className="text-orange-700 text-sm">Compila il check per continuare ad accedere alla tua dashboard.</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Navigation Tabs */}
           <div className="flex space-x-1 bg-gray-200 p-1 rounded-lg mb-8">
             <button
-              onClick={() => setActiveTab('training-plan')}
+              onClick={() => !checkInRequired && setActiveTab('training-plan')}
+              disabled={checkInRequired}
               className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-3 rounded-lg font-medium transition-all ${
                 activeTab === 'training-plan'
                   ? 'bg-white text-gray-900 shadow'
-                  : 'text-gray-600 hover:text-gray-900'
+                  : checkInRequired
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:text-gray-900'
               }`}
               title={t('dashboard.tabs.trainingPlan') || 'Scheda'}
             >
@@ -343,11 +505,14 @@ const Dashboard: React.FC<DashboardProps> = () => {
               <span className="max-[399px]:hidden text-xs sm:text-base">{t('dashboard.tabs.trainingPlan') || 'Scheda'}</span>
             </button>
             <button
-              onClick={() => setActiveTab('videos')}
+              onClick={() => !checkInRequired && setActiveTab('videos')}
+              disabled={checkInRequired}
               className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-3 rounded-lg font-medium transition-all ${
                 activeTab === 'videos'
                   ? 'bg-white text-gray-900 shadow'
-                  : 'text-gray-600 hover:text-gray-900'
+                  : checkInRequired
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:text-gray-900'
               }`}
               title={t('dashboard.tabs.videos') || 'Video'}
             >
@@ -355,11 +520,14 @@ const Dashboard: React.FC<DashboardProps> = () => {
               <span className="max-[399px]:hidden text-xs sm:text-base">{t('dashboard.tabs.videos') || 'Video'}</span>
             </button>
             <button
-              onClick={() => setActiveTab('reviews')}
+              onClick={() => !checkInRequired && setActiveTab('reviews')}
+              disabled={checkInRequired}
               className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-3 rounded-lg font-medium transition-all ${
                 activeTab === 'reviews'
                   ? 'bg-white text-gray-900 shadow'
-                  : 'text-gray-600 hover:text-gray-900'
+                  : checkInRequired
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:text-gray-900'
               }`}
               title="Recensioni"
             >
@@ -367,30 +535,53 @@ const Dashboard: React.FC<DashboardProps> = () => {
               <span className="max-[399px]:hidden text-xs sm:text-base">Recensioni</span>
             </button>
             <button
+              onClick={() => !checkInRequired && setActiveTab('workout')}
+              disabled={checkInRequired}
+              className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-3 rounded-lg font-medium transition-all ${
+                activeTab === 'workout'
+                  ? 'bg-white text-gray-900 shadow'
+                  : checkInRequired
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:text-gray-900'
+              }`}
+              title="I miei pesi"
+            >
+              {React.createElement(FiActivity as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+              <span className="max-[399px]:hidden text-xs sm:text-base">Pesi</span>
+            </button>
+            <button
               onClick={() => setActiveTab('feedback')}
               className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-3 rounded-lg font-medium transition-all ${
                 activeTab === 'feedback'
                   ? 'bg-white text-gray-900 shadow'
                   : 'text-gray-600 hover:text-gray-900'
-              }`}
-              title="Feedback"
+              } ${checkInRequired ? 'ring-2 ring-orange-400' : ''}`}
+              title="Check"
             >
               {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-              <span className="max-[399px]:hidden text-xs sm:text-base">Feedback</span>
+              <span className="max-[399px]:hidden text-xs sm:text-base">{t('dashboard.tabs.feedback')}</span>
             </button>
           </div>
 
           {/* Tab Content */}
           {activeTab === 'training-plan' ? (
             <TrainingPlan />
+          ) : activeTab === 'workout' ? (
+            <WorkoutTab />
           ) : activeTab === 'reviews' ? (
             <ReviewTab />
           ) : activeTab === 'feedback' ? (
-            <FeedbackTab user={authState.user} />
+            <FeedbackTab
+              user={authState.user}
+              onCheckInCompleted={() => {
+                setCheckInRequired(false);
+                setActiveTab('training-plan');
+              }}
+            />
           ) : (
             <>
-              {/* Video Categories Filter */}
-              {videoState.categories.length > 0 && (
+              {/* Video Categories Filter - Hidden when viewing training days */}
+              {videoState.categories.length > 0 && (trainingDays.length === 0 || videoState.searchQuery.trim() || videoState.selectedCategory) && (
                 <CategoryFilter
                   categories={videoState.categories}
                   selectedCategory={videoState.selectedCategory}
@@ -400,12 +591,14 @@ const Dashboard: React.FC<DashboardProps> = () => {
                 />
               )}
 
-              {/* Search Bar */}
-              <SearchBar
-                searchQuery={videoState.searchQuery}
-                onSearch={handleSearch}
-                onClear={clearSearch}
-              />
+              {/* Search Bar - Hidden when viewing training days */}
+              {(trainingDays.length === 0 || videoState.searchQuery.trim() || videoState.selectedCategory) && (
+                <SearchBar
+                  searchQuery={videoState.searchQuery}
+                  onSearch={handleSearch}
+                  onClear={clearSearch}
+                />
+              )}
 
           {/* Videos Grid */}
           {videoState.loading ? (
@@ -455,24 +648,84 @@ const Dashboard: React.FC<DashboardProps> = () => {
             </div>
           ) : (
             <>
-              {/* Results count */}
-              {(videoState.searchQuery.trim() || videoState.selectedCategory) && (
-                <div className="mb-4 text-sm text-gray-600">
-                  {filteredVideos.length} video
-                  {videoState.searchQuery.trim() && ` trovati per "${videoState.searchQuery}"`}
-                  {videoState.selectedCategory && ` nella categoria "${videoState.selectedCategory}"`}
-                </div>
-              )}
+              {/* Show training days if available and no search/filter is active */}
+              {trainingDays.length > 0 && !videoState.searchQuery.trim() && !videoState.selectedCategory ? (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold text-gray-900">{t('dashboard.trainingDays.title')}</h3>
+                    {videoState.videos.length > 0 && (
+                      <button
+                        onClick={() => setVideoState(prev => ({ ...prev, selectedCategory: 'all' }))}
+                        className="text-sm text-gray-600 hover:text-gray-900"
+                      >
+                        {t('dashboard.trainingDays.viewAllVideos')}
+                      </button>
+                    )}
+                  </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredVideos.map((video) => (
-                  <VideoCard
-                    key={video.id}
-                    video={video}
-                    onPlay={handleVideoPlay}
-                  />
-                ))}
-              </div>
+                  {trainingDays.map((day) => (
+                    <div key={day.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                      <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-6 py-4">
+                        <h4 className="text-xl font-bold text-white">
+                          {day.dayName || t('dashboard.trainingDays.dayTitle', { number: day.dayNumber })}
+                        </h4>
+                        <p className="text-sm text-gray-300 mt-1">
+                          {t('dashboard.trainingDays.videoCount', { count: day.videos.length })}
+                        </p>
+                      </div>
+
+                      {day.videos.length > 0 ? (
+                        <div className="p-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {day.videos.map((video) => (
+                              <VideoCard
+                                key={video.id}
+                                video={video}
+                                onPlay={handleVideoPlay}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-8 text-center text-gray-500">
+                          {t('dashboard.trainingDays.noVideos')}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  {/* Results count and back to training days button */}
+                  {(videoState.searchQuery.trim() || videoState.selectedCategory) && (
+                    <div className="mb-4 flex items-center justify-between">
+                      <div className="text-sm text-gray-600">
+                        {filteredVideos.length} video
+                        {videoState.searchQuery.trim() && ` trovati per "${videoState.searchQuery}"`}
+                        {videoState.selectedCategory && videoState.selectedCategory !== 'all' && ` nella categoria "${videoState.selectedCategory}"`}
+                      </div>
+                      {trainingDays.length > 0 && (
+                        <button
+                          onClick={() => setVideoState(prev => ({ ...prev, searchQuery: '', selectedCategory: null }))}
+                          className="text-sm text-gray-600 hover:text-gray-900 font-medium"
+                        >
+                          ← Torna alla vista per giorni
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredVideos.map((video) => (
+                      <VideoCard
+                        key={video.id}
+                        video={video}
+                        onPlay={handleVideoPlay}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
             </>
           )}
 

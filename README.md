@@ -206,13 +206,30 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 
 ## 📚 **Documentazione**
 
-- [`DEPLOYMENT.md`](./DEPLOYMENT.md) - 🚀 **Guida Deploy in Produzione**
-- [`SECURITY.md`](./SECURITY.md) - 🔐 **Guida Sicurezza (LEGGI PRIMA DEL DEPLOY!)**
-- [`backend/README.md`](./backend/README.md) - Documentazione Backend API
-- [`ADMIN_CMS_GUIDE.md`](./ADMIN_CMS_GUIDE.md) - Guida completa utilizzo CMS
-- [`BACKEND_DOCUMENTATION.md`](./BACKEND_DOCUMENTATION.md) - Documentazione API tecnica
-- [`DEMO_SCRIPT.md`](./DEMO_SCRIPT.md) - Script demo passo-passo
-- [`CHANGELOG.md`](./CHANGELOG.md) - Storia modifiche e aggiornamenti
+> **🗺️ INIZIA QUI**: [`DOC_INDEX.md`](./DOC_INDEX.md) - Mappa completa della documentazione
+
+### **Guide Tecniche**
+- [`DEVELOPMENT_PATTERNS.md`](./DEVELOPMENT_PATTERNS.md) - 💡 Pattern tecnici riusabili (25+ patterns)
+- [`TROUBLESHOOTING.md`](./TROUBLESHOOTING.md) - 🔧 Risoluzione problemi comuni (25+ issues)
+- [`BACKEND_DOCUMENTATION.md`](./BACKEND_DOCUMENTATION.md) - 🗄️ Documentazione API completa
+- [`SEO_IMPLEMENTATION.md`](./SEO_IMPLEMENTATION.md) - 🌐 SEO completa (sitemap, meta tags, schema.org)
+
+### **Guide Utente & Admin**
+- [`ADMIN_CMS_GUIDE.md`](./ADMIN_CMS_GUIDE.md) - 🎛️ Guida completa utilizzo CMS
+- [`DEMO_SCRIPT.md`](./DEMO_SCRIPT.md) - 🎬 Script demo passo-passo
+
+### **Deployment & Sicurezza**
+- [`DEPLOYMENT.md`](./DEPLOYMENT.md) - 🚀 Guida deploy in produzione
+- [`SECURITY.md`](./SECURITY.md) - 🔐 Guida sicurezza (LEGGI PRIMA DEL DEPLOY!)
+
+### **Storia & Features**
+- [`PROJECT_HISTORY.md`](./PROJECT_HISTORY.md) - 📜 Storia sviluppo completa (Fase 1-15)
+- [`SCHEDE_EXPIRATION_FEATURE.md`](./SCHEDE_EXPIRATION_FEATURE.md) - 📄 Feature gestione PDF
+- [`CHANGELOG.md`](./CHANGELOG.md) - 📝 Storia modifiche e aggiornamenti
+- [`ANALYTICS_SETUP.md`](./ANALYTICS_SETUP.md) - 📊 Setup analytics
+
+### **Backend Specifico**
+- [`backend/README.md`](./backend/README.md) - ⚙️ Setup backend locale
 
 ## 🛠️ **Sviluppo**
 
