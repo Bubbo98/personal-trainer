@@ -293,19 +293,12 @@ const WorkoutTab: React.FC = () => {
                         {ex.notes && <p className="text-xs text-gray-400 mt-0.5 italic">{ex.notes}</p>}
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 gap-2">
                         <div>
                           <label className="block text-xs text-gray-400 mb-1">Peso (kg)</label>
                           <input type="text" inputMode="decimal" value={draft.weight}
                             onChange={(e) => updateDraft(ex.id, 'weight', e.target.value)}
                             placeholder="es. 70"
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent" />
-                        </div>
-                        <div>
-                          <label className="block text-xs text-gray-400 mb-1">Serie fatte</label>
-                          <input type="number" inputMode="numeric" value={draft.sets_done}
-                            onChange={(e) => updateDraft(ex.id, 'sets_done', e.target.value)}
-                            placeholder={ex.sets || '—'}
                             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent" />
                         </div>
                         <div>
