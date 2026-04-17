@@ -793,7 +793,9 @@ router.get('/videos', (req, res) => {
         conditions.push('v.title LIKE ?');
         filterParams.push(`%${search}%`);
     }
-    if (muscleGroup) {
+    if (muscleGroup === '__none__') {
+        conditions.push('(v.muscle_group IS NULL OR v.muscle_group = \'\')');
+    } else if (muscleGroup) {
         conditions.push('v.muscle_group = ?');
         filterParams.push(muscleGroup);
     }

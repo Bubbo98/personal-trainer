@@ -309,6 +309,7 @@ const VideoManagement: React.FC = () => {
           className="w-full sm:w-auto appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow text-sm"
         >
           <option value="">Tutti i gruppi muscolari</option>
+          <option value="__none__">Senza categoria</option>
           {MUSCLE_GROUPS.map(g => (
             <option key={g} value={g}>{g}</option>
           ))}
