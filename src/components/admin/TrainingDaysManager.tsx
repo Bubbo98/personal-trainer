@@ -93,6 +93,7 @@ const SortableVideoItem: React.FC<{
         <button
           {...attributes}
           {...listeners}
+          style={{ touchAction: 'none' }}
           className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 flex-shrink-0"
         >
           {React.createElement(FiMenu as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
