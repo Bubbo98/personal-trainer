@@ -21,10 +21,10 @@ const TechniqueModal: React.FC<{ technique: TechniqueVideo; onClose: () => void 
       className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
       onClick={handleBackdrop}
     >
-      <div className="relative w-full max-w-2xl bg-white rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <div className="relative w-full max-w-2xl bg-white rounded-2xl overflow-y-auto max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
           <div className="flex items-center gap-2">
-            {React.createElement(FiInfo as React.ComponentType<{ className?: string }>, { className: "w-4 h-4 text-amber-500" })}
+            {React.createElement(FiInfo as React.ComponentType<{ className?: string }>, { className: "w-4 h-4 text-blue-500" })}
             <h3 className="font-bold text-gray-900 text-base">{technique.title}</h3>
           </div>
           <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-700 transition-colors">
@@ -33,18 +33,18 @@ const TechniqueModal: React.FC<{ technique: TechniqueVideo; onClose: () => void 
         </div>
 
         {videoSrc && (
-          <div className="aspect-video bg-black">
+          <div className="bg-black flex-shrink-0">
             <video
               controls
               autoPlay
               src={videoSrc}
-              className="w-full h-full"
+              className="w-full max-h-[50vh]"
             />
           </div>
         )}
 
         {technique.description && (
-          <div className="px-5 py-4 overflow-y-auto">
+          <div className="px-5 py-4">
             <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{technique.description}</p>
           </div>
         )}
