@@ -367,60 +367,65 @@ const TrainingPlanAdmin: React.FC<Props> = ({ userId, userName }) => {
                   </div>
 
                   {day.exercises.map((ex, idx) => (
-                    <div key={idx} className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_1fr_2fr_auto] gap-2 items-center border sm:border-0 border-gray-100 rounded-lg sm:rounded-none p-3 sm:p-0">
-                      <div className="sm:contents">
+                    <div key={idx} className="border sm:border-0 border-gray-100 rounded-lg sm:rounded-none p-3 sm:p-0 sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr_2fr_auto] sm:gap-2 sm:items-center space-y-2 sm:space-y-0">
+                      {/* Esercizio */}
+                      <div>
                         <label className="block sm:hidden text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Esercizio</label>
                         <input
                           value={ex.name}
                           onChange={(e) => updateExercise(day.dayNumber, idx, 'name', e.target.value)}
                           placeholder="Nome esercizio"
-                          className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                         />
                       </div>
-                      <div className="grid grid-cols-3 gap-2 sm:contents">
-                        <div className="sm:contents">
+                      {/* Serie + Reps su 2 colonne, Recupero a larghezza piena */}
+                      <div className="grid grid-cols-2 gap-2 sm:contents">
+                        <div>
                           <label className="block sm:hidden text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Serie</label>
                           <input
                             value={ex.sets}
                             onChange={(e) => updateExercise(day.dayNumber, idx, 'sets', e.target.value)}
                             placeholder="Serie"
-                            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                           />
                         </div>
-                        <div className="sm:contents">
+                        <div>
                           <label className="block sm:hidden text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Reps</label>
                           <input
                             value={ex.reps}
                             onChange={(e) => updateExercise(day.dayNumber, idx, 'reps', e.target.value)}
                             placeholder="Reps"
-                            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                          />
-                        </div>
-                        <div className="sm:contents">
-                          <label className="block sm:hidden text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Recupero</label>
-                          <input
-                            value={ex.rest}
-                            onChange={(e) => updateExercise(day.dayNumber, idx, 'rest', e.target.value)}
-                            placeholder="Recupero"
-                            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                           />
                         </div>
                       </div>
-                      <div className="sm:contents">
-                        <label className="block sm:hidden text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Note</label>
+                      <div>
+                        <label className="block sm:hidden text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Recupero</label>
                         <input
-                          value={ex.notes}
-                          onChange={(e) => updateExercise(day.dayNumber, idx, 'notes', e.target.value)}
-                          placeholder="Note (opz.)"
-                          className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                          value={ex.rest}
+                          onChange={(e) => updateExercise(day.dayNumber, idx, 'rest', e.target.value)}
+                          placeholder="Recupero"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                         />
                       </div>
-                      <button
-                        onClick={() => removeExercise(day.dayNumber, idx)}
-                        className="flex items-center justify-center p-2 text-red-400 hover:text-red-600 transition-colors sm:justify-center justify-end"
-                      >
-                        {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: 'w-4 h-4' })}
-                      </button>
+                      {/* Note + elimina su una riga */}
+                      <div className="flex gap-2 items-end sm:contents">
+                        <div className="flex-1">
+                          <label className="block sm:hidden text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Note</label>
+                          <input
+                            value={ex.notes}
+                            onChange={(e) => updateExercise(day.dayNumber, idx, 'notes', e.target.value)}
+                            placeholder="Note (opz.)"
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                          />
+                        </div>
+                        <button
+                          onClick={() => removeExercise(day.dayNumber, idx)}
+                          className="flex-shrink-0 flex items-center justify-center p-2 text-red-400 hover:text-red-600 transition-colors"
+                        >
+                          {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: 'w-4 h-4' })}
+                        </button>
+                      </div>
                     </div>
                   ))}
 
