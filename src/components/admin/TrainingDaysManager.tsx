@@ -30,7 +30,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { apiCall, formatDuration } from '../../utils/adminUtils';
-import { Video, TrainingDayTechnique } from '../../types/admin';
+import { Video } from '../../types/admin';
 
 interface TrainingDay {
   id: number;
