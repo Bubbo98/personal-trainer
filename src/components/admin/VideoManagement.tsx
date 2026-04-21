@@ -13,7 +13,7 @@ import {
 import { apiCall, formatDate, formatDuration } from '../../utils/adminUtils';
 import { Video, CreateVideoForm } from '../../types/admin';
 
-const MUSCLE_GROUPS = ['Polpaccio','Quadricipite','Femorale','Gluteo','Lombare','Dorsale','Trapezio','Pettorale','Spalle','Bicipite','Tricipite','Addome','Avambraccio','Cardio','Stability','Transizioni'];
+const MUSCLE_GROUPS = ['Polpaccio','Quadricipite','Femorale','Gluteo','Lombare','Dorsale','Trapezio','Pettorale','Spalle','Bicipite','Tricipite','Addome','Avambraccio','Cardio','Stability','Transizioni','Tecniche'];
 
 // Responsive page size: fewer cards on smaller screens
 const getPageSize = () => {

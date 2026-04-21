@@ -8,6 +8,14 @@ export interface User {
   trainerId?: number;
 }
 
+export interface TechniqueVideo {
+  id: number;
+  title: string;
+  description: string;
+  signedUrl: string | null;
+  thumbnailPath?: string | null;
+}
+
 export interface Video {
   id: number;
   title: string;
@@ -21,6 +29,7 @@ export interface Video {
   grantedAt?: string;
   addedAt?: string;
   expiresAt?: string;
+  technique?: TechniqueVideo | null;
 }
 
 export interface Category {

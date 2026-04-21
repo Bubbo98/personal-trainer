@@ -171,15 +171,21 @@ router.get('/training-days', async (req, res) => {
                             tdv.id as assignment_id,
                             tdv.order_index,
                             tdv.added_at,
+                            tdv.technique_id,
                             v.id,
                             v.title,
                             v.description,
                             v.file_path,
                             v.duration,
                             v.thumbnail_path,
-                            v.category
+                            v.category,
+                            tv.title as technique_title,
+                            tv.description as technique_description,
+                            tv.file_path as technique_file_path,
+                            tv.thumbnail_path as technique_thumbnail_path
                         FROM training_day_videos tdv
                         INNER JOIN videos v ON tdv.video_id = v.id
+                        LEFT JOIN videos tv ON tdv.technique_id = tv.id AND tv.is_active = 1
                         WHERE tdv.training_day_id = ? AND v.is_active = 1
                         ORDER BY tdv.order_index ASC
                     `, [day.id], (err, rows) => {
@@ -188,39 +194,42 @@ router.get('/training-days', async (req, res) => {
                     });
                 });
 
-                // Generate signed URLs for all videos
+                // Generate signed URLs for all videos (and techniques)
                 const videosWithUrls = await Promise.all(videos.map(async (video) => {
+                    let signedUrl = null;
+                    let techniqueSignedUrl = null;
                     try {
-                        const signedUrl = await getSignedVideoUrl(video.file_path, 3600);
-                        return {
-                            assignmentId: video.assignment_id,
-                            orderIndex: video.order_index,
-                            addedAt: video.added_at,
-                            id: video.id,
-                            title: video.title,
-                            description: video.description,
-                            filePath: video.file_path,
-                            signedUrl: signedUrl,
-                            duration: video.duration,
-                            thumbnailPath: video.thumbnail_path,
-                            category: video.category
-                        };
+                        signedUrl = await getSignedVideoUrl(video.file_path, 3600);
                     } catch (error) {
                         console.error(`Failed to generate signed URL for video ${video.id}:`, error.message);
-                        return {
-                            assignmentId: video.assignment_id,
-                            orderIndex: video.order_index,
-                            addedAt: video.added_at,
-                            id: video.id,
-                            title: video.title,
-                            description: video.description,
-                            filePath: video.file_path,
-                            signedUrl: null,
-                            duration: video.duration,
-                            thumbnailPath: video.thumbnail_path,
-                            category: video.category
-                        };
                     }
+                    if (video.technique_file_path) {
+                        try {
+                            techniqueSignedUrl = await getSignedVideoUrl(video.technique_file_path, 3600);
+                        } catch (error) {
+                            console.error(`Failed to generate signed URL for technique of video ${video.id}:`, error.message);
+                        }
+                    }
+                    return {
+                        assignmentId: video.assignment_id,
+                        orderIndex: video.order_index,
+                        addedAt: video.added_at,
+                        id: video.id,
+                        title: video.title,
+                        description: video.description,
+                        filePath: video.file_path,
+                        signedUrl,
+                        duration: video.duration,
+                        thumbnailPath: video.thumbnail_path,
+                        category: video.category,
+                        technique: video.technique_id ? {
+                            id: video.technique_id,
+                            title: video.technique_title,
+                            description: video.technique_description,
+                            signedUrl: techniqueSignedUrl,
+                            thumbnailPath: video.technique_thumbnail_path,
+                        } : null,
+                    };
                 }));
 
                 return {

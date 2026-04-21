@@ -38,6 +38,14 @@ export interface Video {
   expiresAt?: string;
 }
 
+export interface TrainingDayTechnique {
+  id: number;
+  title: string;
+  description: string;
+  signedUrl?: string | null;
+  thumbnailPath?: string | null;
+}
+
 export interface CreateUserForm {
   username: string;
   email: string;

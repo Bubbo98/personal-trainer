@@ -47,15 +47,21 @@ router.get('/users/:userId/training-days', async (req, res) => {
                             tdv.id as assignment_id,
                             tdv.order_index,
                             tdv.added_at,
+                            tdv.technique_id,
                             v.id,
                             v.title,
                             v.description,
                             v.file_path,
                             v.duration,
                             v.thumbnail_path,
-                            v.category
+                            v.category,
+                            tv.title as technique_title,
+                            tv.description as technique_description,
+                            tv.file_path as technique_file_path,
+                            tv.thumbnail_path as technique_thumbnail_path
                         FROM training_day_videos tdv
                         INNER JOIN videos v ON tdv.video_id = v.id
+                        LEFT JOIN videos tv ON tdv.technique_id = tv.id AND tv.is_active = 1
                         WHERE tdv.training_day_id = ? AND tdv.is_active = 1 AND v.is_active = 1
                         ORDER BY tdv.order_index ASC
                     `, [day.id], (err, rows) => {
@@ -81,7 +87,12 @@ router.get('/users/:userId/training-days', async (req, res) => {
                         filePath: v.file_path,
                         duration: v.duration,
                         thumbnailPath: v.thumbnail_path,
-                        category: v.category
+                        category: v.category,
+                        techniqueId: v.technique_id || null,
+                        techniqueTitle: v.technique_title || null,
+                        techniqueDescription: v.technique_description || null,
+                        techniqueFilePath: v.technique_file_path || null,
+                        techniqueThumbnailPath: v.technique_thumbnail_path || null,
                     }))
                 };
             })
@@ -701,6 +712,50 @@ router.delete('/users/:userId/training-days/:dayId/videos/:videoId', (req, res) 
                     }
                 });
             });
+        }
+    );
+});
+
+/**
+ * PUT /api/training-days/users/:userId/training-days/:dayId/videos/:videoId/technique
+ * Assign or remove a technique for a video in a training day
+ * Body: { techniqueId: number | null }
+ */
+router.put('/users/:userId/training-days/:dayId/videos/:videoId/technique', (req, res) => {
+    const { userId, dayId, videoId } = req.params;
+    const { techniqueId } = req.body;
+
+    if (!userId || isNaN(userId) || !dayId || isNaN(dayId) || !videoId || isNaN(videoId)) {
+        return res.status(400).json({ success: false, error: 'Valid user ID, day ID, and video ID are required' });
+    }
+
+    const db = createDatabase();
+
+    db.getCallback(
+        'SELECT id FROM user_training_days WHERE id = ? AND user_id = ? AND is_active = 1',
+        [dayId, userId],
+        (err, day) => {
+            if (err || !day) {
+                db.close();
+                return res.status(404).json({ success: false, error: 'Training day not found' });
+            }
+
+            db.runCallback(
+                'UPDATE training_day_videos SET technique_id = ? WHERE training_day_id = ? AND video_id = ? AND is_active = 1',
+                [techniqueId || null, dayId, videoId],
+                function(err) {
+                    db.close();
+                    if (err) {
+                        console.error('Set technique error:', err);
+                        return res.status(500).json({ success: false, error: 'Database error' });
+                    }
+                    if (this.changes === 0) {
+                        return res.status(404).json({ success: false, error: 'Video assignment not found' });
+                    }
+                    console.log(`Admin ${req.user.username} set technique ${techniqueId} for video ${videoId} in day ${dayId}`);
+                    res.json({ success: true, message: 'Technique updated successfully' });
+                }
+            );
         }
     );
 });
