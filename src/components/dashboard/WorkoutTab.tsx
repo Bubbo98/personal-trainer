@@ -12,6 +12,48 @@ interface Exercise {
   reps: string;
   rest: string;
   notes: string;
+  weight_slots?: number;
+}
+
+/** Extracts individual weight values from a stored weight string (plain or JSON array). */
+function parseWeightsFromDraft(weight: string, slots: number): string[] {
+  if (!weight) return Array(slots).fill('');
+  if (weight.startsWith('[')) {
+    try {
+      const arr = JSON.parse(weight) as string[];
+      if (Array.isArray(arr))
+        return [...arr, ...Array(Math.max(0, slots - arr.length)).fill('')].slice(0, slots);
+    } catch { /* fall through */ }
+  }
+  return [weight, ...Array(Math.max(0, slots - 1)).fill('')];
+}
+
+/** Serializes individual weight values into storage format. */
+function serializeWeights(weights: string[], slots: number): string {
+  if (slots <= 1) return weights[0] || '';
+  return JSON.stringify(weights.map((w) => w.trim()));
+}
+
+/** Extracts suggested weight values (numbers) from the notes string as placeholder hints. */
+function getSuggestedWeights(notes: string | null, slots: number): string[] {
+  if (!notes) return Array(slots).fill('');
+  const match = notes.match(/Peso consigliato:\s*(.+)/i);
+  if (!match) return Array(slots).fill('');
+  const nums = match[1].match(/\d+/g) || [];
+  return [...nums.slice(0, slots), ...Array(Math.max(0, slots - nums.length)).fill('')];
+}
+
+/** Formats a stored weight value for display (handles JSON array multi-weights). */
+function formatWeightDisplay(weight: string | null): string | null {
+  if (!weight) return null;
+  if (weight.startsWith('[')) {
+    try {
+      const arr = JSON.parse(weight) as string[];
+      const values = arr.filter(Boolean);
+      return values.length > 0 ? values.join(' / ') : null;
+    } catch { /* fall through */ }
+  }
+  return weight;
 }
 
 interface ExerciseLog {
@@ -261,14 +303,28 @@ const WorkoutTab: React.FC = () => {
         const { dayName, exercises: dayExercises } = days[dayNum];
         const isExpanded = expandedDays[dayNum] !== false;
 
+        // Split "Giorno 1 - MACCHINARI" into label + subtitle
+        const dashIdx = dayName.indexOf(' - ');
+        const dayLabel = dashIdx !== -1 ? dayName.slice(0, dashIdx) : dayName;
+        const daySubtitle = dashIdx !== -1 ? dayName.slice(dashIdx + 3) : '';
+
         return (
-          <div key={dayNum} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+          <div key={dayNum} className="rounded-xl overflow-hidden shadow-sm border border-gray-200">
+            {/* ── Day header ── */}
             <button
               onClick={() => setExpandedDays((prev) => ({ ...prev, [dayNum]: !isExpanded }))}
-              className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
+              className="w-full flex items-center justify-between px-4 py-3.5 bg-gray-900 hover:bg-gray-800 transition-colors"
             >
-              <span className="font-semibold text-gray-900">{dayName}</span>
               <div className="flex items-center gap-3">
+                <span className="flex-shrink-0 w-7 h-7 rounded-full bg-white/15 flex items-center justify-center text-sm font-bold text-white">
+                  {dayNum}
+                </span>
+                <div className="text-left">
+                  <p className="font-semibold text-white leading-tight">{dayLabel}</p>
+                  {daySubtitle && <p className="text-xs text-gray-400 leading-tight">{daySubtitle}</p>}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <span className="text-xs text-gray-400">{dayExercises.length} esercizi</span>
                 {isExpanded
                   ? React.createElement(FiChevronUp as React.ComponentType<{ className?: string }>, { className: 'w-5 h-5 text-gray-400' })
@@ -277,36 +333,79 @@ const WorkoutTab: React.FC = () => {
             </button>
 
             {isExpanded && (
-              <div className="divide-y divide-gray-100">
-                {dayExercises.map((ex) => {
+              <div className="bg-white p-3 space-y-2">
+                {dayExercises.map((ex, exIdx) => {
                   const draft = drafts[ex.id] || { weight: '', sets_done: '', reps_done: '', notes: '' };
+                  const slots = ex.weight_slots || 1;
+                  const suggested = getSuggestedWeights(ex.notes, slots);
+                  const individualWeights = parseWeightsFromDraft(draft.weight, slots);
+                  const inputClass = 'w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent';
 
                   return (
-                    <div key={ex.id} className="px-5 py-4">
-                      <div className="mb-3">
-                        <p className="font-medium text-gray-900">{ex.name}</p>
-                        <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-0.5">
-                          {ex.sets && <span className="text-xs text-gray-500">Serie: <span className="font-medium text-gray-700">{ex.sets}</span></span>}
-                          {ex.reps && <span className="text-xs text-gray-500">Reps: <span className="font-medium text-gray-700">{ex.reps}</span></span>}
-                          {ex.rest && <span className="text-xs text-gray-500">Recupero: <span className="font-medium text-gray-700">{ex.rest}</span></span>}
+                    <div key={ex.id} className="bg-gray-50 rounded-xl p-4">
+                      {/* Exercise header */}
+                      <div className="flex items-start gap-2.5 mb-3">
+                        <span className="flex-shrink-0 mt-0.5 text-xs font-bold text-gray-400 w-5 text-right">
+                          {exIdx + 1}.
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 leading-snug">{ex.name}</p>
+                          <div className="flex flex-wrap gap-1.5 mt-1.5">
+                            {ex.sets && (
+                              <span className="text-xs bg-white border border-gray-200 rounded-full px-2 py-0.5 text-gray-600">
+                                {ex.sets} serie
+                              </span>
+                            )}
+                            {ex.reps && (
+                              <span className="text-xs bg-white border border-gray-200 rounded-full px-2 py-0.5 text-gray-600">
+                                {ex.reps} reps
+                              </span>
+                            )}
+                            {ex.rest && (
+                              <span className="text-xs bg-white border border-gray-200 rounded-full px-2 py-0.5 text-gray-600">
+                                ⏱ {ex.rest}
+                              </span>
+                            )}
+                          </div>
+                          {ex.notes && (
+                            <p className="text-xs text-gray-400 mt-1 italic">{ex.notes}</p>
+                          )}
                         </div>
-                        {ex.notes && <p className="text-xs text-gray-400 mt-0.5 italic">{ex.notes}</p>}
                       </div>
 
+                      {/* Inputs */}
                       <div className="grid grid-cols-2 gap-2">
+                        {slots === 1 ? (
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Peso (kg)</label>
+                            <input type="text" inputMode="decimal" value={draft.weight}
+                              onChange={(e) => updateDraft(ex.id, 'weight', e.target.value)}
+                              placeholder={suggested[0] ? `es. ${suggested[0]}` : 'es. 70'}
+                              className={inputClass} />
+                          </div>
+                        ) : (
+                          <div className="col-span-2">
+                            <label className="block text-xs text-gray-500 mb-1">Pesi (kg)</label>
+                            <div className={`grid gap-2 ${slots === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                              {individualWeights.map((w, i) => (
+                                <input key={i} type="text" inputMode="decimal" value={w}
+                                  onChange={(e) => {
+                                    const updated = [...individualWeights];
+                                    updated[i] = e.target.value;
+                                    updateDraft(ex.id, 'weight', serializeWeights(updated, slots));
+                                  }}
+                                  placeholder={suggested[i] ? `es. ${suggested[i]}` : ''}
+                                  className={inputClass} />
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         <div>
-                          <label className="block text-xs text-gray-400 mb-1">Peso (kg)</label>
-                          <input type="text" inputMode="decimal" value={draft.weight}
-                            onChange={(e) => updateDraft(ex.id, 'weight', e.target.value)}
-                            placeholder="es. 70"
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent" />
-                        </div>
-                        <div>
-                          <label className="block text-xs text-gray-400 mb-1">Reps fatte</label>
+                          <label className="block text-xs text-gray-500 mb-1">Reps fatte</label>
                           <input type="text" inputMode="numeric" value={draft.reps_done}
                             onChange={(e) => updateDraft(ex.id, 'reps_done', e.target.value)}
                             placeholder={ex.reps || '—'}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent" />
+                            className={inputClass} />
                         </div>
                       </div>
                     </div>
@@ -374,8 +473,8 @@ const WorkoutTab: React.FC = () => {
                                 <span className="font-medium text-gray-900 min-w-[140px]">
                                   {resolveExerciseName(log)}
                                 </span>
-                                {log.weight && (
-                                  <span className="font-semibold text-gray-900">{log.weight} kg</span>
+                                {formatWeightDisplay(log.weight) && (
+                                  <span className="font-semibold text-gray-900">{formatWeightDisplay(log.weight)} kg</span>
                                 )}
                                 {log.sets_done != null && (
                                   <span className="text-gray-500">

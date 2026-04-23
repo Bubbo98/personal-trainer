@@ -9,6 +9,7 @@ interface Exercise {
   reps: string;
   rest: string;
   notes: string;
+  weight_slots?: number;
 }
 
 interface Day {
@@ -86,6 +87,7 @@ const TrainingPlanAdmin: React.FC<Props> = ({ userId, userName }) => {
           reps: ex.reps || '',
           rest: ex.rest || '',
           notes: ex.notes || '',
+          weight_slots: (ex as any).weight_slots || 1,
         });
       }
 

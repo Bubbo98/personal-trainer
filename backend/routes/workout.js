@@ -6,6 +6,26 @@ const { authenticateToken, requireAdmin } = require('../middleware/auth');
 // ─── PDF Text Parser ────────────────────────────────────────────────────────
 
 /**
+ * Returns the number of separate weight input slots an exercise needs,
+ * based on the "Peso consigliato: …" notes string.
+ *   "20 kg + 30 kg"  → 2  (superset, different machines)
+ *   "8 - 6 - 4 kg"   → 3  (dropset)
+ *   "10 kg x braccio" → 1  (same weight both sides)
+ *   "40 kg"           → 1
+ */
+function parseWeightSlots(notes) {
+  if (!notes) return 1;
+  const match = notes.match(/Peso consigliato:\s*(.+)/i);
+  if (!match) return 1;
+  const w = match[1].trim();
+  if (/\bx\s+(braccio|lato|gamba|mano)\b/i.test(w)) return 1;
+  const kgCount = (w.match(/\bkg\b/gi) || []).length;
+  if (kgCount > 1) return kgCount;
+  if (kgCount === 1) return Math.max(1, (w.match(/\d+(?:\.\d+)?/g) || []).length);
+  return 1;
+}
+
+/**
  * Parse raw PDF text into days + exercises.
  *
  * Handles the real-world format produced by pdf-parse from Italian workout PDFs:
@@ -34,19 +54,24 @@ function parsePdfText(text) {
   // Detects a rest-time token anywhere in the line: digits[.,digits] + prime char
   const REST_RE = new RegExp(`\\d+(?:[.,]\\d+)?[${PRIME}]`);
 
-  // Full stats pattern: sets  reps[optional-dquote]  rest  [weight kg]
+  // Full stats pattern: sets  reps  rest
+  // Reps can be a single number ("12"), a dropset/superset chain ("8 + 8 + 8", "12 + 10"),
+  // a time value ("30"", "1'"), or a per-side annotation ("10 x braccio").
+  // Weight is extracted from the suffix after the match.
   const STATS_RE = new RegExp(
     `(\\d+)\\s+` +                              // sets
-    `(\\d+[${DQUOTE}]?)\\s+` +                  // reps (optionally "30"")
-    `(\\d+(?:[.,]\\d+)?[${PRIME}][${PRIME}\\d]*)` + // rest  e.g. 1.30' or 2' or 1'30"
-    `(?:\\s+(\\d+)\\s*kg)?`,                    // optional weight
+    `(\\d+[${DQUOTE}${PRIME}]?(?:\\s*\\+\\s*\\d+[${DQUOTE}${PRIME}]?)*(?:\\s+x\\s+\\w+)?)\\s+` + // reps
+    `(\\d+(?:[.,]\\d+)?[${PRIME}][${PRIME}\\d]*)`, // rest  e.g. 1.30' or 2' or 1'30"
     'i'
   );
 
   const flushExercise = (sets, reps, rest, notes) => {
     const name = pendingName.replace(/\s+/g, ' ').trim();
     if (name && currentDay) {
-      currentDay.exercises.push({ name, sets: sets || '', reps: reps || '', rest: rest || '', notes: notes || '' });
+      currentDay.exercises.push({
+        name, sets: sets || '', reps: reps || '', rest: rest || '',
+        notes: notes || '', weightSlots: parseWeightSlots(notes),
+      });
     }
     pendingName = '';
   };
@@ -103,8 +128,9 @@ function parsePdfText(text) {
       continue;
     }
 
-    const weightRaw = (statsMatch[4] || '').trim();
-    const notes = weightRaw ? `Peso consigliato: ${weightRaw} kg` : '';
+    // Weight lives in whatever follows the matched stats; capture if it mentions "kg"
+    const afterStats = line.substring(statsMatch.index + statsMatch[0].length).trim();
+    const notes = (afterStats && /kg/i.test(afterStats)) ? `Peso consigliato: ${afterStats}` : '';
 
     // Text before the stats match belongs to the exercise name
     const before = line.substring(0, statsMatch.index).replace(/^[-\u2013\u2022]\s*/, '').trim();
@@ -200,10 +226,11 @@ router.post('/admin/plan/:userId', authenticateToken, requireAdmin, async (req, 
       for (const ex of day.exercises || []) {
         await new Promise((resolve, reject) => {
           db.runCallback(
-            `INSERT INTO training_exercises (user_id, day_number, day_name, order_index, name, sets, reps, rest, notes)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO training_exercises (user_id, day_number, day_name, order_index, name, sets, reps, rest, notes, weight_slots)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [userId, day.dayNumber, day.dayName || `Giorno ${day.dayNumber}`, orderIndex++,
-             ex.name, ex.sets || '', ex.reps || '', ex.rest || '', ex.notes || ''],
+             ex.name, ex.sets || '', ex.reps || '', ex.rest || '', ex.notes || '',
+             ex.weightSlots || ex.weight_slots || 1],
             (err) => (err ? reject(err) : resolve())
           );
         });

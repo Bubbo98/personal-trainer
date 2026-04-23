@@ -23,6 +23,7 @@ const queries = [
     reps VARCHAR(20),
     rest VARCHAR(20),
     notes TEXT,
+    weight_slots INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   )`,
