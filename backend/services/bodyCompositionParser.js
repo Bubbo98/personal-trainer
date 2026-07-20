@@ -16,6 +16,20 @@ function grabFloat(text, label) {
   return m ? parseFloat(m[1].replace(',', '.')) : null;
 }
 
+// Normalize common OCR artifacts before parsing
+function normalizeOcrText(text) {
+  return text
+    // "Acquacorporea" → "Acqua corporea"
+    .replace(/Acqua\s*corporea/gi, 'Acqua corporea')
+    // "Percentuale Grasso Corporeo(%)" → "Percentuale Grasso Corporeo"
+    .replace(/Percentuale\s+Grasso\s+Corporeo\s*\([^)]*\)/gi, 'Percentuale Grasso Corporeo')
+    // comma decimal in percentages: "9,8" → "9.8"
+    .replace(/(\d),(\d)/g, '$1.$2')
+    // OCR sometimes reads "/" as decimal: "23/4" when it's 23.4 — handle in context
+    // "Rapporto Vita-Fianchi" variants
+    .replace(/Rapporto\s+Vita\s*[-–]\s*Fianchi/gi, 'Rapporto Vita-Fianchi');
+}
+
 // ── header ───────────────────────────────────────────────────────────────────
 
 function parseHeader(text) {
@@ -100,14 +114,22 @@ function parseWeightControl(text) {
 // ── obesity evaluation ────────────────────────────────────────────────────────
 
 function parseObesityEvaluation(text) {
-  const imcM      = text.match(/IMC(?:\s*\([^)]*\))?\s+([\d.]+)/);
-  const percM     = text.match(/Percentuale\s+Grasso\s+Corporeo\s+([\d.]+)/);
-  // "Livello di Obesità 106%"
-  const livM      = text.match(/Livello\s+di\s+Obesit[àa]\s+([\d.]+)\s*%/);
+  // IMC: may be on same line ("IMC(kg/m²) 23.4") or next line ("IMC(kg/m°)\nE 23/4")
+  // OCR sometimes reads "." as "/" → "23/4" means 23.4
+  const imcSameLine = text.match(/IMC(?:\s*\([^)]*\))?\s+([\d]+[./][\d]+|[\d]+)(?!\s*kHz)/);
+  const imcNextLine = text.match(/IMC\s*\([^)]*\)\s*\n[^\n\d]*([\d]+[./][\d]+)/m);
+  const imcRaw = (imcNextLine || imcSameLine)?.[1] || null;
+  const imcVal = imcRaw ? parseFloat(imcRaw.replace('/', '.')) : null;
+
+  // percGrasso: "Corporeo(%) ——— 13.5" (OCR splits "Percentuale Grasso Corporeo" across lines)
+  const percM = text.match(/Corporeo\s*\(%\)\s*[-—\s]+([\d.]+)/) ||
+                text.match(/Percentuale\s+Grasso\s+Corporeo\s+([\d.]+)/);
+
+  const livM = text.match(/Livello\s+di\s+Obesit[àa]\s+([\d.]+)\s*%/);
   return {
-    imc:             imcM   ? parseFloat(imcM[1])   : null,
-    percGrasso:      percM  ? parseFloat(percM[1])  : null,
-    livelloObesita:  livM   ? parseFloat(livM[1])   : null,
+    imc:             imcVal,
+    percGrasso:      percM ? parseFloat(percM[1]) : null,
+    livelloObesita:  livM  ? parseFloat(livM[1])  : null,
   };
 }
 
@@ -117,7 +139,7 @@ function parseOtherIndicators(text) {
   const grassoVisc = (text.match(/Livello\s+di\s+grasso\s+viscerale\s+(\d+)/)          || [])[1];
   const metaboM    =  text.match(/Tasso\s+metabolico\s+basale\s+([\d.]+)\s*kcal/i);
   const massaMagraM=  text.match(/Massa\s+corporea\s+magra\s+([\d.]+)/);
-  // "Grasso sottocutaneo 9.8%" — percent sign optional
+  // "Grasso sottocutaneo 9.8%" or "9,8%" — comma already normalized before reaching here
   const grassoSottM=  text.match(/Grasso\s+sottocutaneo\s+([\d.]+)/);
   // "SMI 9.0kg/m²" — grab number before 'kg'
   const smiM       =  text.match(/SMI\s+([\d.]+)/);
@@ -153,8 +175,8 @@ function parseExerciseCalories(text) {
   const re = /([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,40}?)\s+(\d{2,4})\s*kcal/gi;
   let m;
   while ((m = re.exec(text)) !== null) {
-    const label = m[1].trim();
-    if (!blacklist.test(label) && label.split(/\s+/).length <= 5) {
+    const label = m[1].replace(/^[^A-Za-zÀ-ÿ]+/, '').trim();
+    if (label.length >= 3 && !blacklist.test(label) && label.split(/\s+/).length <= 5) {
       results.push({ nome: label, kcal: parseInt(m[2]) });
     }
   }
@@ -163,15 +185,8 @@ function parseExerciseCalories(text) {
 
 // ── main export ───────────────────────────────────────────────────────────────
 
-async function parseBodyCompositionPDF(buffer) {
-  let text;
-  try {
-    const data = await pdfParse(buffer);
-    text = data.text;
-  } catch (e) {
-    throw new Error('Impossibile leggere il PDF: ' + e.message);
-  }
-
+function parseBodyCompositionText(rawText) {
+  const text = normalizeOcrText(rawText);
   return {
     header:                  parseHeader(text),
     bodyComposition:         parseBodyComposition(text),
@@ -185,4 +200,15 @@ async function parseBodyCompositionPDF(buffer) {
   };
 }
 
-module.exports = { parseBodyCompositionPDF };
+async function parseBodyCompositionPDF(buffer) {
+  let text;
+  try {
+    const data = await pdfParse(buffer);
+    text = data.text;
+  } catch (e) {
+    throw new Error('Impossibile leggere il PDF: ' + e.message);
+  }
+  return parseBodyCompositionText(text);
+}
+
+module.exports = { parseBodyCompositionPDF, parseBodyCompositionText };

@@ -5,7 +5,8 @@ const multer = require('multer');
 const path = require('path');
 const { createDatabase } = require('../utils/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
-const { parseBodyCompositionPDF } = require('../services/bodyCompositionParser');
+const { parseBodyCompositionPDF, parseBodyCompositionText } = require('../services/bodyCompositionParser');
+const { extractTextFromImage } = require('../services/ocrService');
 
 const router = express.Router();
 
@@ -30,6 +31,32 @@ function mimeFromName(originalName) {
     return map[ext] || 'application/octet-stream';
 }
 
+// Extract the first embedded JPEG or PNG from an image-based PDF binary
+function extractImageFromPdfBuffer(buf) {
+    // JPEG: FF D8 FF ... FF D9
+    let start = -1;
+    for (let i = 0; i < buf.length - 2; i++) {
+        if (buf[i] === 0xFF && buf[i + 1] === 0xD8 && buf[i + 2] === 0xFF) { start = i; break; }
+    }
+    if (start >= 0) {
+        for (let i = buf.length - 2; i >= start; i--) {
+            if (buf[i] === 0xFF && buf[i + 1] === 0xD9) return buf.slice(start, i + 2);
+        }
+    }
+    // PNG: 89 50 4E 47
+    for (let i = 0; i < buf.length - 8; i++) {
+        if (buf[i] === 0x89 && buf[i + 1] === 0x50 && buf[i + 2] === 0x4E && buf[i + 3] === 0x47) {
+            // PNG ends with IEND chunk: 49 45 4E 44 AE 42 60 82
+            for (let j = buf.length - 8; j >= i; j--) {
+                if (buf[j] === 0x49 && buf[j + 1] === 0x45 && buf[j + 2] === 0x4E && buf[j + 3] === 0x44) {
+                    return buf.slice(i, j + 8);
+                }
+            }
+        }
+    }
+    return null;
+}
+
 // ── ADMIN ────────────────────────────────────────────────────────────────────
 
 // POST /api/body-composition/admin/upload/:userId
@@ -44,9 +71,31 @@ router.post('/admin/upload/:userId', authenticateToken, requireAdmin, upload.sin
     let parsedData = null;
     if (isPdf) {
         try {
-            parsedData = await parseBodyCompositionPDF(req.file.buffer);
+            const pdfResult = await parseBodyCompositionPDF(req.file.buffer);
+            if (pdfResult.rawTextLength > 50) {
+                parsedData = pdfResult;
+            } else {
+                // Image-based PDF: extract embedded JPEG/PNG and OCR it
+                console.log('PDF has no text layer, attempting image extraction + OCR...');
+                const imgBuf = extractImageFromPdfBuffer(req.file.buffer);
+                if (imgBuf) {
+                    const text = await extractTextFromImage(imgBuf);
+                    console.log('OCR on extracted PDF image, text length:', text.length);
+                    parsedData = parseBodyCompositionText(text);
+                }
+            }
         } catch (parseErr) {
-            console.warn('PDF parsing failed (storing raw):', parseErr.message);
+            console.warn('PDF parsing/OCR failed:', parseErr.message);
+        }
+    } else {
+        // Image upload — run OCR then parse
+        try {
+            console.log('Running OCR on uploaded image...');
+            const text = await extractTextFromImage(req.file.buffer);
+            console.log('OCR complete, text length:', text.length);
+            parsedData = parseBodyCompositionText(text);
+        } catch (parseErr) {
+            console.warn('Image OCR failed:', parseErr.message);
         }
     }
 
