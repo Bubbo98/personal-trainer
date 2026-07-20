@@ -619,8 +619,21 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
 
   if (loading && trainingDays.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      <div className="space-y-4 animate-pulse">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="h-14 bg-gray-200" />
+            <div className="p-4 space-y-3">
+              {[1, 2].map(j => (
+                <div key={j} className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex-shrink-0" />
+                  <div className="flex-1 h-10 bg-gray-100 rounded-lg" />
+                  <div className="w-8 h-8 bg-gray-100 rounded-lg" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     );
   }

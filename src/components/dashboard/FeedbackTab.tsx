@@ -184,10 +184,18 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) =
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">{t('dashboard.feedback.loading')}</p>
+      <div className="max-w-2xl mx-auto space-y-4 animate-pulse">
+        <div className="h-8 bg-gray-200 rounded w-1/3" />
+        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-3">
+          <div className="h-5 bg-gray-200 rounded w-1/2" />
+          <div className="h-4 bg-gray-100 rounded w-full" />
+          <div className="h-4 bg-gray-100 rounded w-4/5" />
+          <div className="h-10 bg-gray-200 rounded-lg w-full mt-2" />
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-3">
+          <div className="h-5 bg-gray-200 rounded w-2/5" />
+          <div className="h-4 bg-gray-100 rounded w-full" />
+          <div className="h-4 bg-gray-100 rounded w-3/4" />
         </div>
       </div>
     );
