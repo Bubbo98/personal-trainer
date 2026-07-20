@@ -46,24 +46,33 @@ function parsePdfText(text) {
   let inWorkout = false;
   let inTable = false;
   let pendingName = '';
+  let inParenthetical = false;
 
-  // All apostrophe/prime/quote variants found in Italian PDFs
-  const PRIME = "''′\u2018\u2019\u2032\u02bc\u02b9";
-  const DQUOTE = '""″\u201c\u201d\u2033';
+  const PRIME = "''′‘’ʼʹ";
+  const DQUOTE = '"' + '\u201c\u201d\u2033';
 
-  // Detects a rest-time token anywhere in the line: digits[.,digits] + prime char
   const REST_RE = new RegExp(`\\d+(?:[.,]\\d+)?[${PRIME}]`);
 
-  // Full stats pattern: sets  reps  rest
-  // Reps can be a single number ("12"), a dropset/superset chain ("8 + 8 + 8", "12 + 10"),
-  // a time value ("30"", "1'"), or a per-side annotation ("10 x braccio").
-  // Weight is extracted from the suffix after the match.
   const STATS_RE = new RegExp(
-    `(\\d+)\\s+` +                              // sets
-    `(\\d+[${DQUOTE}${PRIME}]?(?:\\s*\\+\\s*\\d+[${DQUOTE}${PRIME}]?)*(?:\\s+x\\s+\\w+)?)\\s+` + // reps
-    `(\\d+(?:[.,]\\d+)?[${PRIME}][${PRIME}\\d]*)`, // rest  e.g. 1.30' or 2' or 1'30"
+    `(\\d+)\\s+` +
+    `(\\d+[${DQUOTE}${PRIME}]{0,2}(?:\\s*\\+\\s*\\d+[${DQUOTE}${PRIME}]{0,2})*(?:\\s+x\\s+\\w+)?)\\s+` +
+    `(\\d+(?:[.,]\\d+)?[${PRIME}][${PRIME}\\d]*)`,
     'i'
   );
+
+  const EMOM_STATS_RE = new RegExp(
+    `(\\d+[${PRIME}])\\s+(\\d+)\\s+(\\d+(?:[.,]\\d+)?[${PRIME}])`,
+    'i'
+  );
+
+  const extractNotes = (afterStats) => {
+    if (!afterStats || !/kg/i.test(afterStats)) return { notes: '', openParen: false };
+    const parenIdx = afterStats.indexOf('(');
+    if (parenIdx !== -1 && afterStats.indexOf(')', parenIdx) === -1) {
+      return { notes: `Peso consigliato: ${afterStats.substring(0, parenIdx).trim()}`, openParen: true };
+    }
+    return { notes: `Peso consigliato: ${afterStats}`, openParen: false };
+  };
 
   const flushExercise = (sets, reps, rest, notes) => {
     const name = pendingName.replace(/\s+/g, ' ').trim();
@@ -77,15 +86,14 @@ function parsePdfText(text) {
   };
 
   for (const line of lines) {
-    // Stop at legend / glossary
     if (/^LEGENDA/i.test(line)) break;
 
-    // New day — capture optional subtitle e.g. "GIORNO 1 (TOTAL BODY)"
     const dayMatch = line.match(/^GIORNO\s+(\d+)\s*(.*)$/i);
     if (dayMatch) {
       pendingName = '';
       inWorkout = false;
       inTable = false;
+      inParenthetical = false;
       const num = parseInt(dayMatch[1]);
       const subtitle = dayMatch[2].replace(/[()]/g, '').trim();
       currentDay = {
@@ -99,46 +107,67 @@ function parsePdfText(text) {
 
     if (!currentDay) continue;
 
-    if (/^WORKOUT:/i.test(line))           { inWorkout = true; continue; }
-    if (/^WARM\s*UP/i.test(line))          { pendingName = ''; inWorkout = false; inTable = false; continue; }
-    if (/^STRETCHING/i.test(line))         { pendingName = ''; inWorkout = false; inTable = false; continue; }
+    if (/^WORKOUT:/i.test(line))           { inWorkout = true; inParenthetical = false; continue; }
+    if (/^WARM\s*UP/i.test(line))          { pendingName = ''; inWorkout = false; inTable = false; inParenthetical = false; continue; }
+    if (/^STRETCHING/i.test(line))         { pendingName = ''; inWorkout = false; inTable = false; inParenthetical = false; continue; }
     if (!inWorkout) continue;
 
     if (/^CIRCUITO:/i.test(line))          { inTable = false; continue; }
     if (/^ESERCIZIO\s+SERIE/i.test(line))  { inTable = true; continue; }
     if (!inTable) continue;
 
-    // Skip standalone integers (page numbers, stray digits)
     if (/^\d+$/.test(line)) continue;
 
-    // Does this line contain a rest-time token?
+    if (inParenthetical) {
+      if (line.includes(')')) inParenthetical = false;
+      continue;
+    }
+
     if (!REST_RE.test(line)) {
-      // Pure text — strip leading dash/bullet (circuit format) and accumulate as name
       const clean = line.replace(/^[-\u2013\u2022]\s*/, '').trim();
       if (clean) pendingName = pendingName ? `${pendingName} ${clean}` : clean;
       continue;
     }
 
-    // Stats line — try to extract sets/reps/rest/weight
-    const statsMatch = line.match(STATS_RE);
+    if (/\bEMOM\b/i.test(pendingName)) {
+      const emomMatch = line.match(EMOM_STATS_RE);
+      if (emomMatch) {
+        const afterEmom = line.substring(emomMatch.index + emomMatch[0].length).trim();
+        const { notes: emomNotes, openParen } = extractNotes(afterEmom);
+        if (openParen) inParenthetical = true;
+        flushExercise(`EMOM ${emomMatch[1]}`, emomMatch[2], emomMatch[3], emomNotes);
+        continue;
+      }
+    }
+
+    const soloRest = line.match(new RegExp(`^(\\d+(?:[.,]\\d+)?[${PRIME}])$`));
+    if (soloRest) {
+      const cleanName = pendingName.replace(/\([^)]*\)/g, '').replace(/\s+/g, ' ').trim();
+      const tailMatch = cleanName.match(/^(.*?)\s+(\d+)\s+(\d+)\s*$/);
+      if (tailMatch) {
+        pendingName = tailMatch[1].trim();
+        flushExercise(tailMatch[2], tailMatch[3], soloRest[1], '');
+        continue;
+      }
+    }
+
+    const lineForStats = line.replace(/\([^)]*\)/g, '').replace(/\s+/g, ' ').trim();
+    const statsMatch = lineForStats.match(STATS_RE) || line.match(STATS_RE);
     if (!statsMatch) {
-      // Has a prime char but didn't match full stats — treat as name continuation
       const clean = line.replace(/^[-\u2013\u2022]\s*/, '').trim();
       if (clean) pendingName = pendingName ? `${pendingName} ${clean}` : clean;
       continue;
     }
 
-    // Weight lives in whatever follows the matched stats; capture if it mentions "kg"
-    const afterStats = line.substring(statsMatch.index + statsMatch[0].length).trim();
-    const notes = (afterStats && /kg/i.test(afterStats)) ? `Peso consigliato: ${afterStats}` : '';
+    const origMatch = line.match(STATS_RE) || statsMatch;
+    const afterStats = line.substring(origMatch.index + origMatch[0].length).trim();
+    const { notes, openParen } = extractNotes(afterStats);
+    if (openParen) inParenthetical = true;
 
-    // Text before the stats match belongs to the exercise name
-    const before = line.substring(0, statsMatch.index).replace(/^[-\u2013\u2022]\s*/, '').trim();
-    if (before) {
-      pendingName = pendingName ? `${pendingName} ${before}` : before;
-    }
+    const before = line.substring(0, origMatch.index).replace(/^[-\u2013\u2022]\s*/, '').trim();
+    if (before) pendingName = pendingName ? `${pendingName} ${before}` : before;
 
-    flushExercise(statsMatch[1], statsMatch[2], statsMatch[3], notes);
+    flushExercise(origMatch[1], origMatch[2], origMatch[3], notes);
   }
 
   return days.filter((d) => d.exercises.length > 0);
