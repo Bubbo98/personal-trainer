@@ -141,8 +141,9 @@ const Header: React.FC = () => {
 
           {/* Brand Text */}
           <div>
-            <h1 className="text-sm xs:text-lg sm:text-2xl font-bold tracking-wider">
-              JOSHUA MAURIZIO
+            <h1 className="text-sm xs:text-lg sm:text-2xl font-bold tracking-wider leading-tight sm:leading-normal">
+              <span className="block sm:inline">JOSHUA MAURIZIO</span>
+              <span className="block sm:inline"> E DENISE BERGAMO</span>
             </h1>
             <p className="text-sm font-light tracking-widest">
               PERSONAL TRAINER

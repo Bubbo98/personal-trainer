@@ -44,7 +44,7 @@ const TermsOfService: React.FC = () => {
 
               <div className="bg-gray-50 p-6 rounded-lg space-y-3">
                 <div>
-                  <p><strong>"Fornitore" o "Personal Trainer":</strong> Joshua Maurizio, P.IVA 10657880968, con sede in Via Piero Bottoni 10, 20141 Milano (MI)</p>
+                  <p><strong>"Fornitore" o "Personal Trainer":</strong> Joshua Maurizio e Denise Bergamo, P.IVA 10657880968, con sede in Via Piero Bottoni 10, 20141 Milano (MI)</p>
                 </div>
                 <div>
                   <p><strong>"Cliente" o "Utente":</strong> la persona fisica che utilizza i servizi offerti</p>
@@ -65,7 +65,7 @@ const TermsOfService: React.FC = () => {
             <section className="mb-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">2. Oggetto e Campo di Applicazione</h2>
               <p className="mb-4">
-                I presenti Termini e Condizioni disciplinano il rapporto contrattuale tra il Personal Trainer Joshua Maurizio
+                I presenti Termini e Condizioni disciplinano il rapporto contrattuale tra i Personal Trainer Joshua Maurizio e Denise Bergamo
                 e i Clienti per la fornitura di servizi nel settore del fitness e del benessere.
               </p>
 
@@ -511,7 +511,7 @@ const TermsOfService: React.FC = () => {
                   Per qualsiasi domanda relativa ai presenti Termini e Condizioni:
                 </p>
                 <div className="space-y-2">
-                  <p><strong>Joshua Maurizio - Personal Trainer</strong></p>
+                  <p><strong>Joshua Maurizio e Denise Bergamo - Personal Trainer</strong></p>
                   <p>Codice Fiscale: MRZJSH91S17F205F</p>
                   <p>Partita IVA: 10657880968</p>
                   <p>Via Piero Bottoni 10, 20141 Milano (MI)</p>

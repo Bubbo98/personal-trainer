@@ -60,7 +60,7 @@ const CookiePolicy: React.FC = () => {
             <section className="mb-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">2. Titolare del Trattamento</h2>
               <div className="bg-gray-50 p-6 rounded-lg">
-                <p className="mb-2"><strong>Denominazione:</strong> Joshua Maurizio - Personal Trainer</p>
+                <p className="mb-2"><strong>Denominazione:</strong> Joshua Maurizio e Denise Bergamo - Personal Trainer</p>
                 <p className="mb-2"><strong>Codice Fiscale:</strong> MRZJSH91S17F205F</p>
                 <p className="mb-2"><strong>Partita IVA:</strong> 10657880968</p>
                 <p className="mb-2"><strong>Indirizzo:</strong> Via Piero Bottoni 10, 20141 Milano (MI)</p>
@@ -656,7 +656,7 @@ const CookiePolicy: React.FC = () => {
                   Per domande specifiche sui cookie utilizzati in questo sito o per esercitare i tuoi diritti:
                 </p>
                 <div className="space-y-2">
-                  <p><strong>Joshua Maurizio - Personal Trainer</strong></p>
+                  <p><strong>Joshua Maurizio e Denise Bergamo - Personal Trainer</strong></p>
                   <p>Via Piero Bottoni 10, 20141 Milano (MI)</p>
                   <p>Email: josh17111991@gmail.com</p>
                   <p>Telefono: +39 328 206 2823</p>

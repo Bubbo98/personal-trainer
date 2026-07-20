@@ -10,6 +10,7 @@ import {
   FiSearch,
   FiMenu,
   FiInfo,
+  FiAlertTriangle,
 } from 'react-icons/fi';
 import {
   DndContext,
@@ -243,6 +244,48 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
     loadVideos();
   }, [loadTrainingDays, loadVideos]);
 
+  // Reset all training days
+  const handleResetAllDays = async () => {
+    if (!window.confirm('Sei sicuro di voler eliminare TUTTI i giorni di allenamento? Questa azione è irreversibile.')) {
+      return;
+    }
+    try {
+      await Promise.all(
+        trainingDays.map(day =>
+          apiCall(`/training-days/users/${userId}/training-days/${day.id}`, { method: 'DELETE' })
+        )
+      );
+      await loadTrainingDays();
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Errore nel reset';
+      alert(`Errore nel reset: ${errorMessage}`);
+      console.error('Reset all days error:', error);
+    }
+  };
+
+  // Clear all videos from a single day (keeps the day)
+  const handleClearDay = async (dayId: number) => {
+    const day = trainingDays.find(d => d.id === dayId);
+    if (!day || day.videos.length === 0) return;
+    if (!window.confirm(`Sei sicuro di voler rimuovere tutti i video da "${day.dayName || `Giorno ${day.dayNumber}`}"?`)) {
+      return;
+    }
+    try {
+      await Promise.all(
+        day.videos.map(video =>
+          apiCall(`/training-days/users/${userId}/training-days/${dayId}/videos/${video.id}`, { method: 'DELETE' })
+        )
+      );
+      await loadTrainingDays();
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Errore nella pulizia del giorno';
+      alert(`Errore nella pulizia del giorno: ${errorMessage}`);
+      console.error('Clear day error:', error);
+    }
+  };
+
   // Add new training day
   const handleAddDay = async () => {
     const nextDayNumber = trainingDays.length > 0
@@ -457,14 +500,26 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
             Organizza i video in giorni customizzabili
           </p>
         </div>
-        <button
-          onClick={handleAddDay}
-          disabled={loading}
-          className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2.5 rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {React.createElement(FiPlus as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-          <span>Aggiungi Giorno</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          {trainingDays.length > 0 && (
+            <button
+              onClick={handleResetAllDays}
+              disabled={loading}
+              className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2.5 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {React.createElement(FiAlertTriangle as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+              <span>Reset tutti</span>
+            </button>
+          )}
+          <button
+            onClick={handleAddDay}
+            disabled={loading}
+            className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2.5 rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {React.createElement(FiPlus as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+            <span>Aggiungi Giorno</span>
+          </button>
+        </div>
       </div>
 
       {/* Training Days List */}
@@ -547,9 +602,21 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
                     )}
                   </div>
 
+                  {day.videos.length > 0 && (
+                    <button
+                      onClick={() => handleClearDay(day.id)}
+                      disabled={loading}
+                      className="ml-2 p-2 text-amber-600 hover:bg-amber-50 rounded-xl transition-colors disabled:opacity-50"
+                      title="Rimuovi tutti i video da questo giorno"
+                    >
+                      {React.createElement(FiAlertTriangle as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+                    </button>
+                  )}
                   <button
                     onClick={() => handleDeleteDay(day.id)}
-                    className="ml-2 p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                    disabled={loading}
+                    className="ml-2 p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
+                    title="Elimina questo giorno"
                   >
                     {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
                   </button>

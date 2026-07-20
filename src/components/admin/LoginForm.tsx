@@ -52,7 +52,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
               onError={(e) => { e.currentTarget.style.display = 'none'; }}
             />
           </div>
-          <h1 className="text-white text-xl font-bold tracking-wide">JOSHUA MAURIZIO</h1>
+          <h1 className="text-white text-xl font-bold tracking-wide">JOSHUA MAURIZIO E DENISE BERGAMO</h1>
           <p className="text-gray-400 text-sm font-light tracking-widest mt-0.5">PERSONAL TRAINER</p>
           <div className="mt-4 inline-flex items-center gap-1.5 bg-white/10 text-gray-300 text-xs px-3 py-1.5 rounded-full">
             {React.createElement(FiLock as React.ComponentType<{ className?: string }>, { className: "w-3 h-3" })}

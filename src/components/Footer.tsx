@@ -26,7 +26,7 @@ const Footer: React.FC = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 {React.createElement(FiUser as React.ComponentType<{ className?: string }>, { className: "w-5 h-5 text-gray-400 flex-shrink-0" })}
-                <span className="text-gray-300">Joshua Maurizio</span>
+                <span className="text-gray-300">Joshua Maurizio e Denise Bergamo</span>
               </div>
               <div className="flex items-start space-x-3">
                 {React.createElement(FiMapPin as React.ComponentType<{ className?: string }>, { className: "w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" })}
