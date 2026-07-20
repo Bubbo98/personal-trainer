@@ -11,7 +11,8 @@ import TrainingPlan from '../components/dashboard/TrainingPlan';
 import FeedbackTab from '../components/dashboard/FeedbackTab';
 import ReviewTab from '../components/dashboard/ReviewTab';
 import WorkoutTab from '../components/dashboard/WorkoutTab';
-import { FiGrid, FiLogOut, FiStar, FiVideo, FiFile, FiGift, FiMessageSquare, FiCheckCircle, FiActivity } from 'react-icons/fi';
+import BodyCompositionTab from '../components/dashboard/BodyCompositionTab';
+import { FiGrid, FiLogOut, FiStar, FiVideo, FiFile, FiGift, FiMessageSquare, FiCheckCircle, FiActivity, FiBarChart2 } from 'react-icons/fi';
 import { SiInstagram, SiTiktok } from 'react-icons/si';
 
 import { Video, AuthState, VideoState } from '../types/dashboard';
@@ -53,7 +54,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
   });
 
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
-  const [activeTab, setActiveTab] = useState<'videos' | 'training-plan' | 'reviews' | 'feedback' | 'workout'>('training-plan');
+  const [activeTab, setActiveTab] = useState<'videos' | 'training-plan' | 'reviews' | 'feedback' | 'workout' | 'body-composition'>('training-plan');
   const [hasTrainingPlan, setHasTrainingPlan] = useState(false);
   const [trainingDays, setTrainingDays] = useState<TrainingDay[]>([]);
   const [checkInRequired, setCheckInRequired] = useState(false);
@@ -551,6 +552,21 @@ const Dashboard: React.FC<DashboardProps> = () => {
               <span className="text-xs sm:text-base">Pesi</span>
             </button>
             <button
+              onClick={() => !checkInRequired && setActiveTab('body-composition')}
+              disabled={checkInRequired}
+              className={`flex-shrink-0 sm:flex-1 flex items-center justify-center space-x-1.5 px-3 sm:px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
+                activeTab === 'body-composition'
+                  ? 'bg-white text-gray-900 shadow'
+                  : checkInRequired
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:text-gray-900'
+              }`}
+              title="Analisi Corporea"
+            >
+              {React.createElement(FiBarChart2 as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+              <span className="text-xs sm:text-base">Analisi</span>
+            </button>
+            <button
               onClick={() => setActiveTab('feedback')}
               className={`flex-shrink-0 sm:flex-1 flex items-center justify-center space-x-1.5 px-3 sm:px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
                 activeTab === 'feedback'
@@ -570,6 +586,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
             <TrainingPlan />
           ) : activeTab === 'workout' ? (
             <WorkoutTab />
+          ) : activeTab === 'body-composition' ? (
+            <BodyCompositionTab />
           ) : activeTab === 'reviews' ? (
             <ReviewTab />
           ) : activeTab === 'feedback' ? (

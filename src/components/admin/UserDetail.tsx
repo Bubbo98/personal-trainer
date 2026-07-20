@@ -9,13 +9,15 @@ import {
   FiSearch,
   FiTrash2,
   FiCalendar,
-  FiActivity
+  FiActivity,
+  FiBarChart2
 } from 'react-icons/fi';
 import { apiCall, formatDuration } from '../../utils/adminUtils';
 import { Video } from '../../types/admin';
 import PdfManagement from './PdfManagement';
 import TrainingDaysManager from './TrainingDaysManager';
 import TrainingPlanAdmin from './TrainingPlanAdmin';
+import BodyCompositionAdmin from './BodyCompositionAdmin';
 
 interface User {
   id: number;
@@ -26,7 +28,7 @@ interface User {
   createdAt: string;
 }
 
-type TabType = 'videos' | 'trainingDays' | 'pdf' | 'workoutPlan';
+type TabType = 'videos' | 'trainingDays' | 'pdf' | 'workoutPlan' | 'bodyComposition';
 
 const UserDetail: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -231,6 +233,19 @@ const UserDetail: React.FC = () => {
               <span>Pesi & Progressi</span>
             </div>
           </button>
+          <button
+            onClick={() => setActiveTab('bodyComposition')}
+            className={`flex-shrink-0 py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
+              activeTab === 'bodyComposition'
+                ? 'border-gray-900 text-gray-900'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center space-x-2">
+              {React.createElement(FiBarChart2 as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+              <span>Analisi Corporea</span>
+            </div>
+          </button>
         </nav>
       </div>
 
@@ -359,6 +374,15 @@ const UserDetail: React.FC = () => {
             Scheda Esercizi & Storico Pesi
           </h3>
           <TrainingPlanAdmin
+            userId={user.id}
+            userName={`${user.firstName} ${user.lastName}`}
+          />
+        </div>
+      )}
+
+      {activeTab === 'bodyComposition' && (
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <BodyCompositionAdmin
             userId={user.id}
             userName={`${user.firstName} ${user.lastName}`}
           />
