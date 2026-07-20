@@ -859,39 +859,37 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
                     )}
 
                     {/* Selection mode bottom bar */}
-                    {isInSelectionMode && (() => {
-                      const GROUP_TYPES = ['Superset', 'Giant set', 'Tri-set', 'Circuito', 'Drop set', 'Bi-set'];
-                      return (
-                        <div className="border-t border-blue-200 pt-3 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-blue-700 font-medium">
-                              {selectedAssignmentIds.size} selezionati — scegli il tipo:
-                            </span>
-                            <button
-                              onClick={exitSelectionMode}
-                              className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1"
-                            >
-                              Annulla
-                            </button>
-                          </div>
+                    {isInSelectionMode && (
+                      <div className="border-t border-blue-200 pt-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-blue-700 font-medium">
+                            {selectedAssignmentIds.size} selezionati — scegli la tecnica:
+                          </span>
+                          <button
+                            onClick={exitSelectionMode}
+                            className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1"
+                          >
+                            Annulla
+                          </button>
+                        </div>
+                        {techniqueVideos.length === 0 ? (
+                          <p className="text-xs text-gray-400">Nessuna tecnica disponibile (aggiungi video con gruppo "Tecniche")</p>
+                        ) : (
                           <div className="flex flex-wrap gap-2">
-                            {GROUP_TYPES.map(label => (
+                            {techniqueVideos.map(t => (
                               <button
-                                key={label}
-                                onClick={() => {
-                                  setGroupLabelInput(label);
-                                  handleCreateGroupWith(day.id, label);
-                                }}
+                                key={t.id}
+                                onClick={() => handleCreateGroupWith(day.id, t.title)}
                                 disabled={selectedAssignmentIds.size < 2}
                                 className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                               >
-                                {label}
+                                {t.title}
                               </button>
                             ))}
                           </div>
-                        </div>
-                      );
-                    })()}
+                        )}
+                      </div>
+                    )}
 
                     {/* Add Video Section */}
                     {!isInSelectionMode && (showAddVideo === day.id ? (
