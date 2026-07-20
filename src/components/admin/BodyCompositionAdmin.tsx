@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FiUpload, FiTrash2, FiDownload, FiCalendar, FiLoader } from 'react-icons/fi';
-import { apiCall } from '../../utils/adminUtils';
+import { apiCall, STORAGE_KEY } from '../../utils/adminUtils';
 
 interface Report {
   id: number;
@@ -53,7 +53,7 @@ const BodyCompositionAdmin: React.FC<Props> = ({ userId, userName }) => {
       const form = new FormData();
       form.append('pdf', file);
       if (measurementDate) form.append('measurementDate', measurementDate);
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem(STORAGE_KEY);
       const base = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
       const response = await fetch(`${base}/body-composition/admin/upload/${userId}`, {
         method: 'POST',
@@ -83,7 +83,7 @@ const BodyCompositionAdmin: React.FC<Props> = ({ userId, userName }) => {
   };
 
   const handleDownload = (reportId: number, originalName: string) => {
-    const token = localStorage.getItem('adminToken');
+    const token = localStorage.getItem(STORAGE_KEY);
     const base = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
     fetch(`${base}/body-composition/download/${reportId}`, {
       headers: { Authorization: `Bearer ${token}` },
