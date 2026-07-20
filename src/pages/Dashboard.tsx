@@ -718,50 +718,46 @@ const Dashboard: React.FC<DashboardProps> = () => {
                               }
                             }
 
-                            const singleItems = items.filter(i => i.type === 'single');
-                            const groupItems = items.filter(i => i.type === 'group');
+                            // Render items in original order; batch consecutive singles into grids
+                            type SingleItem = Extract<DayRenderItem, { type: 'single' }>;
+                            const rendered: React.ReactNode[] = [];
+                            let pendingSingles: SingleItem[] = [];
 
-                            return (
-                              <>
-                                {/* Grouped exercises */}
-                                {groupItems.map((item) => {
-                                  if (item.type !== 'group') return null;
-                                  return (
-                                    <div key={`group-${item.groupId}`} className="border-2 border-indigo-200 rounded-xl overflow-hidden">
-                                      <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-4 py-2 flex items-center gap-2">
-                                        <span className="text-xs font-bold text-white uppercase tracking-widest">{item.groupLabel}</span>
-                                        <span className="text-xs text-indigo-100">— {item.videos.length} esercizi</span>
-                                      </div>
-                                      <div className="p-3 sm:p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 bg-indigo-50/40">
-                                        {item.videos.map((video) => (
-                                          <VideoCard
-                                            key={video.id}
-                                            video={video}
-                                            onPlay={handleVideoPlay}
-                                          />
-                                        ))}
-                                      </div>
+                            const flushSingles = () => {
+                              if (pendingSingles.length === 0) return;
+                              rendered.push(
+                                <div key={`singles-${pendingSingles[0].video.id}`} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                  {pendingSingles.map(s => (
+                                    <VideoCard key={s.video.id} video={s.video} onPlay={handleVideoPlay} />
+                                  ))}
+                                </div>
+                              );
+                              pendingSingles = [];
+                            };
+
+                            for (const item of items) {
+                              if (item.type === 'single') {
+                                pendingSingles.push(item);
+                              } else {
+                                flushSingles();
+                                rendered.push(
+                                  <div key={`group-${item.groupId}`} className="border-2 border-indigo-200 rounded-xl overflow-hidden">
+                                    <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-4 py-2 flex items-center gap-2">
+                                      <span className="text-xs font-bold text-white uppercase tracking-widest">{item.groupLabel}</span>
+                                      <span className="text-xs text-indigo-100">— {item.videos.length} esercizi</span>
                                     </div>
-                                  );
-                                })}
-
-                                {/* Ungrouped exercises */}
-                                {singleItems.length > 0 && (
-                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {singleItems.map((item) => {
-                                      if (item.type !== 'single') return null;
-                                      return (
-                                        <VideoCard
-                                          key={item.video.id}
-                                          video={item.video}
-                                          onPlay={handleVideoPlay}
-                                        />
-                                      );
-                                    })}
+                                    <div className="p-3 sm:p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 bg-indigo-50/40">
+                                      {item.videos.map((video) => (
+                                        <VideoCard key={video.id} video={video} onPlay={handleVideoPlay} />
+                                      ))}
+                                    </div>
                                   </div>
-                                )}
-                              </>
-                            );
+                                );
+                              }
+                            }
+                            flushSingles();
+
+                            return <>{rendered}</>;
                           })()}
                         </div>
                       ) : (
