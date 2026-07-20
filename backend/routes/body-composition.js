@@ -109,6 +109,31 @@ router.get('/admin/:userId', authenticateToken, requireAdmin, async (req, res) =
     }
 });
 
+// GET /api/body-composition/admin/debug/:reportId — returns raw PDF text + parsed result
+router.get('/admin/debug/:reportId', authenticateToken, requireAdmin, async (req, res) => {
+    const { reportId } = req.params;
+    const db = createDatabase();
+    try {
+        const row = await new Promise((resolve, reject) => {
+            db.getCallback(
+                'SELECT file_data, original_name FROM body_composition_reports WHERE id = ?',
+                [reportId], (e, r) => e ? reject(e) : resolve(r)
+            );
+        });
+        db.close();
+        if (!row) return res.status(404).json({ success: false, error: 'Not found' });
+
+        const buf = Buffer.from(row.file_data, 'base64');
+        const pdfParse = require('pdf-parse');
+        const data = await pdfParse(buf);
+        const parsed = await parseBodyCompositionPDF(buf).catch(e => ({ error: e.message }));
+        res.json({ success: true, rawText: data.text, parsed });
+    } catch (e) {
+        db.close();
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
 // DELETE /api/body-composition/admin/report/:reportId
 router.delete('/admin/report/:reportId', authenticateToken, requireAdmin, async (req, res) => {
     const { reportId } = req.params;
