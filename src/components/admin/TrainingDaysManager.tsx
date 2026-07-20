@@ -244,7 +244,6 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
   const [selectionModeDayId, setSelectionModeDayId] = useState<number | null>(null);
   const [selectedAssignmentIds, setSelectedAssignmentIds] = useState<Set<number>>(new Set());
   const [groupLabelInput, setGroupLabelInput] = useState('Superset');
-  const [showGroupLabelInput, setShowGroupLabelInput] = useState(false);
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -470,14 +469,12 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
   const enterSelectionMode = (dayId: number) => {
     setSelectionModeDayId(dayId);
     setSelectedAssignmentIds(new Set());
-    setShowGroupLabelInput(false);
     setGroupLabelInput('Superset');
   };
 
   const exitSelectionMode = () => {
     setSelectionModeDayId(null);
     setSelectedAssignmentIds(new Set());
-    setShowGroupLabelInput(false);
     setGroupLabelInput('Superset');
   };
 
@@ -489,14 +486,14 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
     });
   };
 
-  const handleCreateGroup = async (dayId: number) => {
+  const handleCreateGroupWith = async (dayId: number, label: string) => {
     if (selectedAssignmentIds.size < 2) return;
     try {
       await apiCall(`/training-days/users/${userId}/training-days/${dayId}/videos/group`, {
         method: 'PUT',
         body: JSON.stringify({
           assignmentIds: Array.from(selectedAssignmentIds),
-          groupLabel: groupLabelInput.trim() || 'Superset',
+          groupLabel: label,
         }),
       });
       await loadTrainingDays();
@@ -862,51 +859,39 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
                     )}
 
                     {/* Selection mode bottom bar */}
-                    {isInSelectionMode && (
-                      <div className="border-t border-blue-200 pt-3 space-y-2">
-                        {showGroupLabelInput ? (
-                          <div className="flex gap-2 items-center">
-                            <input
-                              type="text"
-                              value={groupLabelInput}
-                              onChange={(e) => setGroupLabelInput(e.target.value)}
-                              placeholder="Tipo (es. Superset, Circuit...)"
-                              className="flex-1 px-3 py-2 border border-blue-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            />
-                            <button
-                              onClick={() => handleCreateGroup(day.id)}
-                              disabled={selectedAssignmentIds.size < 2}
-                              className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                              Crea
-                            </button>
-                            <button onClick={() => setShowGroupLabelInput(false)} className="px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50">
-                              {React.createElement(FiX as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-blue-700 font-medium flex-1">
-                              {selectedAssignmentIds.size} selezionati
+                    {isInSelectionMode && (() => {
+                      const GROUP_TYPES = ['Superset', 'Giant set', 'Tri-set', 'Circuito', 'Drop set', 'Bi-set'];
+                      return (
+                        <div className="border-t border-blue-200 pt-3 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-blue-700 font-medium">
+                              {selectedAssignmentIds.size} selezionati — scegli il tipo:
                             </span>
                             <button
-                              onClick={() => setShowGroupLabelInput(true)}
-                              disabled={selectedAssignmentIds.size < 2}
-                              className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                            >
-                              {React.createElement(FiLink as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
-                              Raggruppa
-                            </button>
-                            <button
                               onClick={exitSelectionMode}
-                              className="px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                              className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1"
                             >
                               Annulla
                             </button>
                           </div>
-                        )}
-                      </div>
-                    )}
+                          <div className="flex flex-wrap gap-2">
+                            {GROUP_TYPES.map(label => (
+                              <button
+                                key={label}
+                                onClick={() => {
+                                  setGroupLabelInput(label);
+                                  handleCreateGroupWith(day.id, label);
+                                }}
+                                disabled={selectedAssignmentIds.size < 2}
+                                className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* Add Video Section */}
                     {!isInSelectionMode && (showAddVideo === day.id ? (
