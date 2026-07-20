@@ -68,35 +68,29 @@ router.post('/admin/upload/:userId', authenticateToken, requireAdmin, upload.sin
     const fileData = req.file.buffer.toString('base64');
     const isPdf = req.file.mimetype === 'application/pdf';
 
-    let parsedData = null;
+    // For PDFs with a text layer, parse synchronously (fast). For all image-based
+    // files (images or image PDFs), save immediately and run OCR in background.
+    let parsedDataSync = null;
+    let needsOcr = false;
+    let ocrBuffer = null;
+
     if (isPdf) {
         try {
             const pdfResult = await parseBodyCompositionPDF(req.file.buffer);
             if (pdfResult.rawTextLength > 50) {
-                parsedData = pdfResult;
+                parsedDataSync = pdfResult;
             } else {
-                // Image-based PDF: extract embedded JPEG/PNG and OCR it
-                console.log('PDF has no text layer, attempting image extraction + OCR...');
-                const imgBuf = extractImageFromPdfBuffer(req.file.buffer);
-                if (imgBuf) {
-                    const text = await extractTextFromImage(imgBuf);
-                    console.log('OCR on extracted PDF image, text length:', text.length);
-                    parsedData = parseBodyCompositionText(text);
-                }
+                // Image-based PDF: will OCR the embedded image in background
+                ocrBuffer = extractImageFromPdfBuffer(req.file.buffer);
+                needsOcr = !!ocrBuffer;
             }
         } catch (parseErr) {
-            console.warn('PDF parsing/OCR failed:', parseErr.message);
+            console.warn('PDF parsing failed:', parseErr.message);
         }
     } else {
-        // Image upload — run OCR then parse
-        try {
-            console.log('Running OCR on uploaded image...');
-            const text = await extractTextFromImage(req.file.buffer);
-            console.log('OCR complete, text length:', text.length);
-            parsedData = parseBodyCompositionText(text);
-        } catch (parseErr) {
-            console.warn('Image OCR failed:', parseErr.message);
-        }
+        // Image upload: OCR in background
+        ocrBuffer = req.file.buffer;
+        needsOcr = true;
     }
 
     try {
@@ -113,18 +107,43 @@ router.post('/admin/upload/:userId', authenticateToken, requireAdmin, upload.sin
                  (user_id, measurement_date, uploaded_by, original_name, file_size, file_data, parsed_data)
                  VALUES (?, ?, ?, ?, ?, ?, ?)`,
                 [userId, measurementDate, req.user.username, req.file.originalname,
-                 req.file.size, fileData, parsedData ? JSON.stringify(parsedData) : null],
+                 req.file.size, fileData, parsedDataSync ? JSON.stringify(parsedDataSync) : null],
                 function(e) { if (e) reject(e); else resolve(this); }
             );
         });
 
+        const newId = result.lastID;
         db.close();
-        console.log(`Admin ${req.user.username} uploaded body composition report for user ${userId}`);
+
+        // Respond immediately — don't make the admin wait for OCR
         res.status(201).json({
             success: true,
             message: 'Report caricato',
-            data: { id: result.lastID, measurementDate },
+            data: { id: newId, measurementDate, parsingInProgress: needsOcr },
         });
+
+        // Run OCR in background and update the row when done
+        if (needsOcr && ocrBuffer) {
+            setImmediate(async () => {
+                try {
+                    console.log(`Background OCR started for report ${newId}...`);
+                    const text = await extractTextFromImage(ocrBuffer);
+                    const parsed = parseBodyCompositionText(text);
+                    const dbBg = createDatabase();
+                    await new Promise((resolve, reject) => {
+                        dbBg.runCallback(
+                            'UPDATE body_composition_reports SET parsed_data = ? WHERE id = ?',
+                            [JSON.stringify(parsed), newId],
+                            function(e) { if (e) reject(e); else resolve(this); }
+                        );
+                    });
+                    dbBg.close();
+                    console.log(`Background OCR complete for report ${newId}, text length: ${text.length}`);
+                } catch (e) {
+                    console.error(`Background OCR failed for report ${newId}:`, e.message);
+                }
+            });
+        }
     } catch (error) {
         console.error('Body composition upload error:', error);
         res.status(500).json({ success: false, error: error.message || 'Errore del server' });

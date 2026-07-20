@@ -91,6 +91,9 @@ const BodyCompositionAdmin: React.FC<Props> = ({ userId, userName }) => {
       if (!data.success) throw new Error(data.error);
       setMeasurementDate('');
       await loadReports();
+      if (data.data?.parsingInProgress) {
+        alert('File caricato. Analisi automatica in corso (~30 secondi) — i dati appariranno nel dashboard dell\'utente a breve.');
+      }
     } catch (err: any) {
       alert('Errore upload: ' + (err.message || 'Sconosciuto'));
     } finally {
