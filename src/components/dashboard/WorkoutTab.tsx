@@ -238,8 +238,21 @@ const WorkoutTab: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-16">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+      <div className="space-y-4 animate-pulse">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="h-14 bg-gray-200" />
+            <div className="p-4 space-y-3">
+              {[1, 2, 3].map(j => (
+                <div key={j} className="flex items-center gap-4">
+                  <div className="flex-1 h-10 bg-gray-100 rounded-lg" />
+                  <div className="w-20 h-10 bg-gray-100 rounded-lg" />
+                  <div className="w-20 h-10 bg-gray-100 rounded-lg" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     );
   }

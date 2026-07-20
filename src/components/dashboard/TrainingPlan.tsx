@@ -133,8 +133,22 @@ const TrainingPlan: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <div className="text-gray-600">{t('dashboard.loading') || 'Caricamento...'}</div>
+      <div className="max-w-2xl mx-auto animate-pulse">
+        <div className="bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+          <div className="h-16 bg-gray-200 rounded-t-lg" />
+          <div className="p-6 space-y-4">
+            <div className="flex items-start space-x-4">
+              <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-5 bg-gray-200 rounded w-3/4" />
+                <div className="h-4 bg-gray-100 rounded w-1/2" />
+                <div className="h-4 bg-gray-100 rounded w-2/5" />
+              </div>
+            </div>
+            <div className="h-12 bg-gray-200 rounded-lg w-full" />
+            <div className="h-16 bg-gray-100 rounded-lg w-full" />
+          </div>
+        </div>
       </div>
     );
   }

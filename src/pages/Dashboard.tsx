@@ -57,6 +57,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
   const [activeTab, setActiveTab] = useState<'videos' | 'training-plan' | 'reviews' | 'feedback' | 'workout' | 'body-composition'>('training-plan');
   const [hasTrainingPlan, setHasTrainingPlan] = useState(false);
   const [trainingDays, setTrainingDays] = useState<TrainingDay[]>([]);
+  const [trainingDaysLoading, setTrainingDaysLoading] = useState(true);
   const [checkInRequired, setCheckInRequired] = useState(false);
   const [trainerSeenNotifications, setTrainerSeenNotifications] = useState<any[]>([]);
 
@@ -203,16 +204,17 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
   // Load training days
   const loadTrainingDays = useCallback(async (authToken: string) => {
+    setTrainingDaysLoading(true);
     try {
       const response = await apiCall('/videos/training-days', {
         headers: { Authorization: `Bearer ${authToken}` }
       });
-
       setTrainingDays(response.data.trainingDays);
     } catch (error) {
       console.error('Failed to load training days:', error);
-      // Don't show error, just fallback to regular videos
       setTrainingDays([]);
+    } finally {
+      setTrainingDaysLoading(false);
     }
   }, []);
 
@@ -621,12 +623,18 @@ const Dashboard: React.FC<DashboardProps> = () => {
               )}
 
           {/* Videos Grid */}
-          {videoState.loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-                <p className="text-gray-600">{t('dashboard.loadingVideos')}</p>
-              </div>
+          {videoState.loading || trainingDaysLoading ? (
+            <div className="space-y-4 animate-pulse">
+              {[1, 2].map(i => (
+                <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="h-16 bg-gray-200" />
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[1, 2, 3].map(j => (
+                      <div key={j} className="h-48 bg-gray-100 rounded-xl" />
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           ) : videoState.error ? (
             <div className="text-center py-16">

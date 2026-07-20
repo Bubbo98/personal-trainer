@@ -2,33 +2,43 @@ const { createClient } = require('@libsql/client');
 const sqlite3 = require('sqlite3').verbose();
 require('dotenv').config();
 
-// Database factory - returns the appropriate client based on environment
-function createDatabase() {
-    console.log('=== DATABASE SELECTION ===');
-    console.log('TURSO_DATABASE_URL:', process.env.TURSO_DATABASE_URL ? 'SET' : 'NOT SET');
-    console.log('TURSO_AUTH_TOKEN:', process.env.TURSO_AUTH_TOKEN ? 'SET' : 'NOT SET');
-    console.log('NODE_ENV:', process.env.NODE_ENV);
+// ── Turso singleton ──────────────────────────────────────────────────────────
+// One client for the lifetime of the process — avoids per-request connection overhead.
+let _tursoClient = null;
 
-    if (process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN) {
-        console.log('✅ Using Turso cloud database');
-        return createTursoClient();
-    } else {
-        console.log('⚠️ Using local SQLite database (fallback)');
-        return createLocalClient();
+function getTursoClient() {
+    if (!_tursoClient) {
+        _tursoClient = createClient({
+            url: process.env.TURSO_DATABASE_URL,
+            authToken: process.env.TURSO_AUTH_TOKEN,
+        });
     }
+    return _tursoClient;
 }
 
-// Turso cloud client
-function createTursoClient() {
-    console.log('🚀 Creating Turso client...');
-    const client = createClient({
-        url: process.env.TURSO_DATABASE_URL,
-        authToken: process.env.TURSO_AUTH_TOKEN,
-    });
-    console.log('✅ Turso client created successfully');
+// ── Local SQLite singleton ───────────────────────────────────────────────────
+let _localDb = null;
+
+function getLocalDb() {
+    if (!_localDb) {
+        const dbPath = process.env.DB_PATH || './database/app.db';
+        _localDb = new sqlite3.Database(dbPath);
+    }
+    return _localDb;
+}
+
+// ── Factory ──────────────────────────────────────────────────────────────────
+function createDatabase() {
+    if (process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN) {
+        return createTursoWrapper();
+    }
+    return createLocalWrapper();
+}
+
+function createTursoWrapper() {
+    const client = getTursoClient();
 
     return {
-        // Wrapper to make Turso API similar to sqlite3
         get: async (query, params = []) => {
             const result = await client.execute({ sql: query, args: params });
             return result.rows[0] || null;
@@ -43,112 +53,50 @@ function createTursoClient() {
             const result = await client.execute({ sql: query, args: params });
             return {
                 lastInsertRowid: result.lastInsertRowid,
-                changes: result.rowsAffected
+                changes: result.rowsAffected,
             };
         },
 
-        close: () => {
-            // Turso client doesn't need explicit closing
-        },
+        close: () => { /* singleton — never close */ },
 
-        // For compatibility with sqlite3 callbacks
         getCallback: (query, params, callback) => {
-            console.log('🔍 Turso GET:', query, params);
             client.execute({ sql: query, args: params })
-                .then(result => {
-                    console.log('✅ Turso GET result:', result.rows.length, 'rows');
-                    callback(null, result.rows[0] || null);
-                })
-                .catch(err => {
-                    console.error('❌ Turso GET error:', err);
-                    callback(err, null);
-                });
+                .then(result => callback(null, result.rows[0] || null))
+                .catch(err => callback(err, null));
         },
 
         allCallback: (query, params, callback) => {
-            console.log('📋 Turso ALL:', query, params);
             client.execute({ sql: query, args: params })
-                .then(result => {
-                    console.log('✅ Turso ALL result:', result.rows.length, 'rows');
-                    callback(null, result.rows);
-                })
-                .catch(err => {
-                    console.error('❌ Turso ALL error:', err);
-                    callback(err, null);
-                });
+                .then(result => callback(null, result.rows))
+                .catch(err => callback(err, null));
         },
 
         runCallback: (query, params, callback) => {
-            console.log('⚡ Turso RUN:', query.substring(0, 100));
             client.execute({ sql: query, args: params })
                 .then(result => {
-                    console.log('✅ Turso RUN result:', result.rowsAffected, 'rows affected, lastInsertRowid:', result.lastInsertRowid);
-                    // Handle BigInt properly - lastInsertRowid can be 0n which is falsy but valid
-                    const lastID = result.lastInsertRowid !== null && result.lastInsertRowid !== undefined
+                    const lastID = result.lastInsertRowid != null
                         ? Number(result.lastInsertRowid)
                         : undefined;
-                    const context = {
-                        lastID: lastID,
-                        changes: result.rowsAffected
-                    };
-                    callback.call(context, null);
+                    callback.call({ lastID, changes: result.rowsAffected }, null);
                 })
-                .catch(err => {
-                    console.error('❌ Turso RUN error:', err.message);
-                    callback(err);
-                });
-        }
+                .catch(err => callback(err));
+        },
     };
 }
 
-// Local SQLite client (for development)
-function createLocalClient() {
-    const dbPath = process.env.DB_PATH || './database/app.db';
+function createLocalWrapper() {
+    const db = getLocalDb();
 
     return {
-        // Direct sqlite3 wrapper
-        get: (query, params, callback) => {
-            const db = new sqlite3.Database(dbPath);
-            db.get(query, params, (err, row) => {
-                db.close();
-                callback(err, row);
-            });
-        },
+        get: (query, params, callback) => db.get(query, params, callback),
+        all: (query, params, callback) => db.all(query, params, callback),
+        run: (query, params, callback) => db.run(query, params, callback),
 
-        all: (query, params, callback) => {
-            const db = new sqlite3.Database(dbPath);
-            db.all(query, params, (err, rows) => {
-                db.close();
-                callback(err, rows);
-            });
-        },
+        close: () => { /* singleton — never close */ },
 
-        run: (query, params, callback) => {
-            const db = new sqlite3.Database(dbPath);
-            db.run(query, params, function(err) {
-                const context = {
-                    lastID: this.lastID,
-                    changes: this.changes
-                };
-                db.close();
-                callback.call(context, err);
-            });
-        },
-
-        // For compatibility
-        getCallback: function(query, params, callback) {
-            this.get(query, params, callback);
-        },
-
-        allCallback: function(query, params, callback) {
-            this.all(query, params, callback);
-        },
-
-        runCallback: function(query, params, callback) {
-            this.run(query, params, callback);
-        },
-
-        close: () => {}
+        getCallback(query, params, callback) { this.get(query, params, callback); },
+        allCallback(query, params, callback) { this.all(query, params, callback); },
+        runCallback(query, params, callback) { this.run(query, params, callback); },
     };
 }
 
