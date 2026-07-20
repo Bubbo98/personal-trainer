@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FiUpload, FiTrash2, FiDownload, FiCalendar, FiLoader, FiImage } from 'react-icons/fi';
 import { apiCall, STORAGE_KEY } from '../../utils/adminUtils';
+import Tesseract from 'tesseract.js';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
@@ -30,6 +31,7 @@ const BodyCompositionAdmin: React.FC<Props> = ({ userId, userName }) => {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [measurementDate, setMeasurementDate] = useState('');
   const [previewUrls, setPreviewUrls] = useState<Record<number, string>>({});
   const fileRef = useRef<HTMLInputElement>(null);
@@ -77,10 +79,28 @@ const BodyCompositionAdmin: React.FC<Props> = ({ userId, userName }) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setUploadStatus(null);
+
     try {
+      let ocrText: string | null = null;
+
+      // Run OCR in the browser for image files
+      const isImage = file.type.startsWith('image/');
+      if (isImage) {
+        setUploadStatus('Analisi testo in corso…');
+        try {
+          const { data: { text } } = await Tesseract.recognize(file, 'ita', { logger: () => {} });
+          ocrText = text;
+        } catch (ocrErr) {
+          console.warn('Browser OCR failed, uploading without parsed data', ocrErr);
+        }
+      }
+
+      setUploadStatus('Caricamento…');
       const form = new FormData();
       form.append('pdf', file);
       if (measurementDate) form.append('measurementDate', measurementDate);
+      if (ocrText) form.append('ocrText', ocrText);
       const token = localStorage.getItem(STORAGE_KEY);
       const response = await fetch(`${API_BASE}/body-composition/admin/upload/${userId}`, {
         method: 'POST',
@@ -91,13 +111,11 @@ const BodyCompositionAdmin: React.FC<Props> = ({ userId, userName }) => {
       if (!data.success) throw new Error(data.error);
       setMeasurementDate('');
       await loadReports();
-      if (data.data?.parsingInProgress) {
-        alert('File caricato. Analisi automatica in corso (~30 secondi) — i dati appariranno nel dashboard dell\'utente a breve.');
-      }
     } catch (err: any) {
       alert('Errore upload: ' + (err.message || 'Sconosciuto'));
     } finally {
       setUploading(false);
+      setUploadStatus(null);
       if (fileRef.current) fileRef.current.value = '';
     }
   };
@@ -171,7 +189,7 @@ const BodyCompositionAdmin: React.FC<Props> = ({ userId, userName }) => {
               ? React.createElement(FiLoader as React.ComponentType<{ className?: string }>, { className: "w-4 h-4 animate-spin" })
               : React.createElement(FiUpload as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })
             }
-            {uploading ? 'Caricamento...' : 'Carica file'}
+            {uploadStatus ?? 'Carica file'}
           </button>
         </div>
       </div>
