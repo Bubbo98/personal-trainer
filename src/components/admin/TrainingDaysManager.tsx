@@ -45,15 +45,19 @@ interface TrainingDay {
   videos: TrainingDayVideo[];
 }
 
+interface TechniqueInfo {
+  id: number;
+  title: string;
+  description?: string;
+  filePath?: string;
+  thumbnailPath?: string;
+}
+
 interface TrainingDayVideo extends Video {
   assignmentId: number;
   orderIndex: number;
   addedAt: string;
-  techniqueId?: number | null;
-  techniqueTitle?: string | null;
-  techniqueDescription?: string | null;
-  techniqueFilePath?: string | null;
-  techniqueThumbnailPath?: string | null;
+  techniques: TechniqueInfo[];
   groupId?: number | null;
   groupLabel?: string | null;
 }
@@ -68,11 +72,12 @@ const SortableVideoItem: React.FC<{
   video: TrainingDayVideo;
   techniqueVideos: Video[];
   onRemove: () => void;
-  onSetTechnique: (techniqueId: number | null) => void;
+  onAddTechnique: (techniqueId: number) => void;
+  onRemoveTechnique: (techniqueId: number) => void;
   selectionMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: () => void;
-}> = ({ video, techniqueVideos, onRemove, onSetTechnique, selectionMode, isSelected, onToggleSelect }) => {
+}> = ({ video, techniqueVideos, onRemove, onAddTechnique, onRemoveTechnique, selectionMode, isSelected, onToggleSelect }) => {
   const [showTechPanel, setShowTechPanel] = useState(false);
   const [techSearch, setTechSearch] = useState('');
 
@@ -91,6 +96,7 @@ const SortableVideoItem: React.FC<{
     opacity: isDragging ? 0.5 : 1
   };
 
+  const assignedIds = new Set((video.techniques || []).map(t => t.id));
   const filteredTechniques = techniqueVideos.filter(t =>
     t.title.toLowerCase().includes(techSearch.toLowerCase())
   );
@@ -130,16 +136,20 @@ const SortableVideoItem: React.FC<{
             <span>•</span>
             <span>{formatDuration(video.duration)}</span>
           </div>
-          {video.techniqueId && !showTechPanel && (
-            <div className="flex items-center gap-1 mt-1">
-              {React.createElement(FiInfo as React.ComponentType<{ className?: string }>, { className: "w-3 h-3 text-blue-500 flex-shrink-0" })}
-              <span className="text-xs text-blue-700 font-medium truncate">{video.techniqueTitle}</span>
-              <button
-                onClick={() => onSetTechnique(null)}
-                className="ml-1 text-gray-400 hover:text-red-500 flex-shrink-0"
-              >
-                {React.createElement(FiX as React.ComponentType<{ className?: string }>, { className: "w-3 h-3" })}
-              </button>
+          {(video.techniques || []).length > 0 && !showTechPanel && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {video.techniques.map(t => (
+                <span key={t.id} className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 rounded px-1.5 py-0.5 text-xs font-medium">
+                  {React.createElement(FiInfo as React.ComponentType<{ className?: string }>, { className: "w-3 h-3 flex-shrink-0" })}
+                  <span className="truncate max-w-[120px]">{t.title}</span>
+                  <button
+                    onClick={() => onRemoveTechnique(t.id)}
+                    className="ml-0.5 text-blue-400 hover:text-red-500 flex-shrink-0"
+                  >
+                    {React.createElement(FiX as React.ComponentType<{ className?: string }>, { className: "w-3 h-3" })}
+                  </button>
+                </span>
+              ))}
             </div>
           )}
         </div>
@@ -150,7 +160,7 @@ const SortableVideoItem: React.FC<{
           }`}
         >
           {React.createElement(FiInfo as React.ComponentType<{ className?: string }>, { className: "w-3 h-3" })}
-          Tecnica
+          {(video.techniques || []).length > 0 ? `+Tecnica (${video.techniques.length})` : 'Tecnica'}
         </button>
         <button
           onClick={onRemove}
@@ -163,19 +173,11 @@ const SortableVideoItem: React.FC<{
       {showTechPanel && (
         <div className="border-t border-gray-200 p-3 space-y-2 bg-white">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Seleziona tecnica</span>
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Aggiungi tecnica</span>
             <button onClick={() => setShowTechPanel(false)} className="text-gray-400 hover:text-gray-600">
               {React.createElement(FiX as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
             </button>
           </div>
-          {video.techniqueId && (
-            <button
-              onClick={() => { onSetTechnique(null); setShowTechPanel(false); }}
-              className="w-full text-left text-xs text-red-600 hover:text-red-700 py-1"
-            >
-              Rimuovi tecnica assegnata
-            </button>
-          )}
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
               {React.createElement(FiSearch as React.ComponentType<{ className?: string }>, { className: "w-3.5 h-3.5 text-gray-400" })}
@@ -194,19 +196,29 @@ const SortableVideoItem: React.FC<{
                 {techniqueVideos.length === 0 ? 'Nessun video con gruppo "Tecniche"' : 'Nessun risultato'}
               </p>
             ) : (
-              filteredTechniques.map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => { onSetTechnique(t.id); setShowTechPanel(false); }}
-                  className={`w-full text-left px-2 py-1.5 rounded-lg text-xs transition-colors ${
-                    video.techniqueId === t.id
-                      ? 'bg-blue-100 text-blue-800 font-semibold'
-                      : 'hover:bg-gray-50 text-gray-700'
-                  }`}
-                >
-                  {t.title}
-                </button>
-              ))
+              filteredTechniques.map(t => {
+                const already = assignedIds.has(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => {
+                      if (already) {
+                        onRemoveTechnique(t.id);
+                      } else {
+                        onAddTechnique(t.id);
+                      }
+                    }}
+                    className={`w-full text-left px-2 py-1.5 rounded-lg text-xs transition-colors flex items-center justify-between ${
+                      already
+                        ? 'bg-blue-100 text-blue-800 font-semibold'
+                        : 'hover:bg-gray-50 text-gray-700'
+                    }`}
+                  >
+                    <span>{t.title}</span>
+                    {already && React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: "w-3 h-3 text-blue-600" })}
+                  </button>
+                );
+              })
             )}
           </div>
         </div>
@@ -430,17 +442,27 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
     }
   };
 
-  // Set or clear technique for a video in a day
-  const handleSetTechnique = async (dayId: number, videoId: number, techniqueId: number | null) => {
+  const handleAddTechnique = async (dayId: number, videoId: number, techniqueId: number) => {
     try {
-      await apiCall(`/training-days/users/${userId}/training-days/${dayId}/videos/${videoId}/technique`, {
-        method: 'PUT',
-        body: JSON.stringify({ techniqueId }),
+      await apiCall(`/training-days/users/${userId}/training-days/${dayId}/videos/${videoId}/techniques/${techniqueId}`, {
+        method: 'POST',
       });
       await loadTrainingDays();
     } catch (error) {
-      alert('Errore nell\'assegnazione della tecnica');
-      console.error('Set technique error:', error);
+      alert('Errore nell\'aggiunta della tecnica');
+      console.error('Add technique error:', error);
+    }
+  };
+
+  const handleRemoveTechnique = async (dayId: number, videoId: number, techniqueId: number) => {
+    try {
+      await apiCall(`/training-days/users/${userId}/training-days/${dayId}/videos/${videoId}/techniques/${techniqueId}`, {
+        method: 'DELETE',
+      });
+      await loadTrainingDays();
+    } catch (error) {
+      alert('Errore nella rimozione della tecnica');
+      console.error('Remove technique error:', error);
     }
   };
 
@@ -790,7 +812,8 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
                                     video={item.video}
                                     techniqueVideos={techniqueVideos}
                                     onRemove={() => handleRemoveVideo(day.id, item.video.id)}
-                                    onSetTechnique={(techId) => handleSetTechnique(day.id, item.video.id, techId)}
+                                    onAddTechnique={(techId) => handleAddTechnique(day.id, item.video.id, techId)}
+                                    onRemoveTechnique={(techId) => handleRemoveTechnique(day.id, item.video.id, techId)}
                                     selectionMode={isInSelectionMode}
                                     isSelected={selectedAssignmentIds.has(item.video.assignmentId)}
                                     onToggleSelect={() => toggleAssignmentSelection(item.video.assignmentId)}
@@ -822,7 +845,8 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
                                         video={video}
                                         techniqueVideos={techniqueVideos}
                                         onRemove={() => handleRemoveVideo(day.id, video.id)}
-                                        onSetTechnique={(techId) => handleSetTechnique(day.id, video.id, techId)}
+                                        onAddTechnique={(techId) => handleAddTechnique(day.id, video.id, techId)}
+                                        onRemoveTechnique={(techId) => handleRemoveTechnique(day.id, video.id, techId)}
                                         selectionMode={isInSelectionMode}
                                         isSelected={selectedAssignmentIds.has(video.assignmentId)}
                                         onToggleSelect={() => toggleAssignmentSelection(video.assignmentId)}

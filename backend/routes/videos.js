@@ -171,7 +171,6 @@ router.get('/training-days', async (req, res) => {
                             tdv.id as assignment_id,
                             tdv.order_index,
                             tdv.added_at,
-                            tdv.technique_id,
                             tdv.group_id,
                             tdv.group_label,
                             v.id,
@@ -180,14 +179,9 @@ router.get('/training-days', async (req, res) => {
                             v.file_path,
                             v.duration,
                             v.thumbnail_path,
-                            v.category,
-                            tv.title as technique_title,
-                            tv.description as technique_description,
-                            tv.file_path as technique_file_path,
-                            tv.thumbnail_path as technique_thumbnail_path
+                            v.category
                         FROM training_day_videos tdv
                         INNER JOIN videos v ON tdv.video_id = v.id
-                        LEFT JOIN videos tv ON tdv.technique_id = tv.id AND tv.is_active = 1
                         WHERE tdv.training_day_id = ? AND v.is_active = 1
                         ORDER BY tdv.order_index ASC
                     `, [day.id], (err, rows) => {
@@ -196,22 +190,55 @@ router.get('/training-days', async (req, res) => {
                     });
                 });
 
-                // Generate signed URLs for all videos (and techniques)
+                // Fetch techniques for all assignments in this day
+                const assignmentIds = videos.map(v => v.assignment_id);
+                let techniquesMap = {};
+                if (assignmentIds.length > 0) {
+                    const placeholders = assignmentIds.map(() => '?').join(',');
+                    const techniqueRows = await new Promise((resolve, reject) => {
+                        db.allCallback(`
+                            SELECT tdvt.training_day_video_id, tv.id, tv.title, tv.description, tv.file_path, tv.thumbnail_path
+                            FROM training_day_video_techniques tdvt
+                            INNER JOIN videos tv ON tdvt.technique_id = tv.id AND tv.is_active = 1
+                            WHERE tdvt.training_day_video_id IN (${placeholders})
+                            ORDER BY tdvt.training_day_video_id, tdvt.order_index
+                        `, assignmentIds, (err, rows) => {
+                            if (err) reject(err);
+                            else resolve(rows);
+                        });
+                    });
+                    for (const row of techniqueRows) {
+                        if (!techniquesMap[row.training_day_video_id]) techniquesMap[row.training_day_video_id] = [];
+                        techniquesMap[row.training_day_video_id].push(row);
+                    }
+                }
+
+                // Generate signed URLs for all videos and their techniques
                 const videosWithUrls = await Promise.all(videos.map(async (video) => {
                     let signedUrl = null;
-                    let techniqueSignedUrl = null;
                     try {
                         signedUrl = await getSignedVideoUrl(video.file_path, 3600);
                     } catch (error) {
                         console.error(`Failed to generate signed URL for video ${video.id}:`, error.message);
                     }
-                    if (video.technique_file_path) {
+
+                    const rawTechniques = techniquesMap[video.assignment_id] || [];
+                    const techniques = await Promise.all(rawTechniques.map(async (t) => {
+                        let techSignedUrl = null;
                         try {
-                            techniqueSignedUrl = await getSignedVideoUrl(video.technique_file_path, 3600);
+                            techSignedUrl = await getSignedVideoUrl(t.file_path, 3600);
                         } catch (error) {
-                            console.error(`Failed to generate signed URL for technique of video ${video.id}:`, error.message);
+                            console.error(`Failed to generate signed URL for technique ${t.id}:`, error.message);
                         }
-                    }
+                        return {
+                            id: t.id,
+                            title: t.title,
+                            description: t.description,
+                            signedUrl: techSignedUrl,
+                            thumbnailPath: t.thumbnail_path,
+                        };
+                    }));
+
                     return {
                         assignmentId: video.assignment_id,
                         orderIndex: video.order_index,
@@ -226,13 +253,7 @@ router.get('/training-days', async (req, res) => {
                         category: video.category,
                         groupId: video.group_id || null,
                         groupLabel: video.group_label || null,
-                        technique: video.technique_id ? {
-                            id: video.technique_id,
-                            title: video.technique_title,
-                            description: video.technique_description,
-                            signedUrl: techniqueSignedUrl,
-                            thumbnailPath: video.technique_thumbnail_path,
-                        } : null,
+                        techniques,
                     };
                 }));
 

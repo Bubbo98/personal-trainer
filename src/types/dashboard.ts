@@ -29,7 +29,7 @@ export interface Video {
   grantedAt?: string;
   addedAt?: string;
   expiresAt?: string;
-  technique?: TechniqueVideo | null;
+  techniques?: TechniqueVideo[];
   groupId?: number | null;
   groupLabel?: string | null;
 }

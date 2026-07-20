@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiPlay, FiInfo, FiX } from 'react-icons/fi';
+import { FiPlay, FiInfo, FiX, FiChevronRight } from 'react-icons/fi';
 import { Video, TechniqueVideo } from '../../types/dashboard';
 import { formatDuration, formatDate, getLocalizedText } from '../../utils/dashboardUtils';
 
@@ -53,11 +53,62 @@ const TechniqueModal: React.FC<{ technique: TechniqueVideo; onClose: () => void 
   );
 };
 
+const TechniquePickerModal: React.FC<{
+  techniques: TechniqueVideo[];
+  onSelect: (t: TechniqueVideo) => void;
+  onClose: () => void;
+}> = ({ techniques, onSelect, onClose }) => {
+  const handleBackdrop = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) onClose();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4"
+      onClick={handleBackdrop}
+    >
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <h3 className="font-bold text-gray-900">Scegli una tecnica</h3>
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-700">
+            {React.createElement(FiX as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+          </button>
+        </div>
+        <div className="divide-y divide-gray-100">
+          {techniques.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => onSelect(t)}
+              className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-blue-50 transition-colors text-left"
+            >
+              <div className="flex items-center gap-2">
+                {React.createElement(FiInfo as React.ComponentType<{ className?: string }>, { className: "w-4 h-4 text-blue-500 flex-shrink-0" })}
+                <span className="font-medium text-gray-900 text-sm">{t.title}</span>
+              </div>
+              {React.createElement(FiChevronRight as React.ComponentType<{ className?: string }>, { className: "w-4 h-4 text-gray-400" })}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const VideoCard: React.FC<VideoCardProps> = ({ video, onPlay }) => {
   const { t } = useTranslation();
-  const [showTechnique, setShowTechnique] = useState(false);
+  const [activeTechnique, setActiveTechnique] = useState<TechniqueVideo | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
 
-  // Construct thumbnail URL
+  const techniques = video.techniques || [];
+
+  const handleTechniqueClick = () => {
+    if (techniques.length === 1) {
+      setActiveTechnique(techniques[0]);
+    } else if (techniques.length > 1) {
+      setShowPicker(true);
+    }
+  };
+
   const thumbnailUrl = video.thumbnailPath
     ? `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:3001'}/thumbnails/${video.thumbnailPath}`
     : null;
@@ -95,7 +146,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onPlay }) => {
             )}
           </div>
 
-          <div className={`mt-3 flex gap-2 ${video.technique ? '' : ''}`}>
+          <div className="mt-3 flex gap-2">
             <button
               onClick={() => onPlay(video)}
               className="flex-1 flex items-center justify-center gap-2 bg-gray-900 text-white py-2.5 rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
@@ -105,24 +156,31 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onPlay }) => {
               Guarda video
             </button>
 
-            {video.technique && (
+            {techniques.length > 0 && (
               <button
-                onClick={() => setShowTechnique(true)}
+                onClick={handleTechniqueClick}
                 className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
-                aria-label={`Vedi tecnica: ${video.technique.title}`}
               >
                 {React.createElement(FiInfo as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
-                Tecnica
+                {techniques.length === 1 ? 'Tecnica' : `Tecniche (${techniques.length})`}
               </button>
             )}
           </div>
         </div>
       </div>
 
-      {showTechnique && video.technique && (
+      {activeTechnique && (
         <TechniqueModal
-          technique={video.technique}
-          onClose={() => setShowTechnique(false)}
+          technique={activeTechnique}
+          onClose={() => setActiveTechnique(null)}
+        />
+      )}
+
+      {showPicker && (
+        <TechniquePickerModal
+          techniques={techniques}
+          onSelect={(t) => { setShowPicker(false); setActiveTechnique(t); }}
+          onClose={() => setShowPicker(false)}
         />
       )}
     </>
