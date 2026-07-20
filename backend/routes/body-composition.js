@@ -144,7 +144,7 @@ router.get('/my-reports', authenticateToken, async (req, res) => {
 router.get('/download/:reportId', authenticateToken, async (req, res) => {
     const { reportId } = req.params;
     const userId = req.user.userId;
-    const isAdmin = req.user.isAdmin;
+    const isAdmin = req.user.username === (process.env.ADMIN_USERNAME || 'admin');
     const db = createDatabase();
     try {
         const row = await new Promise((resolve, reject) => {
