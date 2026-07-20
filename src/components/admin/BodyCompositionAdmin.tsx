@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { FiUpload, FiTrash2, FiDownload, FiCalendar, FiLoader } from 'react-icons/fi';
+import { FiUpload, FiTrash2, FiDownload, FiCalendar, FiLoader, FiImage } from 'react-icons/fi';
 import { apiCall, STORAGE_KEY } from '../../utils/adminUtils';
+
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
 interface Report {
   id: number;
@@ -29,6 +31,7 @@ const BodyCompositionAdmin: React.FC<Props> = ({ userId, userName }) => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [measurementDate, setMeasurementDate] = useState('');
+  const [previewUrls, setPreviewUrls] = useState<Record<number, string>>({});
   const fileRef = useRef<HTMLInputElement>(null);
 
   const loadReports = useCallback(async () => {
@@ -45,6 +48,31 @@ const BodyCompositionAdmin: React.FC<Props> = ({ userId, userName }) => {
 
   useEffect(() => { loadReports(); }, [loadReports]);
 
+  // Load image previews as authenticated blob URLs
+  useEffect(() => {
+    if (reports.length === 0) return;
+
+    const newUrls: Record<number, string> = {};
+
+    reports.forEach(report => {
+      const token = localStorage.getItem(STORAGE_KEY);
+      fetch(`${API_BASE}/body-composition/download/${report.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(r => r.blob())
+        .then(blob => {
+          const url = URL.createObjectURL(blob);
+          newUrls[report.id] = url;
+          setPreviewUrls(prev => ({ ...prev, [report.id]: url }));
+        })
+        .catch(() => {});
+    });
+
+    return () => {
+      Object.values(newUrls).forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [reports]);
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -54,8 +82,7 @@ const BodyCompositionAdmin: React.FC<Props> = ({ userId, userName }) => {
       form.append('pdf', file);
       if (measurementDate) form.append('measurementDate', measurementDate);
       const token = localStorage.getItem(STORAGE_KEY);
-      const base = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
-      const response = await fetch(`${base}/body-composition/admin/upload/${userId}`, {
+      const response = await fetch(`${API_BASE}/body-composition/admin/upload/${userId}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: form,
@@ -76,6 +103,12 @@ const BodyCompositionAdmin: React.FC<Props> = ({ userId, userName }) => {
     if (!window.confirm('Eliminare questo report?')) return;
     try {
       await apiCall(`/body-composition/admin/report/${reportId}`, { method: 'DELETE' });
+      setPreviewUrls(prev => {
+        const next = { ...prev };
+        if (next[reportId]) URL.revokeObjectURL(next[reportId]);
+        delete next[reportId];
+        return next;
+      });
       setReports(prev => prev.filter(r => r.id !== reportId));
     } catch (e) {
       alert('Errore eliminazione');
@@ -84,8 +117,7 @@ const BodyCompositionAdmin: React.FC<Props> = ({ userId, userName }) => {
 
   const handleDownload = (reportId: number, originalName: string) => {
     const token = localStorage.getItem(STORAGE_KEY);
-    const base = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
-    fetch(`${base}/body-composition/download/${reportId}`, {
+    fetch(`${API_BASE}/body-composition/download/${reportId}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.blob())
@@ -93,20 +125,20 @@ const BodyCompositionAdmin: React.FC<Props> = ({ userId, userName }) => {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = originalName;
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
       });
   };
 
   return (
     <div className="space-y-6">
-      {/* Upload */}
+      {/* Header + upload */}
       <div className="flex flex-col sm:flex-row sm:items-end gap-3">
         <div className="flex-1">
           <h4 className="text-base font-semibold text-gray-900">Report Composizione Corporea</h4>
           <p className="text-sm text-gray-500 mt-0.5">{reports.length} report caricati per {userName}</p>
         </div>
-
-        {/* Date + upload */}
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="relative">
             <div className="absolute inset-y-0 left-2.5 flex items-center pointer-events-none">
@@ -142,8 +174,16 @@ const BodyCompositionAdmin: React.FC<Props> = ({ userId, userName }) => {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
+          {[1, 2].map(i => (
+            <div key={i} className="bg-gray-100 rounded-2xl overflow-hidden">
+              <div className="h-56 bg-gray-200" />
+              <div className="p-3 space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-2/3" />
+                <div className="h-3 bg-gray-100 rounded w-1/2" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : reports.length === 0 ? (
         <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-xl text-gray-400">
@@ -151,38 +191,57 @@ const BodyCompositionAdmin: React.FC<Props> = ({ userId, userName }) => {
           <p className="text-xs mt-1">Seleziona una data opzionale e carica l'immagine Starfit</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {reports.map(report => (
-            <div key={report.id} className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex items-center gap-4">
+            <div key={report.id} className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col">
+              {/* Image preview */}
+              <div className="relative bg-gray-50 flex items-center justify-center" style={{ minHeight: 220 }}>
+                {previewUrls[report.id] ? (
+                  <img
+                    src={previewUrls[report.id]}
+                    alt="Report"
+                    className="w-full object-contain"
+                    style={{ maxHeight: 280 }}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center gap-2 text-gray-300 py-10">
+                    {React.createElement(FiImage as React.ComponentType<{ className?: string }>, { className: "w-10 h-10" })}
+                    <span className="text-xs">Caricamento anteprima...</span>
+                  </div>
+                )}
+              </div>
+
               {/* Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  {report.measurementDate && (
-                    <span className="flex items-center gap-1 text-sm font-medium text-gray-800">
-                      {React.createElement(FiCalendar as React.ComponentType<{ className?: string }>, { className: "w-3.5 h-3.5 text-indigo-500" })}
-                      {report.measurementDate}
-                    </span>
-                  )}
-                  <span className="text-xs text-gray-400">caricato {formatDate(report.uploadedAt)} da {report.uploadedBy}</span>
-                </div>
-                <p className="text-xs text-gray-400 mt-1">{report.originalName} · {formatBytes(report.fileSize)}</p>
+              <div className="px-4 py-3 flex-1">
+                {report.measurementDate && (
+                  <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-800 mb-0.5">
+                    {React.createElement(FiCalendar as React.ComponentType<{ className?: string }>, { className: "w-3.5 h-3.5 text-indigo-500" })}
+                    {report.measurementDate}
+                  </div>
+                )}
+                <p className="text-xs text-gray-400">
+                  Caricato {formatDate(report.uploadedAt)} da {report.uploadedBy}
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {report.originalName} · {formatBytes(report.fileSize)}
+                </p>
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="px-4 pb-4 flex gap-2">
                 <button
                   onClick={() => handleDownload(report.id, report.originalName)}
-                  className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                  title="Scarica immagine"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   {React.createElement(FiDownload as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+                  Scarica
                 </button>
                 <button
                   onClick={() => handleDelete(report.id)}
-                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Elimina"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-red-100 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
                 >
                   {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+                  Elimina
                 </button>
               </div>
             </div>
