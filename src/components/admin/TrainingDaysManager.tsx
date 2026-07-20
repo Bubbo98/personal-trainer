@@ -243,7 +243,6 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
   const [stretchingSearch, setStretchingSearch] = useState('');
   const [selectionModeDayId, setSelectionModeDayId] = useState<number | null>(null);
   const [selectedAssignmentIds, setSelectedAssignmentIds] = useState<Set<number>>(new Set());
-  const [groupLabelInput, setGroupLabelInput] = useState('Superset');
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -469,13 +468,11 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
   const enterSelectionMode = (dayId: number) => {
     setSelectionModeDayId(dayId);
     setSelectedAssignmentIds(new Set());
-    setGroupLabelInput('Superset');
   };
 
   const exitSelectionMode = () => {
     setSelectionModeDayId(null);
     setSelectedAssignmentIds(new Set());
-    setGroupLabelInput('Superset');
   };
 
   const toggleAssignmentSelection = (assignmentId: number) => {
