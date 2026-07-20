@@ -30,6 +30,8 @@ export interface Video {
   addedAt?: string;
   expiresAt?: string;
   technique?: TechniqueVideo | null;
+  groupId?: number | null;
+  groupLabel?: string | null;
 }
 
 export interface Category {

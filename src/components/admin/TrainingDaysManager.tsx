@@ -11,6 +11,8 @@ import {
   FiMenu,
   FiInfo,
   FiAlertTriangle,
+  FiLink,
+  FiScissors,
 } from 'react-icons/fi';
 import {
   DndContext,
@@ -52,6 +54,8 @@ interface TrainingDayVideo extends Video {
   techniqueDescription?: string | null;
   techniqueFilePath?: string | null;
   techniqueThumbnailPath?: string | null;
+  groupId?: number | null;
+  groupLabel?: string | null;
 }
 
 interface Props {
@@ -65,7 +69,10 @@ const SortableVideoItem: React.FC<{
   techniqueVideos: Video[];
   onRemove: () => void;
   onSetTechnique: (techniqueId: number | null) => void;
-}> = ({ video, techniqueVideos, onRemove, onSetTechnique }) => {
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
+}> = ({ video, techniqueVideos, onRemove, onSetTechnique, selectionMode, isSelected, onToggleSelect }) => {
   const [showTechPanel, setShowTechPanel] = useState(false);
   const [techSearch, setTechSearch] = useState('');
 
@@ -89,16 +96,33 @@ const SortableVideoItem: React.FC<{
   );
 
   return (
-    <div ref={setNodeRef} style={style} className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`bg-gray-50 border rounded-xl overflow-hidden transition-colors ${
+        selectionMode && isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+      }`}
+    >
       <div className="p-3 flex items-center gap-2">
-        <button
-          {...attributes}
-          {...listeners}
-          style={{ touchAction: 'none' }}
-          className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 flex-shrink-0"
-        >
-          {React.createElement(FiMenu as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-        </button>
+        {selectionMode ? (
+          <button
+            onClick={onToggleSelect}
+            className={`w-5 h-5 rounded flex-shrink-0 flex items-center justify-center border-2 transition-colors ${
+              isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-300 hover:border-blue-400'
+            }`}
+          >
+            {isSelected && React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: "w-3 h-3 text-white" })}
+          </button>
+        ) : (
+          <button
+            {...attributes}
+            {...listeners}
+            style={{ touchAction: 'none' }}
+            className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 flex-shrink-0"
+          >
+            {React.createElement(FiMenu as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+          </button>
+        )}
         <div className="flex-1 min-w-0">
           <h5 className="font-medium text-gray-900 text-sm truncate">{video.title}</h5>
           <div className="text-xs text-gray-500 space-x-2">
@@ -205,6 +229,10 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
   const [stretchingModal, setStretchingModal] = useState<{ dayId: number; dayName: string } | null>(null);
   const [selectedStretchingVideos, setSelectedStretchingVideos] = useState<Set<number>>(new Set());
   const [stretchingSearch, setStretchingSearch] = useState('');
+  const [selectionModeDayId, setSelectionModeDayId] = useState<number | null>(null);
+  const [selectedAssignmentIds, setSelectedAssignmentIds] = useState<Set<number>>(new Set());
+  const [groupLabelInput, setGroupLabelInput] = useState('Superset');
+  const [showGroupLabelInput, setShowGroupLabelInput] = useState(false);
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -413,6 +441,59 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
     } catch (error) {
       alert('Errore nell\'assegnazione della tecnica');
       console.error('Set technique error:', error);
+    }
+  };
+
+  // Enter / exit selection (grouping) mode for a day
+  const enterSelectionMode = (dayId: number) => {
+    setSelectionModeDayId(dayId);
+    setSelectedAssignmentIds(new Set());
+    setShowGroupLabelInput(false);
+    setGroupLabelInput('Superset');
+  };
+
+  const exitSelectionMode = () => {
+    setSelectionModeDayId(null);
+    setSelectedAssignmentIds(new Set());
+    setShowGroupLabelInput(false);
+    setGroupLabelInput('Superset');
+  };
+
+  const toggleAssignmentSelection = (assignmentId: number) => {
+    setSelectedAssignmentIds(prev => {
+      const next = new Set(prev);
+      next.has(assignmentId) ? next.delete(assignmentId) : next.add(assignmentId);
+      return next;
+    });
+  };
+
+  const handleCreateGroup = async (dayId: number) => {
+    if (selectedAssignmentIds.size < 2) return;
+    try {
+      await apiCall(`/training-days/users/${userId}/training-days/${dayId}/videos/group`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          assignmentIds: Array.from(selectedAssignmentIds),
+          groupLabel: groupLabelInput.trim() || 'Superset',
+        }),
+      });
+      await loadTrainingDays();
+      exitSelectionMode();
+    } catch (error) {
+      alert('Errore nella creazione del gruppo');
+      console.error('Create group error:', error);
+    }
+  };
+
+  const handleUngroup = async (dayId: number, groupId: number) => {
+    try {
+      await apiCall(`/training-days/users/${userId}/training-days/${dayId}/videos/group/${groupId}`, {
+        method: 'DELETE',
+      });
+      await loadTrainingDays();
+    } catch (error) {
+      alert('Errore nella rimozione del gruppo');
+      console.error('Ungroup error:', error);
     }
   };
 
@@ -662,7 +743,32 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
                 </div>
 
                 {/* Day Content (Expanded) */}
-                {isExpanded && (
+                {isExpanded && (() => {
+                  const isInSelectionMode = selectionModeDayId === day.id;
+
+                  // Group videos: consecutive videos with same group_id form a group
+                  type RenderItem =
+                    | { type: 'single'; video: TrainingDayVideo }
+                    | { type: 'group'; groupId: number; groupLabel: string; videos: TrainingDayVideo[] };
+
+                  const renderItems: RenderItem[] = [];
+                  for (const video of day.videos) {
+                    if (video.groupId != null) {
+                      const existing = renderItems.find(
+                        (item): item is Extract<RenderItem, { type: 'group' }> =>
+                          item.type === 'group' && item.groupId === video.groupId
+                      );
+                      if (existing) {
+                        existing.videos.push(video);
+                      } else {
+                        renderItems.push({ type: 'group', groupId: video.groupId, groupLabel: video.groupLabel || 'Superset', videos: [video] });
+                      }
+                    } else {
+                      renderItems.push({ type: 'single', video });
+                    }
+                  }
+
+                  return (
                   <div className="px-4 pb-4 space-y-4">
                     {/* Videos List */}
                     {day.videos.length > 0 && (
@@ -676,22 +782,110 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
                           strategy={verticalListSortingStrategy}
                         >
                           <div className="space-y-2">
-                            {day.videos.map((video) => (
-                              <SortableVideoItem
-                                key={video.id}
-                                video={video}
-                                techniqueVideos={techniqueVideos}
-                                onRemove={() => handleRemoveVideo(day.id, video.id)}
-                                onSetTechnique={(techId) => handleSetTechnique(day.id, video.id, techId)}
-                              />
-                            ))}
+                            {renderItems.map((item) => {
+                              if (item.type === 'single') {
+                                return (
+                                  <SortableVideoItem
+                                    key={item.video.id}
+                                    video={item.video}
+                                    techniqueVideos={techniqueVideos}
+                                    onRemove={() => handleRemoveVideo(day.id, item.video.id)}
+                                    onSetTechnique={(techId) => handleSetTechnique(day.id, item.video.id, techId)}
+                                    selectionMode={isInSelectionMode}
+                                    isSelected={selectedAssignmentIds.has(item.video.assignmentId)}
+                                    onToggleSelect={() => toggleAssignmentSelection(item.video.assignmentId)}
+                                  />
+                                );
+                              }
+                              // Grouped videos
+                              return (
+                                <div key={`group-${item.groupId}`} className="border-2 border-blue-300 rounded-xl overflow-hidden">
+                                  <div className="bg-blue-50 px-3 py-1.5 flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5">
+                                      {React.createElement(FiLink as React.ComponentType<{ className?: string }>, { className: "w-3.5 h-3.5 text-blue-600" })}
+                                      <span className="text-xs font-semibold text-blue-700 uppercase tracking-wide">{item.groupLabel}</span>
+                                    </div>
+                                    {!isInSelectionMode && (
+                                      <button
+                                        onClick={() => handleUngroup(day.id, item.groupId)}
+                                        className="flex items-center gap-1 text-xs text-blue-500 hover:text-red-600 transition-colors"
+                                      >
+                                        {React.createElement(FiScissors as React.ComponentType<{ className?: string }>, { className: "w-3 h-3" })}
+                                        Sciogli
+                                      </button>
+                                    )}
+                                  </div>
+                                  <div className="p-2 space-y-1.5 bg-blue-50/30">
+                                    {item.videos.map((video) => (
+                                      <SortableVideoItem
+                                        key={video.id}
+                                        video={video}
+                                        techniqueVideos={techniqueVideos}
+                                        onRemove={() => handleRemoveVideo(day.id, video.id)}
+                                        onSetTechnique={(techId) => handleSetTechnique(day.id, video.id, techId)}
+                                        selectionMode={isInSelectionMode}
+                                        isSelected={selectedAssignmentIds.has(video.assignmentId)}
+                                        onToggleSelect={() => toggleAssignmentSelection(video.assignmentId)}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </SortableContext>
                       </DndContext>
                     )}
 
+                    {/* Selection mode bottom bar */}
+                    {isInSelectionMode && (
+                      <div className="border-t border-blue-200 pt-3 space-y-2">
+                        {showGroupLabelInput ? (
+                          <div className="flex gap-2 items-center">
+                            <input
+                              type="text"
+                              value={groupLabelInput}
+                              onChange={(e) => setGroupLabelInput(e.target.value)}
+                              placeholder="Tipo (es. Superset, Circuit...)"
+                              className="flex-1 px-3 py-2 border border-blue-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            />
+                            <button
+                              onClick={() => handleCreateGroup(day.id)}
+                              disabled={selectedAssignmentIds.size < 2}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                              Crea
+                            </button>
+                            <button onClick={() => setShowGroupLabelInput(false)} className="px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50">
+                              {React.createElement(FiX as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-blue-700 font-medium flex-1">
+                              {selectedAssignmentIds.size} selezionati
+                            </span>
+                            <button
+                              onClick={() => setShowGroupLabelInput(true)}
+                              disabled={selectedAssignmentIds.size < 2}
+                              className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            >
+                              {React.createElement(FiLink as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+                              Raggruppa
+                            </button>
+                            <button
+                              onClick={exitSelectionMode}
+                              className="px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                            >
+                              Annulla
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Add Video Section */}
-                    {showAddVideo === day.id ? (
+                    {!isInSelectionMode && (showAddVideo === day.id ? (
                       <div className="border-t border-gray-200 pt-4 space-y-3">
                         <div className="flex items-center justify-between">
                           <h5 className="font-medium text-gray-900">Aggiungi Video</h5>
@@ -768,15 +962,27 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
                         </div>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => setShowAddVideo(day.id)}
-                        className="w-full mt-2 py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors"
-                      >
-                        + Aggiungi Video
-                      </button>
-                    )}
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          onClick={() => setShowAddVideo(day.id)}
+                          className="flex-1 py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors"
+                        >
+                          + Aggiungi Video
+                        </button>
+                        {day.videos.length >= 2 && (
+                          <button
+                            onClick={() => enterSelectionMode(day.id)}
+                            className="flex items-center gap-1.5 px-3 py-2.5 border-2 border-dashed border-blue-300 rounded-xl text-blue-600 hover:border-blue-400 hover:text-blue-700 transition-colors text-sm font-medium"
+                          >
+                            {React.createElement(FiLink as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
+                            Raggruppa
+                          </button>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                )}
+                  );
+                })()}
               </div>
             );
           })}

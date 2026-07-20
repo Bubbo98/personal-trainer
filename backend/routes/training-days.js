@@ -48,6 +48,8 @@ router.get('/users/:userId/training-days', async (req, res) => {
                             tdv.order_index,
                             tdv.added_at,
                             tdv.technique_id,
+                            tdv.group_id,
+                            tdv.group_label,
                             v.id,
                             v.title,
                             v.description,
@@ -93,6 +95,8 @@ router.get('/users/:userId/training-days', async (req, res) => {
                         techniqueDescription: v.technique_description || null,
                         techniqueFilePath: v.technique_file_path || null,
                         techniqueThumbnailPath: v.technique_thumbnail_path || null,
+                        groupId: v.group_id || null,
+                        groupLabel: v.group_label || null,
                     }))
                 };
             })
@@ -758,6 +762,117 @@ router.put('/users/:userId/training-days/:dayId/videos/:videoId/technique', (req
             );
         }
     );
+});
+
+/**
+ * PUT /api/admin/users/:userId/training-days/:dayId/videos/group
+ * Group a set of videos together (superset, circuit, etc.)
+ * Body: { assignmentIds: number[], groupLabel: string | null }
+ * Passing assignmentIds with groupLabel creates/updates the group.
+ * Passing assignmentIds with groupLabel=null ungroups those videos.
+ */
+router.put('/users/:userId/training-days/:dayId/videos/group', async (req, res) => {
+    const { userId, dayId } = req.params;
+    const { assignmentIds, groupLabel } = req.body;
+
+    if (!userId || isNaN(userId) || !dayId || isNaN(dayId)) {
+        return res.status(400).json({ success: false, error: 'Valid user ID and day ID are required' });
+    }
+    if (!Array.isArray(assignmentIds) || assignmentIds.length < 2) {
+        return res.status(400).json({ success: false, error: 'At least 2 assignment IDs are required to group' });
+    }
+
+    const db = createDatabase();
+
+    try {
+        // Verify the day belongs to the user
+        const day = await new Promise((resolve, reject) => {
+            db.getCallback(
+                'SELECT id FROM user_training_days WHERE id = ? AND user_id = ? AND is_active = 1',
+                [dayId, userId],
+                (err, row) => { if (err) reject(err); else resolve(row); }
+            );
+        });
+
+        if (!day) {
+            db.close();
+            return res.status(404).json({ success: false, error: 'Training day not found' });
+        }
+
+        // Find the next available group_id for this training day
+        const maxRow = await new Promise((resolve, reject) => {
+            db.getCallback(
+                'SELECT COALESCE(MAX(group_id), 0) as max_gid FROM training_day_videos WHERE training_day_id = ?',
+                [dayId],
+                (err, row) => { if (err) reject(err); else resolve(row); }
+            );
+        });
+
+        const newGroupId = (maxRow.max_gid || 0) + 1;
+        const label = groupLabel || 'Superset';
+        const placeholders = assignmentIds.map(() => '?').join(',');
+
+        await new Promise((resolve, reject) => {
+            db.runCallback(
+                `UPDATE training_day_videos SET group_id = ?, group_label = ? WHERE id IN (${placeholders}) AND training_day_id = ?`,
+                [newGroupId, label, ...assignmentIds, dayId],
+                (err) => { if (err) reject(err); else resolve(); }
+            );
+        });
+
+        db.close();
+        console.log(`Admin ${req.user.username} grouped ${assignmentIds.length} videos in day ${dayId}`);
+        res.json({ success: true, message: 'Videos grouped successfully', data: { groupId: newGroupId, groupLabel: label } });
+    } catch (error) {
+        db.close();
+        console.error('Group videos error:', error);
+        res.status(500).json({ success: false, error: 'Database error' });
+    }
+});
+
+/**
+ * DELETE /api/admin/users/:userId/training-days/:dayId/videos/group/:groupId
+ * Remove grouping for all videos that share the given group_id in this day
+ */
+router.delete('/users/:userId/training-days/:dayId/videos/group/:groupId', async (req, res) => {
+    const { userId, dayId, groupId } = req.params;
+
+    if (!userId || isNaN(userId) || !dayId || isNaN(dayId) || !groupId || isNaN(groupId)) {
+        return res.status(400).json({ success: false, error: 'Valid IDs required' });
+    }
+
+    const db = createDatabase();
+
+    try {
+        const day = await new Promise((resolve, reject) => {
+            db.getCallback(
+                'SELECT id FROM user_training_days WHERE id = ? AND user_id = ? AND is_active = 1',
+                [dayId, userId],
+                (err, row) => { if (err) reject(err); else resolve(row); }
+            );
+        });
+
+        if (!day) {
+            db.close();
+            return res.status(404).json({ success: false, error: 'Training day not found' });
+        }
+
+        await new Promise((resolve, reject) => {
+            db.runCallback(
+                'UPDATE training_day_videos SET group_id = NULL, group_label = NULL WHERE training_day_id = ? AND group_id = ?',
+                [dayId, groupId],
+                (err) => { if (err) reject(err); else resolve(); }
+            );
+        });
+
+        db.close();
+        console.log(`Admin ${req.user.username} ungrouped group ${groupId} in day ${dayId}`);
+        res.json({ success: true, message: 'Group removed successfully' });
+    } catch (error) {
+        db.close();
+        console.error('Ungroup videos error:', error);
+        res.status(500).json({ success: false, error: 'Database error' });
+    }
 });
 
 module.exports = router;

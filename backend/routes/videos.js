@@ -172,6 +172,8 @@ router.get('/training-days', async (req, res) => {
                             tdv.order_index,
                             tdv.added_at,
                             tdv.technique_id,
+                            tdv.group_id,
+                            tdv.group_label,
                             v.id,
                             v.title,
                             v.description,
@@ -222,6 +224,8 @@ router.get('/training-days', async (req, res) => {
                         duration: video.duration,
                         thumbnailPath: video.thumbnail_path,
                         category: video.category,
+                        groupId: video.group_id || null,
+                        groupLabel: video.group_label || null,
                         technique: video.technique_id ? {
                             id: video.technique_id,
                             title: video.technique_title,
