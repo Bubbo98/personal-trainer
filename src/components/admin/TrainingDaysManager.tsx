@@ -201,6 +201,9 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
   const [showAddVideo, setShowAddVideo] = useState<number | null>(null);
   const [videoSearchTerm, setVideoSearchTerm] = useState('');
   const [videoMuscleFilter, setVideoMuscleFilter] = useState('');
+  const [stretchingModal, setStretchingModal] = useState<{ dayId: number; dayName: string } | null>(null);
+  const [selectedStretchingVideos, setSelectedStretchingVideos] = useState<Set<number>>(new Set());
+  const [stretchingSearch, setStretchingSearch] = useState('');
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -286,23 +289,52 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
     }
   };
 
+  // Confirm stretching video selection after day creation
+  const handleConfirmStretching = async () => {
+    if (!stretchingModal) return;
+    const { dayId } = stretchingModal;
+    try {
+      if (selectedStretchingVideos.size > 0) {
+        await Promise.all(
+          Array.from(selectedStretchingVideos).map(videoId =>
+            apiCall(`/training-days/users/${userId}/training-days/${dayId}/videos/${videoId}`, { method: 'POST' })
+          )
+        );
+        await loadTrainingDays();
+        if (onUpdate) onUpdate();
+      }
+    } catch (error) {
+      alert('Errore nell\'aggiunta dei video di stretching');
+      console.error('Stretching assign error:', error);
+    } finally {
+      setStretchingModal(null);
+      setSelectedStretchingVideos(new Set());
+      setStretchingSearch('');
+    }
+  };
+
   // Add new training day
   const handleAddDay = async () => {
     const nextDayNumber = trainingDays.length > 0
       ? Math.max(...trainingDays.map(d => d.dayNumber)) + 1
       : 1;
+    const dayName = `Giorno ${nextDayNumber}`;
 
     try {
-      await apiCall(`/training-days/users/${userId}/training-days`, {
+      const response = await apiCall(`/training-days/users/${userId}/training-days`, {
         method: 'POST',
-        body: JSON.stringify({
-          dayNumber: nextDayNumber,
-          dayName: `Giorno ${nextDayNumber}`
-        })
+        body: JSON.stringify({ dayNumber: nextDayNumber, dayName })
       });
 
       await loadTrainingDays();
       if (onUpdate) onUpdate();
+
+      const stretchingVideos = allVideos.filter(v => v.muscleGroup === 'Stretching');
+      if (stretchingVideos.length > 0) {
+        setSelectedStretchingVideos(new Set());
+        setStretchingSearch('');
+        setStretchingModal({ dayId: response.data.id, dayName });
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Errore nella creazione del giorno';
       alert(`Errore nella creazione del giorno: ${errorMessage}`);
@@ -491,6 +523,7 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
   }
 
   return (
+    <>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -734,6 +767,89 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
         </div>
       )}
     </div>
+
+    {/* Stretching Modal */}
+      {stretchingModal && (() => {
+        const stretchingVideos = allVideos.filter(v => v.muscleGroup === 'Stretching');
+        const filtered = stretchingSearch
+          ? stretchingVideos.filter(v => v.title.toLowerCase().includes(stretchingSearch.toLowerCase()))
+          : stretchingVideos;
+        return (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col">
+              <div className="p-6 border-b border-gray-200">
+                <h3 className="text-lg font-bold text-gray-900">Video Stretching — {stretchingModal.dayName}</h3>
+                <p className="text-sm text-gray-500 mt-1">Seleziona i video di stretching da aggiungere (opzionale)</p>
+              </div>
+              <div className="p-4 border-b border-gray-200">
+                <div className="relative">
+                  {React.createElement(FiSearch as React.ComponentType<{ className?: string }>, { className: "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" })}
+                  <input
+                    type="text"
+                    placeholder="Cerca video..."
+                    value={stretchingSearch}
+                    onChange={(e) => setStretchingSearch(e.target.value)}
+                    className="w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 text-sm"
+                  />
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                {filtered.length === 0 ? (
+                  <p className="text-center text-gray-500 py-4">Nessun video trovato</p>
+                ) : (
+                  filtered.map(video => {
+                    const selected = selectedStretchingVideos.has(video.id);
+                    return (
+                      <button
+                        key={video.id}
+                        onClick={() => {
+                          setSelectedStretchingVideos(prev => {
+                            const next = new Set(prev);
+                            selected ? next.delete(video.id) : next.add(video.id);
+                            return next;
+                          });
+                        }}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-colors text-left ${
+                          selected ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className={`w-5 h-5 rounded flex-shrink-0 flex items-center justify-center border-2 ${
+                          selected ? 'bg-green-500 border-green-500' : 'border-gray-300'
+                        }`}>
+                          {selected && React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: "w-3 h-3 text-white" })}
+                        </div>
+                        <span className="text-sm font-medium text-gray-900">{video.title}</span>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+              <div className="p-4 border-t border-gray-200 flex gap-3">
+                <button
+                  onClick={() => {
+                    setStretchingModal(null);
+                    setSelectedStretchingVideos(new Set());
+                    setStretchingSearch('');
+                  }}
+                  className="flex-1 py-2.5 border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                >
+                  Salta
+                </button>
+                <button
+                  onClick={handleConfirmStretching}
+                  disabled={selectedStretchingVideos.size === 0}
+                  className="flex-1 py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {selectedStretchingVideos.size > 0
+                    ? `Aggiungi ${selectedStretchingVideos.size} video`
+                    : 'Aggiungi selezionati'}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+    </>
   );
 };
 
