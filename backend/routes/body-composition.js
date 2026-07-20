@@ -5,24 +5,29 @@ const multer = require('multer');
 const path = require('path');
 const { createDatabase } = require('../utils/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { parseBodyCompositionPDF } = require('../services/bodyCompositionParser');
 
 const router = express.Router();
 
-const ACCEPTED_MIME = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+const ACCEPTED_MIME = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
 
 const upload = multer({
     storage: multer.memoryStorage(),
     fileFilter: (req, file, cb) => {
         if (ACCEPTED_MIME.includes(file.mimetype)) cb(null, true);
-        else cb(new Error('Formato non supportato. Usa JPG, PNG o WEBP.'), false);
+        else cb(new Error('Formato non supportato. Usa JPG, PNG, WEBP o PDF.'), false);
     },
     limits: { fileSize: 20 * 1024 * 1024 },
 });
 
 function mimeFromName(originalName) {
     const ext = path.extname(originalName || '').toLowerCase();
-    const map = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' };
-    return map[ext] || 'image/jpeg';
+    const map = {
+        '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+        '.png': 'image/png', '.webp': 'image/webp',
+        '.pdf': 'application/pdf',
+    };
+    return map[ext] || 'application/octet-stream';
 }
 
 // ── ADMIN ────────────────────────────────────────────────────────────────────
@@ -34,6 +39,16 @@ router.post('/admin/upload/:userId', authenticateToken, requireAdmin, upload.sin
 
     const measurementDate = req.body.measurementDate || null;
     const fileData = req.file.buffer.toString('base64');
+    const isPdf = req.file.mimetype === 'application/pdf';
+
+    let parsedData = null;
+    if (isPdf) {
+        try {
+            parsedData = await parseBodyCompositionPDF(req.file.buffer);
+        } catch (parseErr) {
+            console.warn('PDF parsing failed (storing raw):', parseErr.message);
+        }
+    }
 
     try {
         const db = createDatabase();
@@ -49,7 +64,7 @@ router.post('/admin/upload/:userId', authenticateToken, requireAdmin, upload.sin
                  (user_id, measurement_date, uploaded_by, original_name, file_size, file_data, parsed_data)
                  VALUES (?, ?, ?, ?, ?, ?, ?)`,
                 [userId, measurementDate, req.user.username, req.file.originalname,
-                 req.file.size, fileData, null],
+                 req.file.size, fileData, parsedData ? JSON.stringify(parsedData) : null],
                 function(e) { if (e) reject(e); else resolve(this); }
             );
         });
@@ -120,7 +135,7 @@ router.get('/my-reports', authenticateToken, async (req, res) => {
     try {
         const rows = await new Promise((resolve, reject) => {
             db.allCallback(
-                `SELECT id, measurement_date, uploaded_at, original_name, file_size
+                `SELECT id, measurement_date, uploaded_at, original_name, file_size, parsed_data
                  FROM body_composition_reports WHERE user_id = ? ORDER BY uploaded_at DESC`,
                 [userId], (e, r) => e ? reject(e) : resolve(r)
             );
@@ -132,6 +147,7 @@ router.get('/my-reports', authenticateToken, async (req, res) => {
                 id: r.id, measurementDate: r.measurement_date,
                 uploadedAt: r.uploaded_at, originalName: r.original_name,
                 fileSize: r.file_size,
+                parsedData: r.parsed_data ? JSON.parse(r.parsed_data) : null,
             })),
         });
     } catch (e) {

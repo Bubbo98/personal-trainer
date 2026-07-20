@@ -155,7 +155,7 @@ const BodyCompositionAdmin: React.FC<Props> = ({ userId, userName }) => {
           <input
             ref={fileRef}
             type="file"
-            accept="image/jpeg,image/jpg,image/png,image/webp"
+            accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
             className="hidden"
             onChange={handleUpload}
           />
@@ -168,7 +168,7 @@ const BodyCompositionAdmin: React.FC<Props> = ({ userId, userName }) => {
               ? React.createElement(FiLoader as React.ComponentType<{ className?: string }>, { className: "w-4 h-4 animate-spin" })
               : React.createElement(FiUpload as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })
             }
-            {uploading ? 'Caricamento...' : 'Carica immagine'}
+            {uploading ? 'Caricamento...' : 'Carica file'}
           </button>
         </div>
       </div>
@@ -188,21 +188,30 @@ const BodyCompositionAdmin: React.FC<Props> = ({ userId, userName }) => {
       ) : reports.length === 0 ? (
         <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-xl text-gray-400">
           <p>Nessun report caricato</p>
-          <p className="text-xs mt-1">Seleziona una data opzionale e carica l'immagine Starfit</p>
+          <p className="text-xs mt-1">Seleziona una data opzionale e carica il PDF o l'immagine Starfit</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {reports.map(report => (
             <div key={report.id} className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col">
-              {/* Image preview */}
+              {/* Preview */}
               <div className="relative bg-gray-50 flex items-center justify-center" style={{ minHeight: 220 }}>
                 {previewUrls[report.id] ? (
-                  <img
-                    src={previewUrls[report.id]}
-                    alt="Report"
-                    className="w-full object-contain"
-                    style={{ maxHeight: 280 }}
-                  />
+                  report.originalName.toLowerCase().endsWith('.pdf') ? (
+                    <embed
+                      src={previewUrls[report.id]}
+                      type="application/pdf"
+                      className="w-full"
+                      style={{ height: 280 }}
+                    />
+                  ) : (
+                    <img
+                      src={previewUrls[report.id]}
+                      alt="Report"
+                      className="w-full object-contain"
+                      style={{ maxHeight: 280 }}
+                    />
+                  )
                 ) : (
                   <div className="flex flex-col items-center gap-2 text-gray-300 py-10">
                     {React.createElement(FiImage as React.ComponentType<{ className?: string }>, { className: "w-10 h-10" })}
