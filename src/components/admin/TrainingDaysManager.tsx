@@ -13,6 +13,7 @@ import {
   FiAlertTriangle,
   FiLink,
   FiScissors,
+  FiLoader,
 } from 'react-icons/fi';
 import {
   DndContext,
@@ -243,6 +244,11 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
   const [stretchingSearch, setStretchingSearch] = useState('');
   const [selectionModeDayId, setSelectionModeDayId] = useState<number | null>(null);
   const [selectedAssignmentIds, setSelectedAssignmentIds] = useState<Set<number>>(new Set());
+  const [pendingActions, setPendingActions] = useState<Set<string>>(new Set());
+
+  const isPending = (key: string) => pendingActions.has(key);
+  const startPending = (key: string) => setPendingActions(p => new Set(p).add(key));
+  const stopPending = (key: string) => setPendingActions(p => { const s = new Set(p); s.delete(key); return s; });
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -352,22 +358,20 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
     }
   };
 
-  // Add new training day
+  // Add new training day — needs server response for new ID
   const handleAddDay = async () => {
     const nextDayNumber = trainingDays.length > 0
       ? Math.max(...trainingDays.map(d => d.dayNumber)) + 1
       : 1;
     const dayName = `Giorno ${nextDayNumber}`;
-
+    startPending('add-day');
     try {
       const response = await apiCall(`/training-days/users/${userId}/training-days`, {
         method: 'POST',
         body: JSON.stringify({ dayNumber: nextDayNumber, dayName })
       });
-
       await loadTrainingDays();
       if (onUpdate) onUpdate();
-
       const stretchingVideos = allVideos.filter(v => v.muscleGroup === 'Stretching');
       if (stretchingVideos.length > 0) {
         setSelectedStretchingVideos(new Set());
@@ -375,58 +379,48 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
         setStretchingModal({ dayId: response.data.id, dayName });
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Errore nella creazione del giorno';
-      alert(`Errore nella creazione del giorno: ${errorMessage}`);
-      console.error('Create training day error:', error);
+      alert(`Errore nella creazione del giorno: ${error instanceof Error ? error.message : ''}`);
+    } finally {
+      stopPending('add-day');
     }
   };
 
-  // Delete training day
+  // Delete training day — optimistic
   const handleDeleteDay = async (dayId: number) => {
-    if (!window.confirm('Sei sicuro di voler eliminare questo giorno di allenamento?')) {
-      return;
-    }
-
+    if (!window.confirm('Sei sicuro di voler eliminare questo giorno di allenamento?')) return;
+    setTrainingDays(prev => prev.filter(d => d.id !== dayId));
     try {
-      await apiCall(`/training-days/users/${userId}/training-days/${dayId}`, {
-        method: 'DELETE'
-      });
-
-      await loadTrainingDays();
+      await apiCall(`/training-days/users/${userId}/training-days/${dayId}`, { method: 'DELETE' });
       if (onUpdate) onUpdate();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Errore nell\'eliminazione del giorno';
-      alert(`Errore nell'eliminazione del giorno: ${errorMessage}`);
-      console.error('Delete training day error:', error);
+    } catch {
+      alert('Errore nell\'eliminazione del giorno');
+      await loadTrainingDays();
     }
   };
 
-  // Update day name
+  // Update day name — optimistic
   const handleUpdateDayName = async (dayId: number) => {
+    const newName = editDayName;
+    setEditingDayId(null);
+    setEditDayName('');
+    setTrainingDays(prev => prev.map(d => d.id === dayId ? { ...d, dayName: newName } : d));
     try {
       await apiCall(`/training-days/users/${userId}/training-days/${dayId}`, {
         method: 'PUT',
-        body: JSON.stringify({ dayName: editDayName })
+        body: JSON.stringify({ dayName: newName })
       });
-
-      await loadTrainingDays();
-      setEditingDayId(null);
-      setEditDayName('');
       if (onUpdate) onUpdate();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Errore nell\'aggiornamento del nome';
-      alert(`Errore nell'aggiornamento del nome: ${errorMessage}`);
-      console.error('Update day name error:', error);
+    } catch {
+      alert('Errore nell\'aggiornamento del nome');
+      await loadTrainingDays();
     }
   };
 
-  // Assign video to day
+  // Assign video to day — needs server response for assignmentId/orderIndex
   const handleAssignVideo = async (dayId: number, videoId: number) => {
+    startPending(`assign-${videoId}`);
     try {
-      await apiCall(`/training-days/users/${userId}/training-days/${dayId}/videos/${videoId}`, {
-        method: 'POST'
-      });
-
+      await apiCall(`/training-days/users/${userId}/training-days/${dayId}/videos/${videoId}`, { method: 'POST' });
       await loadTrainingDays();
       setShowAddVideo(null);
       setVideoSearchTerm('');
@@ -434,37 +428,45 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
       setVideoCategoryFilter('');
       if (onUpdate) onUpdate();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Errore nell\'assegnazione del video';
-      alert(`Errore nell'assegnazione del video: ${errorMessage}`);
-      console.error('Assign video error:', error);
+      alert(`Errore nell'assegnazione del video: ${error instanceof Error ? error.message : ''}`);
+    } finally {
+      stopPending(`assign-${videoId}`);
     }
   };
 
+  // Add technique — optimistic
   const handleAddTechnique = async (dayId: number, videoId: number, techniqueId: number) => {
+    const tech = allVideos.find(v => v.id === techniqueId);
+    if (tech) {
+      setTrainingDays(prev => prev.map(d => d.id === dayId
+        ? { ...d, videos: d.videos.map(v => v.id === videoId
+            ? { ...v, techniques: [...(v.techniques || []), { id: tech.id, title: tech.title }] }
+            : v) }
+        : d));
+    }
     try {
-      await apiCall(`/training-days/users/${userId}/training-days/${dayId}/videos/${videoId}/techniques/${techniqueId}`, {
-        method: 'POST',
-      });
-      await loadTrainingDays();
-    } catch (error) {
+      await apiCall(`/training-days/users/${userId}/training-days/${dayId}/videos/${videoId}/techniques/${techniqueId}`, { method: 'POST' });
+    } catch {
       alert('Errore nell\'aggiunta della tecnica');
-      console.error('Add technique error:', error);
-    }
-  };
-
-  const handleRemoveTechnique = async (dayId: number, videoId: number, techniqueId: number) => {
-    try {
-      await apiCall(`/training-days/users/${userId}/training-days/${dayId}/videos/${videoId}/techniques/${techniqueId}`, {
-        method: 'DELETE',
-      });
       await loadTrainingDays();
-    } catch (error) {
-      alert('Errore nella rimozione della tecnica');
-      console.error('Remove technique error:', error);
     }
   };
 
-  // Enter / exit selection (grouping) mode for a day
+  // Remove technique — optimistic
+  const handleRemoveTechnique = async (dayId: number, videoId: number, techniqueId: number) => {
+    setTrainingDays(prev => prev.map(d => d.id === dayId
+      ? { ...d, videos: d.videos.map(v => v.id === videoId
+          ? { ...v, techniques: (v.techniques || []).filter(t => t.id !== techniqueId) }
+          : v) }
+      : d));
+    try {
+      await apiCall(`/training-days/users/${userId}/training-days/${dayId}/videos/${videoId}/techniques/${techniqueId}`, { method: 'DELETE' });
+    } catch {
+      alert('Errore nella rimozione della tecnica');
+      await loadTrainingDays();
+    }
+  };
+
   const enterSelectionMode = (dayId: number) => {
     setSelectionModeDayId(dayId);
     setSelectedAssignmentIds(new Set());
@@ -483,49 +485,57 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
     });
   };
 
+  // Create group — optimistic with temp groupId, then reload for real ID
   const handleCreateGroupWith = async (dayId: number, label: string) => {
     if (selectedAssignmentIds.size < 2) return;
+    const assignmentIds = Array.from(selectedAssignmentIds);
+    const tempGroupId = -Date.now();
+    setTrainingDays(prev => prev.map(d => d.id === dayId
+      ? { ...d, videos: d.videos.map(v =>
+          assignmentIds.includes(v.assignmentId)
+            ? { ...v, groupId: tempGroupId, groupLabel: label }
+            : v) }
+      : d));
+    exitSelectionMode();
+    startPending(`group-${dayId}`);
     try {
       await apiCall(`/training-days/users/${userId}/training-days/${dayId}/videos/group`, {
         method: 'PUT',
-        body: JSON.stringify({
-          assignmentIds: Array.from(selectedAssignmentIds),
-          groupLabel: label,
-        }),
+        body: JSON.stringify({ assignmentIds, groupLabel: label }),
       });
       await loadTrainingDays();
-      exitSelectionMode();
-    } catch (error) {
+    } catch {
       alert('Errore nella creazione del gruppo');
-      console.error('Create group error:', error);
+      await loadTrainingDays();
+    } finally {
+      stopPending(`group-${dayId}`);
     }
   };
 
+  // Ungroup — optimistic
   const handleUngroup = async (dayId: number, groupId: number) => {
+    setTrainingDays(prev => prev.map(d => d.id === dayId
+      ? { ...d, videos: d.videos.map(v => v.groupId === groupId ? { ...v, groupId: null, groupLabel: null } : v) }
+      : d));
     try {
-      await apiCall(`/training-days/users/${userId}/training-days/${dayId}/videos/group/${groupId}`, {
-        method: 'DELETE',
-      });
-      await loadTrainingDays();
-    } catch (error) {
+      await apiCall(`/training-days/users/${userId}/training-days/${dayId}/videos/group/${groupId}`, { method: 'DELETE' });
+    } catch {
       alert('Errore nella rimozione del gruppo');
-      console.error('Ungroup error:', error);
+      await loadTrainingDays();
     }
   };
 
-  // Remove video from day
+  // Remove video from day — optimistic
   const handleRemoveVideo = async (dayId: number, videoId: number) => {
+    setTrainingDays(prev => prev.map(d => d.id === dayId
+      ? { ...d, videos: d.videos.filter(v => v.id !== videoId) }
+      : d));
     try {
-      await apiCall(`/training-days/users/${userId}/training-days/${dayId}/videos/${videoId}`, {
-        method: 'DELETE'
-      });
-
-      await loadTrainingDays();
+      await apiCall(`/training-days/users/${userId}/training-days/${dayId}/videos/${videoId}`, { method: 'DELETE' });
       if (onUpdate) onUpdate();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Errore nella rimozione del video';
-      alert(`Errore nella rimozione del video: ${errorMessage}`);
-      console.error('Remove video error:', error);
+    } catch {
+      alert('Errore nella rimozione del video');
+      await loadTrainingDays();
     }
   };
 
@@ -662,11 +672,14 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
           )}
           <button
             onClick={handleAddDay}
-            disabled={loading}
+            disabled={isPending('add-day')}
             className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2.5 rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {React.createElement(FiPlus as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-            <span>Aggiungi Giorno</span>
+            {isPending('add-day')
+              ? React.createElement(FiLoader as React.ComponentType<{ className?: string }>, { className: "w-5 h-5 animate-spin" })
+              : React.createElement(FiPlus as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })
+            }
+            <span>{isPending('add-day') ? 'Aggiunta...' : 'Aggiungi Giorno'}</span>
           </button>
         </div>
       </div>
@@ -677,10 +690,10 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
           <p className="mb-4">Nessun giorno di allenamento creato</p>
           <button
             onClick={handleAddDay}
-            disabled={loading}
+            disabled={isPending('add-day')}
             className="text-green-600 hover:text-green-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            + Crea il primo giorno
+            {isPending('add-day') ? 'Aggiunta...' : '+ Crea il primo giorno'}
           </button>
         </div>
       ) : (
@@ -890,9 +903,10 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
                               <button
                                 key={t.id}
                                 onClick={() => handleCreateGroupWith(day.id, t.title)}
-                                disabled={selectedAssignmentIds.size < 2}
-                                className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                disabled={selectedAssignmentIds.size < 2 || isPending(`group-${day.id}`)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                               >
+                                {isPending(`group-${day.id}`) && React.createElement(FiLoader as React.ComponentType<{ className?: string }>, { className: "w-3 h-3 animate-spin" })}
                                 {t.title}
                               </button>
                             ))}
@@ -965,13 +979,17 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
                               <button
                                 key={video.id}
                                 onClick={() => handleAssignVideo(day.id, video.id)}
-                                className="w-full text-left bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl p-3 transition-colors"
+                                disabled={isPending(`assign-${video.id}`)}
+                                className="w-full text-left bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl p-3 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-3"
                               >
-                                <h6 className="font-medium text-gray-900 text-sm">{video.title}</h6>
-                                <div className="text-xs text-gray-500 space-x-2 mt-1">
-                                  <span className="capitalize">{video.category}</span>
-                                  <span>•</span>
-                                  <span>{formatDuration(video.duration)}</span>
+                                {isPending(`assign-${video.id}`) && React.createElement(FiLoader as React.ComponentType<{ className?: string }>, { className: "w-4 h-4 animate-spin text-gray-500 flex-shrink-0" })}
+                                <div>
+                                  <h6 className="font-medium text-gray-900 text-sm">{video.title}</h6>
+                                  <div className="text-xs text-gray-500 space-x-2 mt-1">
+                                    <span className="capitalize">{video.category}</span>
+                                    <span>•</span>
+                                    <span>{formatDuration(video.duration)}</span>
+                                  </div>
                                 </div>
                               </button>
                             ))
