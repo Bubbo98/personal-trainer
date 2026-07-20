@@ -201,6 +201,7 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
   const [showAddVideo, setShowAddVideo] = useState<number | null>(null);
   const [videoSearchTerm, setVideoSearchTerm] = useState('');
   const [videoMuscleFilter, setVideoMuscleFilter] = useState('');
+  const [videoCategoryFilter, setVideoCategoryFilter] = useState('');
   const [stretchingModal, setStretchingModal] = useState<{ dayId: number; dayName: string } | null>(null);
   const [selectedStretchingVideos, setSelectedStretchingVideos] = useState<Set<number>>(new Set());
   const [stretchingSearch, setStretchingSearch] = useState('');
@@ -392,6 +393,7 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
       setShowAddVideo(null);
       setVideoSearchTerm('');
       setVideoMuscleFilter('');
+      setVideoCategoryFilter('');
       if (onUpdate) onUpdate();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Errore nell\'assegnazione del video';
@@ -499,6 +501,10 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
 
     const assignedVideoIds = new Set(day.videos.map(v => v.id));
     let available = allVideos.filter(v => !assignedVideoIds.has(v.id));
+
+    if (videoCategoryFilter) {
+      available = available.filter(v => v.category === videoCategoryFilter);
+    }
 
     if (videoMuscleFilter) {
       available = available.filter(v => v.muscleGroup === videoMuscleFilter);
@@ -694,6 +700,7 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
                               setShowAddVideo(null);
                               setVideoSearchTerm('');
                               setVideoMuscleFilter('');
+                              setVideoCategoryFilter('');
                             }}
                             className="text-gray-600 hover:text-gray-800"
                           >
@@ -714,6 +721,15 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
                               className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors"
                             />
                           </div>
+                          <select
+                            value={videoCategoryFilter}
+                            onChange={(e) => setVideoCategoryFilter(e.target.value)}
+                            className="py-2.5 pl-3 pr-8 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors text-sm text-gray-700 bg-white"
+                          >
+                            <option value="">Palestra + Corpo libero</option>
+                            <option value="palestra">Palestra</option>
+                            <option value="corpoLibero">Corpo libero</option>
+                          </select>
                           {availableMuscleGroups.length > 0 && (
                             <select
                               value={videoMuscleFilter}
