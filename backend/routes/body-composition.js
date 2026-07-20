@@ -2,36 +2,44 @@
 
 const express = require('express');
 const multer = require('multer');
+const path = require('path');
 const { createDatabase } = require('../utils/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
-const { parseBodyCompositionPDF } = require('../services/bodyCompositionParser');
+const { parseBodyCompositionReport } = require('../services/bodyCompositionParser');
 
 const router = express.Router();
+
+const ACCEPTED_MIME = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
 
 const upload = multer({
     storage: multer.memoryStorage(),
     fileFilter: (req, file, cb) => {
-        if (file.mimetype === 'application/pdf') cb(null, true);
-        else cb(new Error('Solo file PDF'), false);
+        if (ACCEPTED_MIME.includes(file.mimetype)) cb(null, true);
+        else cb(new Error('Formato non supportato. Usa JPG, PNG o WEBP.'), false);
     },
     limits: { fileSize: 20 * 1024 * 1024 },
 });
+
+function mimeFromName(originalName) {
+    const ext = path.extname(originalName || '').toLowerCase();
+    const map = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif' };
+    return map[ext] || 'image/jpeg';
+}
 
 // ── ADMIN ────────────────────────────────────────────────────────────────────
 
 // POST /api/body-composition/admin/upload/:userId
 router.post('/admin/upload/:userId', authenticateToken, requireAdmin, upload.single('pdf'), async (req, res) => {
     const { userId } = req.params;
-    if (!req.file) return res.status(400).json({ success: false, error: 'Nessun file PDF' });
+    if (!req.file) return res.status(400).json({ success: false, error: 'Nessun file' });
 
     try {
-        const parsedData = await parseBodyCompositionPDF(req.file.buffer);
+        const parsedData = await parseBodyCompositionReport(req.file.buffer, req.file.mimetype);
         const fileData = req.file.buffer.toString('base64');
         const measurementDate = parsedData.header?.dataRilevazione || null;
 
         const db = createDatabase();
 
-        // Verify user exists
         const user = await new Promise((resolve, reject) => {
             db.getCallback('SELECT id FROM users WHERE id = ?', [userId], (e, r) => e ? reject(e) : resolve(r));
         });
@@ -136,7 +144,7 @@ router.get('/my-reports', authenticateToken, async (req, res) => {
     }
 });
 
-// GET /api/body-composition/download/:reportId  — download original PDF
+// GET /api/body-composition/download/:reportId  — download original image
 router.get('/download/:reportId', authenticateToken, async (req, res) => {
     const { reportId } = req.params;
     const userId = req.user.userId;
@@ -154,7 +162,8 @@ router.get('/download/:reportId', authenticateToken, async (req, res) => {
         if (!isAdmin && row.user_id !== userId) return res.status(403).json({ success: false, error: 'Accesso negato' });
 
         const buf = Buffer.from(row.file_data, 'base64');
-        res.setHeader('Content-Type', 'application/pdf');
+        const mime = mimeFromName(row.original_name);
+        res.setHeader('Content-Type', mime);
         res.setHeader('Content-Disposition', `attachment; filename="${row.original_name}"`);
         res.setHeader('Content-Length', buf.length);
         res.send(buf);

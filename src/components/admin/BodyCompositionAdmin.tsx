@@ -106,7 +106,7 @@ const BodyCompositionAdmin: React.FC<Props> = ({ userId, userName }) => {
           <input
             ref={fileRef}
             type="file"
-            accept="application/pdf"
+            accept="image/jpeg,image/jpg,image/png,image/webp"
             className="hidden"
             onChange={handleUpload}
           />
