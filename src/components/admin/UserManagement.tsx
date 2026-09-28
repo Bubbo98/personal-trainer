@@ -251,6 +251,7 @@ const UserManagement: React.FC = () => {
       lastName: user.lastName || '',
       email: user.email || '',
       isPaying: Boolean(user.isPaying),
+      checkinExempt: Boolean(user.checkinExempt),
       trainerId: user.trainerId || 1
     });
   };
@@ -637,6 +638,19 @@ const UserManagement: React.FC = () => {
                 />
                 <label htmlFor="isPayingEdit" className="text-sm font-medium text-gray-700">
                   Utente pagante
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2 py-3">
+                <input
+                  type="checkbox"
+                  id="checkinExemptEdit"
+                  checked={updateUserForm.checkinExempt}
+                  onChange={(e) => setUpdateUserForm(prev => ({ ...prev, checkinExempt: e.target.checked }))}
+                  className="w-4 h-4 rounded border-gray-300 accent-gray-900 focus:ring-2 focus:ring-gray-900 cursor-pointer"
+                />
+                <label htmlFor="checkinExemptEdit" className="text-sm font-medium text-gray-700">
+                  Esenta dal check settimanale obbligatorio
                 </label>
               </div>
 

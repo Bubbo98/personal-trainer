@@ -240,7 +240,9 @@ router.post('/admin/plan/:userId', authenticateToken, requireAdmin, async (req, 
   const db = createDatabase();
 
   try {
-    // Delete existing plan (FK cascade is OFF in SQLite/Turso by default — logs are preserved)
+    // Delete existing plan — exercise_id has ON DELETE CASCADE, so this also
+    // wipes exercise_logs for the deleted exercises. Intentional: a new plan
+    // means new exercises, so old weight logs no longer apply.
     await new Promise((resolve, reject) => {
       db.runCallback(
         'DELETE FROM training_exercises WHERE user_id = ?',

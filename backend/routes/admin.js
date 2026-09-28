@@ -307,6 +307,7 @@ router.get('/users', (req, res) => {
             u.last_name,
             u.is_active,
             u.is_paying,
+            u.checkin_exempt,
             u.trainer_id,
             t.name as trainer_name,
             u.created_at,
@@ -357,6 +358,7 @@ router.get('/users', (req, res) => {
                     lastName: user.last_name,
                     isActive: Number(user.is_active) === 1,
                     isPaying: Number(user.is_paying) === 1,
+                    checkinExempt: Number(user.checkin_exempt) === 1,
                     trainerId: user.trainer_id,
                     trainerName: user.trainer_name,
                     createdAt: user.created_at,
@@ -1343,7 +1345,7 @@ router.delete('/reviews/:id', (req, res) => {
 // Update user details
 router.put('/users/:id', async (req, res) => {
     const userId = req.params.id;
-    const { firstName, lastName, email, isPaying, trainerId } = req.body;
+    const { firstName, lastName, email, isPaying, checkinExempt, trainerId } = req.body;
 
     if (!userId || isNaN(userId)) {
         return res.status(400).json({
@@ -1374,6 +1376,10 @@ router.put('/users/:id', async (req, res) => {
     if (isPaying !== undefined) {
         updates.push('is_paying = ?');
         params.push(isPaying ? 1 : 0);
+    }
+    if (checkinExempt !== undefined) {
+        updates.push('checkin_exempt = ?');
+        params.push(checkinExempt ? 1 : 0);
     }
     if (trainerId !== undefined) {
         updates.push('trainer_id = ?');
@@ -1427,7 +1433,7 @@ router.put('/users/:id', async (req, res) => {
 
         // Return updated user with trainer info
         db.getCallback(
-            `SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.is_paying, u.is_active, u.trainer_id, u.created_at, u.updated_at, t.name as trainer_name
+            `SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.is_paying, u.checkin_exempt, u.is_active, u.trainer_id, u.created_at, u.updated_at, t.name as trainer_name
              FROM users u
              LEFT JOIN trainers t ON u.trainer_id = t.id
              WHERE u.id = ?`,
@@ -1456,6 +1462,7 @@ router.put('/users/:id', async (req, res) => {
                             firstName: user.first_name,
                             lastName: user.last_name,
                             isPaying: Number(user.is_paying) === 1,
+                            checkinExempt: Number(user.checkin_exempt) === 1,
                             isActive: Number(user.is_active) === 1,
                             trainerId: user.trainer_id,
                             trainerName: user.trainer_name,

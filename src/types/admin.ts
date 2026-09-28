@@ -14,6 +14,7 @@ export interface User {
   lastName?: string;
   isActive: boolean;
   isPaying: boolean;
+  checkinExempt?: boolean;
   trainerId: number;
   trainerName?: string;
   createdAt: string;
@@ -60,6 +61,7 @@ export interface UpdateUserForm {
   lastName?: string;
   email?: string;
   isPaying?: boolean;
+  checkinExempt?: boolean;
   trainerId?: number;
 }
 

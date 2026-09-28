@@ -121,15 +121,31 @@ const WorkoutTab: React.FC = () => {
 
       setExercises(exList);
 
-      // Pre-fill drafts from current week logs
+      // Pre-fill drafts from current week logs. If this week has no log yet for
+      // an exercise, carry over the weight from the most recent previous week
+      // (allLogList is already ordered by week_start DESC) so weights persist
+      // week to week and only reset when a new plan assigns new exercise ids.
+      const latestLogByExercise: Record<number, ExerciseLog> = {};
+      for (const log of allLogList) {
+        if (!(log.exercise_id in latestLogByExercise)) {
+          latestLogByExercise[log.exercise_id] = log;
+        }
+      }
+
       const initial: Record<number, LogDraft> = {};
-      for (const log of currentLogList) {
-        initial[log.exercise_id] = {
-          weight: log.weight || '',
-          sets_done: log.sets_done != null ? String(log.sets_done) : '',
-          reps_done: log.reps_done || '',
-          notes: log.notes || '',
-        };
+      for (const ex of exList) {
+        const currentLog = currentLogList.find((l) => l.exercise_id === ex.id);
+        const carriedWeight = latestLogByExercise[ex.id]?.weight || '';
+        if (currentLog) {
+          initial[ex.id] = {
+            weight: currentLog.weight || carriedWeight,
+            sets_done: currentLog.sets_done != null ? String(currentLog.sets_done) : '',
+            reps_done: currentLog.reps_done || '',
+            notes: currentLog.notes || '',
+          };
+        } else if (carriedWeight) {
+          initial[ex.id] = { weight: carriedWeight, sets_done: '', reps_done: '', notes: '' };
+        }
       }
       setDrafts(initial);
 

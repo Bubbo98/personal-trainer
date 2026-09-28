@@ -38,6 +38,32 @@ router.get('/should-show', authenticateToken, (req, res) => {
   const db = createDatabase();
   const userId = req.user.userId;
 
+  // Admin can exempt a user from the mandatory weekly check-in
+  db.getCallback('SELECT checkin_exempt FROM users WHERE id = ?', [userId], (exemptErr, userRow) => {
+    if (exemptErr) {
+      db.close();
+      console.error('Error checking checkin_exempt:', exemptErr);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to check feedback status'
+      });
+    }
+
+    if (userRow && userRow.checkin_exempt) {
+      db.close();
+      return res.json({
+        success: true,
+        data: {
+          shouldShow: false,
+          reason: 'exempt'
+        }
+      });
+    }
+
+    continueShouldShowCheck();
+  });
+
+  function continueShouldShowCheck() {
   // Get the latest PDF change date and latest feedback date for this PDF
   const query = `
     SELECT
@@ -117,6 +143,7 @@ router.get('/should-show', authenticateToken, (req, res) => {
       }
     });
   });
+  }
 });
 
 // POST /api/feedback - Submit a new weekly check
@@ -655,7 +682,12 @@ router.get('/admin/all', authenticateToken, (req, res) => {
             u.username,
             u.first_name as user_first_name,
             u.last_name as user_last_name,
-            u.trainer_id
+            u.trainer_id,
+            CASE WHEN f.pdf_change_date IS NULL THEN 0 ELSE (
+              (SELECT f2.id FROM user_feedbacks f2
+               WHERE f2.user_id = f.user_id AND f2.pdf_change_date = f.pdf_change_date
+               ORDER BY f2.feedback_date ASC, f2.created_at ASC LIMIT 1) = f.id
+            ) END AS is_first_of_scheda
           FROM user_feedbacks f
           JOIN users u ON f.user_id = u.id
           ${fullWhere}

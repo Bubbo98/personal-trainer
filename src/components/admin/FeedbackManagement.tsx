@@ -29,6 +29,7 @@ interface Feedback {
   created_at: string;
   pdf_change_date: string | null;
   trainer_seen_at: string | null;
+  is_first_of_scheda?: number | boolean;
 }
 
 interface UserSummary {
@@ -211,6 +212,23 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
     }
   };
 
+  // Is this the earliest feedback the user submitted for this plan version?
+  // (pdf_change_date is stamped on submit — see backend/routes/feedback.js)
+  const isFirstOfScheda = (list: Feedback[], feedback: Feedback): boolean => {
+    if (!feedback.pdf_change_date) return false;
+    const sameScheda = list.filter(
+      (f) => f.user_id === feedback.user_id && f.pdf_change_date === feedback.pdf_change_date
+    );
+    const earliest = sameScheda.reduce((min, f) => {
+      const fDate = new Date(f.feedback_date).getTime();
+      const minDate = new Date(min.feedback_date).getTime();
+      if (fDate !== minDate) return fDate < minDate ? f : min;
+      // Same day — tie-break on submission timestamp
+      return new Date(f.created_at) < new Date(min.created_at) ? f : min;
+    }, sameScheda[0]);
+    return earliest.id === feedback.id;
+  };
+
   // ─── Label helpers ─────────────────────────────────────────────────────────
   const getEnergyLabel = (level: string) => ({ high: 'Alta', medium: 'Media', low: 'Bassa' }[level] || level);
   const getWorkoutsLabel = (s: string) => ({ all: 'Tutti', almost_all: 'Quasi tutti', few_or_none: 'Pochi/nessuno' }[s] || s);
@@ -379,6 +397,7 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             {isNew && <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white uppercase">Nuovo</span>}
+                            {!!feedback.is_first_of_scheda && <span title="Primo check di questa scheda" className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-white uppercase">1° scheda</span>}
                             <span className={`font-semibold text-gray-900 text-sm ${isNew ? 'text-blue-900' : ''}`}>{feedback.user_first_name} {feedback.user_last_name}</span>
                             {feedback.trainer_seen_at && <span className="text-green-500 text-xs font-medium">✓</span>}
                           </div>
@@ -434,6 +453,7 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           <div className="flex items-center gap-2">
                             {isNew && <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white uppercase">Nuovo</span>}
+                            {!!feedback.is_first_of_scheda && <span title="Primo check di questa scheda" className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-white uppercase">1° scheda</span>}
                             {formatDate(feedback.feedback_date)}
                           </div>
                         </td>
@@ -565,6 +585,7 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                                 <div className="flex-1">
                                   <div className="flex items-center space-x-3 mb-2">
                                     {isNew && <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white uppercase">Nuovo</span>}
+                                    {isFirstOfScheda(expandedUserFeedbacks[userSum.user_id] || [], feedback) && <span title="Primo check di questa scheda" className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-white uppercase">1° scheda</span>}
                                     <span className={`text-sm ${isNew ? 'font-bold' : 'font-medium'} text-gray-900`}>{formatDate(feedback.feedback_date)}</span>
                                     {feedback.physical_discomfort !== 'none' && (
                                       <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(feedback.physical_discomfort, 'discomfort')}`}>{getDiscomfortLabel(feedback.physical_discomfort)}</span>

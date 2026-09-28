@@ -435,24 +435,31 @@ const Dashboard: React.FC<DashboardProps> = () => {
               </div>
             </div>
           ) : (
-            <div className="mb-6 bg-gradient-to-r from-gray-900 to-gray-700 rounded-xl p-5 shadow-lg">
-              <div className="flex items-center space-x-4">
-                <div className="flex-shrink-0">
-                  {React.createElement(SiTiktok as React.ComponentType<{ className?: string }>, { className: "w-10 h-10 text-white" })}
+            <div className="mb-6 grid grid-cols-2 gap-3">
+              <a
+                href="https://www.instagram.com/mauriziojoshuapt?stkn=MWt2N2sxaG1uZTBqZg%3D%3D&utm_source=qr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center sm:justify-start gap-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-4 shadow-lg hover:opacity-90 transition-opacity"
+              >
+                {React.createElement(SiInstagram as React.ComponentType<{ className?: string }>, { className: "w-7 h-7 sm:w-8 sm:h-8 text-white flex-shrink-0" })}
+                <div className="hidden sm:block min-w-0">
+                  <p className="text-white font-semibold text-sm leading-tight">Instagram</p>
+                  <p className="text-purple-100 text-xs truncate">@mauriziojoshuapt</p>
                 </div>
-                <div className="flex-1">
-                  <p className="text-white font-semibold text-lg">Seguimi su TikTok!</p>
-                  <p className="text-gray-300 text-sm">Video, tips e motivazione per i tuoi allenamenti.</p>
+              </a>
+              <a
+                href="https://www.tiktok.com/@jd.push.pull?_r=1&_t=ZN-945Y5lf6Dbi"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center sm:justify-start gap-3 bg-gradient-to-r from-gray-900 to-gray-700 rounded-xl p-4 shadow-lg hover:opacity-90 transition-opacity"
+              >
+                {React.createElement(SiTiktok as React.ComponentType<{ className?: string }>, { className: "w-7 h-7 sm:w-8 sm:h-8 text-white flex-shrink-0" })}
+                <div className="hidden sm:block min-w-0">
+                  <p className="text-white font-semibold text-sm leading-tight">TikTok</p>
+                  <p className="text-gray-300 text-xs truncate">@jd.push.pull</p>
                 </div>
-                <a
-                  href="https://www.tiktok.com/@jd.push.pull?_r=1&_t=ZN-945Y5lf6Dbi"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-shrink-0 bg-white text-gray-900 font-semibold px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors text-sm"
-                >
-                  @jd.push.pull
-                </a>
-              </div>
+              </a>
             </div>
           )}
 

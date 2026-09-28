@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiMessageSquare, FiClock, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
+import { FiMessageSquare, FiClock, FiCheckCircle, FiAlertCircle, FiAward } from 'react-icons/fi';
 import FeedbackForm from './FeedbackForm';
 import { apiCall, formatDate, STORAGE_KEY } from '../../utils/dashboardUtils';
 
@@ -223,6 +223,15 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) =
       {/* Show Feedback Form if conditions are met */}
       {feedbackStatus?.shouldShow && (
         <div className="mb-8">
+          {!feedbackStatus.lastFeedbackAt && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg mb-4 flex items-start space-x-2">
+              {React.createElement(FiAward as React.ComponentType<{ className?: string }>, { className: "w-5 h-5 mt-0.5" })}
+              <div>
+                <p className="font-medium">Primo check di questa scheda!</p>
+                <p className="text-sm">Compilalo per far sapere al tuo PT come sta andando la prima settimana.</p>
+              </div>
+            </div>
+          )}
           <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg mb-4 flex items-start space-x-2">
             {React.createElement(FiClock as React.ComponentType<{ className?: string }>, { className: "w-5 h-5 mt-0.5" })}
             <div>
@@ -276,6 +285,14 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) =
                     <p className="font-semibold text-gray-900 mb-1">{t('dashboard.feedback.status.noPlan')}</p>
                     <p className="text-sm text-gray-700">
                       {t('dashboard.feedback.status.noPlanMessage')}
+                    </p>
+                  </>
+                )}
+                {feedbackStatus.reason === 'exempt' && (
+                  <>
+                    <p className="font-semibold text-gray-900 mb-1">Check settimanale non richiesto</p>
+                    <p className="text-sm text-gray-700">
+                      Il tuo personal trainer ti ha esentato dal check settimanale obbligatorio.
                     </p>
                   </>
                 )}
