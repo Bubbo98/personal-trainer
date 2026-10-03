@@ -57,8 +57,9 @@ function parsePdfText(text) {
 
   const STATS_RE = new RegExp(
     `(\\d+)\\s+` +
-    // reps: "12", "10 + 12", "12/12" (superset), "15 x lato" / "15 per lato"
-    `(\\d+[${DQUOTE}${PRIME}]{0,2}(?:\\s*[+/]\\s*\\d+[${DQUOTE}${PRIME}]{0,2})*(?:\\s+(?:x|per)\\s+\\w+)?)\\s+` +
+    // reps: "12", "10 + 12", "12/12" (superset), "10+cedimento", "4-6-8-6-4" (ladder),
+    // "15 x lato" / "15 per lato"
+    `(\\d+[${DQUOTE}${PRIME}]{0,2}(?:\\s*[+/-]\\s*(?:\\d+[${DQUOTE}${PRIME}]{0,2}|cedimento|max))*(?:\\s+(?:x|per)\\s+\\w+)?)\\s+` +
     `(\\d+(?:[.,]\\d+)?[${PRIME}][${PRIME}\\d]*)`,
     'i'
   );
@@ -71,7 +72,7 @@ function parsePdfText(text) {
   const UNIT = `(?:\\s*(?:sec|min|[${PRIME}${DQUOTE}]{1,2}))`;
   const TABLE_ROW_RE = new RegExp(
     `^(.*?)\\s*\\b(\\d+)\\s+` +
-    `((?:${NUM}${UNIT}?(?:\\s*[+/]\\s*${NUM}${UNIT}?)*(?:\\s+(?:x|per)\\s+\\w+)?)|ladder|max)\\s+` +
+    `((?:${NUM}${UNIT}?(?:\\s*[+/-]\\s*(?:${NUM}${UNIT}?|cedimento|max))*(?:\\s+(?:x|per)\\s+\\w+)?)|ladder|max)\\s+` +
     // rest: "90 sec", "1 min 30 sec", or seconds written as 45"
     `(${NUM}\\s*(?:sec|min)(?:\\s+${NUM}\\s*sec)?|\\d+[${DQUOTE}])(?=\\s|$)\\s*(.*)$`,
     'i'
@@ -234,15 +235,19 @@ function parsePdfText(text) {
       continue;
     }
 
-    const origMatch = line.match(STATS_RE) || statsMatch;
-    const afterStats = line.substring(origMatch.index + origMatch[0].length).trim();
+    // Offsets must come from the same string the match ran on ("1 (ladder) 6-8-10 1'30" 10 kg"
+    // only matches once the parentheses are stripped)
+    const origMatch = line.match(STATS_RE);
+    const statsLine = origMatch ? line : lineForStats;
+    const match = origMatch || statsMatch;
+    const afterStats = statsLine.substring(match.index + match[0].length).trim();
     const { notes, openParen } = extractNotes(afterStats);
     if (openParen) inParenthetical = true;
 
-    const before = line.substring(0, origMatch.index).replace(/^[-\u2013\u2022]\s*/, '').trim();
+    const before = statsLine.substring(0, match.index).replace(/^[-\u2013\u2022]\s*/, '').trim();
     if (before) pendingName = pendingName ? `${pendingName} ${before}` : before;
 
-    flushExercise(origMatch[1], origMatch[2], origMatch[3], notes);
+    flushExercise(match[1], match[2], match[3], notes);
   }
 
   return days.filter((d) => d.exercises.length > 0);
