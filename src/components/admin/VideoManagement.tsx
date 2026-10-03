@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import {
   FiPlus,
   FiTrash2,
-  FiVideo,
   FiX,
   FiUpload,
   FiPlay,
@@ -12,6 +11,7 @@ import {
 } from 'react-icons/fi';
 import { apiCall, formatDate, formatDuration } from '../../utils/adminUtils';
 import { Video, CreateVideoForm } from '../../types/admin';
+import ThumbnailUploader from './ThumbnailUploader';
 
 const MUSCLE_GROUPS = ['Polpaccio','Quadricipite','Femorale','Gluteo','Lombare','Dorsale','Trapezio','Pettorale','Spalle','Bicipite','Tricipite','Addome','Avambraccio','Cardio','Stability','Transizioni','Tecniche','Stretching'];
 
@@ -34,6 +34,8 @@ const VideoManagement: React.FC = () => {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [muscleGroupFilter, setMuscleGroupFilter] = useState('');
+  const [missingThumbnailOnly, setMissingThumbnailOnly] = useState(false);
+  const [missingThumbnailCount, setMissingThumbnailCount] = useState(0);
   const [showCreateVideo, setShowCreateVideo] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -63,16 +65,26 @@ const VideoManagement: React.FC = () => {
       const params = new URLSearchParams({ page: String(page), limit: String(pageSize) });
       if (search) params.append('search', search);
       if (muscleGroupFilter) params.append('muscleGroup', muscleGroupFilter);
+      if (missingThumbnailOnly) params.append('missingThumbnail', '1');
       const response = await apiCall(`/admin/videos?${params}`);
       setVideos(response.data.videos);
       setTotalCount(response.data.totalCount);
       setTotalPages(response.data.totalPages || 1);
+      setMissingThumbnailCount(response.data.missingThumbnailCount || 0);
     } catch (error) {
       console.error('Failed to load videos:', error);
     } finally {
       setLoading(false);
     }
-  }, [page, search, muscleGroupFilter, pageSize]);
+  }, [page, search, muscleGroupFilter, missingThumbnailOnly, pageSize]);
+
+  // A photo was uploaded from a card or the edit dialog
+  const handleThumbnailChange = (videoId: number, thumbnailKey: string) => {
+    const hadPhoto = videos.find((v) => v.id === videoId)?.thumbnailKey;
+    setVideos((prev) => prev.map((v) => (v.id === videoId ? { ...v, thumbnailKey } : v)));
+    setEditingVideo((prev) => (prev && prev.id === videoId ? { ...prev, thumbnailKey } : prev));
+    if (!hadPhoto) setMissingThumbnailCount((c) => Math.max(0, c - 1));
+  };
 
   useEffect(() => {
     loadVideos();
@@ -315,8 +327,21 @@ const VideoManagement: React.FC = () => {
           ))}
         </select>
 
+        <button
+          onClick={() => { setPage(1); setMissingThumbnailOnly((v) => !v); }}
+          className={`w-full sm:w-auto px-4 py-2.5 rounded-xl text-sm font-medium border transition-colors ${
+            missingThumbnailOnly
+              ? 'bg-gray-900 text-white border-gray-900'
+              : missingThumbnailCount > 0
+                ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+                : 'bg-white text-gray-500 border-gray-200'
+          }`}
+        >
+          Senza foto ({missingThumbnailCount})
+        </button>
+
         <div className="text-sm text-gray-500 sm:ml-auto">
-          {totalCount} video{(search || muscleGroupFilter) ? ' trovati' : ' totali'}
+          {totalCount} video{(search || muscleGroupFilter || missingThumbnailOnly) ? ' trovati' : ' totali'}
         </div>
       </div>
 
@@ -463,16 +488,9 @@ const VideoManagement: React.FC = () => {
                     {t('admin.videos.autoDetected')}
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('admin.videos.thumbnailPath')}</label>
-                  <input
-                    type="text"
-                    value={createVideoForm.thumbnailPath}
-                    onChange={(e) => setCreateVideoForm(prev => ({ ...prev, thumbnailPath: e.target.value }))}
-                    className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
-                    placeholder={t('admin.videos.thumbnailPlaceholder')}
-                  />
-                </div>
+                <p className="text-xs text-gray-500">
+                  La foto si aggiunge dopo aver creato il video, cliccando sulla sua card.
+                </p>
               </div>
 
               <div className="flex space-x-3">
@@ -503,7 +521,7 @@ const VideoManagement: React.FC = () => {
           </div>
         ) : videos.length === 0 ? (
           <div className="col-span-full text-center py-12 text-gray-500">
-            {(search || muscleGroupFilter)
+            {(search || muscleGroupFilter || missingThumbnailOnly)
               ? 'Nessun video trovato con i filtri selezionati'
               : 'Nessun video disponibile'
             }
@@ -511,17 +529,9 @@ const VideoManagement: React.FC = () => {
         ) : (
           videos.map((video) => (
           <div key={video.id} className="bg-white rounded-xl shadow-lg overflow-hidden">
-            <div className="relative aspect-video bg-gray-100 flex items-center justify-center">
-              {video.thumbnailPath ? (
-                <img
-                  src={`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:3001'}/thumbnails/${video.thumbnailPath}`}
-                  alt={video.title}
-                  className="absolute inset-0 w-full h-full object-contain"
-                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                />
-              ) : (
-                React.createElement(FiVideo as React.ComponentType<{ className?: string }>, { className: "w-12 h-12 text-gray-400" })
-              )}
+            {/* Photo: click or drop an image to upload/replace it */}
+            <div className="p-2 pb-0">
+              <ThumbnailUploader video={video} onChange={(key) => handleThumbnailChange(video.id, key)} />
             </div>
 
             <div className="p-3 sm:p-4">
@@ -643,14 +653,9 @@ const VideoManagement: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Thumbnail Path</label>
-                <input
-                  type="text"
-                  value={editForm.thumbnailPath}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, thumbnailPath: e.target.value }))}
-                  className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
-                  placeholder="categoria/thumb.jpg"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Foto</label>
+                <ThumbnailUploader video={editingVideo} onChange={(key) => handleThumbnailChange(editingVideo.id, key)} />
+                <p className="text-xs text-gray-400 mt-1">Si salva subito, senza premere "Salva".</p>
               </div>
 
               <div>

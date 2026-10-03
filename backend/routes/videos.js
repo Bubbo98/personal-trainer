@@ -26,6 +26,7 @@ router.get('/', (req, res) => {
             v.file_path,
             v.duration,
             v.thumbnail_path,
+            v.thumbnail_key,
             v.category,
             v.created_at,
             uvp.granted_at,
@@ -65,6 +66,7 @@ router.get('/', (req, res) => {
                     signedUrl: signedUrl, // Add signed URL
                     duration: video.duration,
                     thumbnailPath: video.thumbnail_path,
+                    thumbnailKey: video.thumbnail_key || null,
                     category: video.category,
                     createdAt: video.created_at,
                     grantedAt: video.granted_at,
@@ -80,6 +82,7 @@ router.get('/', (req, res) => {
                     signedUrl: null,
                     duration: video.duration,
                     thumbnailPath: video.thumbnail_path,
+                    thumbnailKey: video.thumbnail_key || null,
                     category: video.category,
                     createdAt: video.created_at,
                     grantedAt: video.granted_at,
@@ -173,12 +176,14 @@ router.get('/training-days', async (req, res) => {
                             tdv.added_at,
                             tdv.group_id,
                             tdv.group_label,
+                            tdv.exercise_id,
                             v.id,
                             v.title,
                             v.description,
                             v.file_path,
                             v.duration,
                             v.thumbnail_path,
+                            v.thumbnail_key,
                             v.category
                         FROM training_day_videos tdv
                         INNER JOIN videos v ON tdv.video_id = v.id
@@ -197,7 +202,7 @@ router.get('/training-days', async (req, res) => {
                     const placeholders = assignmentIds.map(() => '?').join(',');
                     const techniqueRows = await new Promise((resolve, reject) => {
                         db.allCallback(`
-                            SELECT tdvt.training_day_video_id, tv.id, tv.title, tv.description, tv.file_path, tv.thumbnail_path
+                            SELECT tdvt.training_day_video_id, tv.id, tv.title, tv.description, tv.file_path, tv.thumbnail_path, tv.thumbnail_key
                             FROM training_day_video_techniques tdvt
                             INNER JOIN videos tv ON tdvt.technique_id = tv.id AND tv.is_active = 1
                             WHERE tdvt.training_day_video_id IN (${placeholders})
@@ -236,6 +241,7 @@ router.get('/training-days', async (req, res) => {
                             description: t.description,
                             signedUrl: techSignedUrl,
                             thumbnailPath: t.thumbnail_path,
+                            thumbnailKey: t.thumbnail_key || null,
                         };
                     }));
 
@@ -250,9 +256,12 @@ router.get('/training-days', async (req, res) => {
                         signedUrl,
                         duration: video.duration,
                         thumbnailPath: video.thumbnail_path,
+                        thumbnailKey: video.thumbnail_key || null,
                         category: video.category,
                         groupId: video.group_id || null,
                         groupLabel: video.group_label || null,
+                        // Training-plan exercise this video belongs to (null = extra video of the day)
+                        exerciseId: video.exercise_id || null,
                         techniques,
                     };
                 }));
@@ -313,6 +322,7 @@ router.get('/:id', (req, res) => {
             v.file_path,
             v.duration,
             v.thumbnail_path,
+            v.thumbnail_key,
             v.category,
             v.created_at,
             uvp.granted_at,
@@ -382,6 +392,7 @@ router.get('/:id', (req, res) => {
                     signedUrl: signedUrl,
                     duration: video.duration,
                     thumbnailPath: video.thumbnail_path,
+                    thumbnailKey: video.thumbnail_key || null,
                     category: video.category,
                     createdAt: video.created_at,
                     grantedAt: video.granted_at,
@@ -408,6 +419,7 @@ router.get('/category/:category', (req, res) => {
             v.file_path,
             v.duration,
             v.thumbnail_path,
+            v.thumbnail_key,
             v.category,
             v.created_at,
             uvp.granted_at,
@@ -445,6 +457,7 @@ router.get('/category/:category', (req, res) => {
                     signedUrl: signedUrl,
                     duration: video.duration,
                     thumbnailPath: video.thumbnail_path,
+                    thumbnailKey: video.thumbnail_key || null,
                     category: video.category,
                     createdAt: video.created_at,
                     grantedAt: video.granted_at,
@@ -460,6 +473,7 @@ router.get('/category/:category', (req, res) => {
                     signedUrl: null,
                     duration: video.duration,
                     thumbnailPath: video.thumbnail_path,
+                    thumbnailKey: video.thumbnail_key || null,
                     category: video.category,
                     createdAt: video.created_at,
                     grantedAt: video.granted_at,

@@ -8,7 +8,7 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Services from './pages/Services';
 import Booking from './pages/Booking';
-import Dashboard from './pages/Dashboard';
+import DashboardSwitch from './pages/DashboardSwitch';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import CookiePolicy from './pages/CookiePolicy';
@@ -37,8 +37,8 @@ function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/services" element={<Services />} />
             <Route path="/booking" element={<Booking />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/dashboard/:token" element={<Dashboard />} />
+            <Route path="/dashboard" element={<DashboardSwitch />} />
+            <Route path="/dashboard/:token" element={<DashboardSwitch />} />
             <Route path="/admin" element={<AdminCMS />} />
             <Route path="/admin/users/:userId" element={<AdminCMS />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />

@@ -33,7 +33,7 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { apiCall, formatDuration } from '../../utils/adminUtils';
+import { apiCall, formatDuration, numberMatchScore } from '../../utils/adminUtils';
 import { Video } from '../../types/admin';
 
 interface TrainingDay {
@@ -620,11 +620,22 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
     if (!videoSearchTerm) return available;
 
     const searchLower = videoSearchTerm.toLowerCase();
-    return available.filter(v =>
+    const matched = available.filter(v =>
       v.title.toLowerCase().includes(searchLower) ||
       v.category.toLowerCase().includes(searchLower) ||
       (v.description && v.description.toLowerCase().includes(searchLower))
     );
+
+    // Searching a bare number ("5") should surface titles in numeric order
+    // (5, 15, 25…) instead of whatever order the video list was already in.
+    const searchDigits = videoSearchTerm.trim();
+    if (/^\d+$/.test(searchDigits)) {
+      return [...matched].sort(
+        (a, b) => numberMatchScore(a.title, searchDigits) - numberMatchScore(b.title, searchDigits)
+      );
+    }
+
+    return matched;
   };
 
   if (loading && trainingDays.length === 0) {
@@ -1028,9 +1039,15 @@ const TrainingDaysManager: React.FC<Props> = ({ userId, onUpdate }) => {
     {/* Stretching Modal */}
       {stretchingModal && (() => {
         const stretchingVideos = allVideos.filter(v => v.muscleGroup === 'Stretching');
-        const filtered = stretchingSearch
+        let filtered = stretchingSearch
           ? stretchingVideos.filter(v => v.title.toLowerCase().includes(stretchingSearch.toLowerCase()))
           : stretchingVideos;
+        const stretchingDigits = stretchingSearch.trim();
+        if (/^\d+$/.test(stretchingDigits)) {
+          filtered = [...filtered].sort(
+            (a, b) => numberMatchScore(a.title, stretchingDigits) - numberMatchScore(b.title, stretchingDigits)
+          );
+        }
         return (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col">

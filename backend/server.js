@@ -9,7 +9,6 @@ const authRoutes = require('./routes/auth');
 const videoRoutes = require('./routes/videos');
 const adminRoutes = require('./routes/admin');
 const reviewRoutes = require('./routes/reviews');
-const debugRoutes = require('./routes/debug');
 const sitemapRoutes = require('./routes/sitemap');
 const pdfRoutes = require('./routes/pdf');
 const feedbackRoutes = require('./routes/feedback');
@@ -18,6 +17,8 @@ const trainingDaysRoutes = require('./routes/training-days');
 const workoutRoutes = require('./routes/workout');
 const cronRoutes = require('./routes/cron');
 const bodyCompositionRoutes = require('./routes/body-composition');
+const integrationRoutes = require('./routes/integration');
+const thumbnailRoutes = require('./routes/thumbnails');
 const { authenticateToken } = require('./middleware/auth');
 
 const app = express();
@@ -88,13 +89,14 @@ app.use('/api/videos', authenticateToken, videoRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/training-days', trainingDaysRoutes);
 app.use('/api/reviews', reviewRoutes);
-app.use('/api/debug', debugRoutes);
 app.use('/api/pdf', pdfRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/workout', workoutRoutes);
 app.use('/api/cron', cronRoutes);
 app.use('/api/body-composition', bodyCompositionRoutes);
+app.use('/api/integration', integrationRoutes);
+app.use('/api/thumbnails', thumbnailRoutes);
 
 // SEO Routes (sitemap.xml, robots.txt)
 app.use('/', sitemapRoutes);

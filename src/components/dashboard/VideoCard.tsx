@@ -3,10 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { FiPlay, FiInfo, FiX, FiChevronRight } from 'react-icons/fi';
 import { Video, TechniqueVideo } from '../../types/dashboard';
 import { formatDuration, formatDate, getLocalizedText } from '../../utils/dashboardUtils';
+import { thumbnailUrl } from '../../utils/thumbnails';
 
 interface VideoCardProps {
   video: Video;
   onPlay: (video: Video) => void;
+  /** 'card' = full card for grids; 'row' = compact row shown under an exercise. */
+  variant?: 'card' | 'row';
 }
 
 const TechniqueModal: React.FC<{ technique: TechniqueVideo; onClose: () => void }> = ({ technique, onClose }) => {
@@ -94,7 +97,7 @@ const TechniquePickerModal: React.FC<{
   );
 };
 
-const VideoCard: React.FC<VideoCardProps> = ({ video, onPlay }) => {
+const VideoCard: React.FC<VideoCardProps> = ({ video, onPlay, variant = 'card' }) => {
   const { t } = useTranslation();
   const [activeTechnique, setActiveTechnique] = useState<TechniqueVideo | null>(null);
   const [showPicker, setShowPicker] = useState(false);
@@ -109,17 +112,78 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onPlay }) => {
     }
   };
 
-  const thumbnailUrl = video.thumbnailPath
-    ? `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:3001'}/thumbnails/${video.thumbnailPath}`
-    : null;
+  const thumbnailSrc = thumbnailUrl(video);
+
+  const modals = (
+    <>
+      {activeTechnique && (
+        <TechniqueModal
+          technique={activeTechnique}
+          onClose={() => setActiveTechnique(null)}
+        />
+      )}
+
+      {showPicker && (
+        <TechniquePickerModal
+          techniques={techniques}
+          onSelect={(t) => { setShowPicker(false); setActiveTechnique(t); }}
+          onClose={() => setShowPicker(false)}
+        />
+      )}
+    </>
+  );
+
+  if (variant === 'row') {
+    return (
+      <>
+        <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg p-2">
+          <button
+            onClick={() => onPlay(video)}
+            className="relative flex-shrink-0 w-24 aspect-video rounded-md bg-gray-100 overflow-hidden"
+            aria-label={`${t('dashboard.playVideo')} ${video.title}`}
+          >
+            {thumbnailSrc && (
+              <img
+                src={thumbnailSrc}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+            )}
+            <span className="absolute inset-0 flex items-center justify-center bg-black/25">
+              <span className="w-8 h-8 rounded-full bg-white/95 flex items-center justify-center shadow">
+                {React.createElement(FiPlay as React.ComponentType<{ className?: string }>, { className: "w-4 h-4 text-gray-900 ml-0.5" })}
+              </span>
+            </span>
+          </button>
+          <button onClick={() => onPlay(video)} className="flex-1 min-w-0 text-left">
+            <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">{video.title}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{formatDuration(video.duration)}</p>
+          </button>
+          {techniques.length > 0 && (
+            <button
+              onClick={handleTechniqueClick}
+              className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors text-xs font-medium"
+            >
+              {React.createElement(FiInfo as React.ComponentType<{ className?: string }>, { className: "w-3.5 h-3.5" })}
+              {techniques.length === 1 ? 'Tecnica' : `Tecniche (${techniques.length})`}
+            </button>
+          )}
+        </div>
+        {modals}
+      </>
+    );
+  }
 
   return (
     <>
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+      {/* h-full + flex column so cards in the same grid row share a height and
+          the action buttons sit at the bottom regardless of title length */}
+      <div className="h-full flex flex-col bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
         <div className="relative aspect-video bg-gray-100">
-          {thumbnailUrl && (
+          {thumbnailSrc && (
             <img
-              src={thumbnailUrl}
+              src={thumbnailSrc}
               alt={video.title}
               className="absolute inset-0 w-full h-full object-contain"
               onError={(e) => { e.currentTarget.style.display = 'none'; }}
@@ -130,7 +194,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onPlay }) => {
           </div>
         </div>
 
-        <div className="p-4">
+        <div className="p-4 flex-1 flex flex-col">
           <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2">
             {video.title}
           </h3>
@@ -139,7 +203,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onPlay }) => {
               {video.description}
             </p>
           )}
-          <div className="flex items-center justify-between text-sm text-gray-500 mt-1">
+          <div className="mt-auto pt-1 flex items-center justify-between text-sm text-gray-500">
             <span className="capitalize font-medium">{video.category}</span>
             {(video.addedAt || video.grantedAt) && (
               <span>{getLocalizedText.addedOn} {formatDate(video.addedAt || video.grantedAt!)}</span>
@@ -149,7 +213,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onPlay }) => {
           <div className="mt-3 flex gap-2">
             <button
               onClick={() => onPlay(video)}
-              className="flex-1 flex items-center justify-center gap-2 bg-gray-900 text-white py-2.5 rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
+              className="flex-1 flex items-center justify-center gap-2 bg-gray-900 text-white py-2.5 border border-gray-900 rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
               aria-label={`${t('dashboard.playVideo')} ${video.title}`}
             >
               {React.createElement(FiPlay as React.ComponentType<{ className?: string }>, { className: "w-4 h-4 ml-0.5" })}
@@ -169,20 +233,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onPlay }) => {
         </div>
       </div>
 
-      {activeTechnique && (
-        <TechniqueModal
-          technique={activeTechnique}
-          onClose={() => setActiveTechnique(null)}
-        />
-      )}
-
-      {showPicker && (
-        <TechniquePickerModal
-          techniques={techniques}
-          onSelect={(t) => { setShowPicker(false); setActiveTechnique(t); }}
-          onClose={() => setShowPicker(false)}
-        />
-      )}
+      {modals}
     </>
   );
 };

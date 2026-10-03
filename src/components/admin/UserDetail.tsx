@@ -17,6 +17,7 @@ import { Video } from '../../types/admin';
 import PdfManagement from './PdfManagement';
 import TrainingDaysManager from './TrainingDaysManager';
 import TrainingPlanAdmin from './TrainingPlanAdmin';
+import ExerciseVideoLinker from './ExerciseVideoLinker';
 import BodyCompositionAdmin from './BodyCompositionAdmin';
 
 interface User {
@@ -36,6 +37,7 @@ const UserDetail: React.FC = () => {
   const { t } = useTranslation();
 
   const [activeTab, setActiveTab] = useState<TabType>('trainingDays');
+  const [trainingDaysVersion, setTrainingDaysVersion] = useState(0);
   const [user, setUser] = useState<User | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
   const [userVideos, setUserVideos] = useState<Video[]>([]);
@@ -251,13 +253,24 @@ const UserDetail: React.FC = () => {
 
       {/* Tab Content */}
       {activeTab === 'trainingDays' && (
-        <TrainingDaysManager
-          userId={user.id}
-          onUpdate={() => {
-            // Reload user videos when training days are updated
-            loadUserVideos();
-          }}
-        />
+        <>
+          <ExerciseVideoLinker
+            userId={user.id}
+            onSaved={() => {
+              // Saving may add library videos to the days: remount the days list
+              setTrainingDaysVersion((v) => v + 1);
+              loadUserVideos();
+            }}
+          />
+          <TrainingDaysManager
+            key={trainingDaysVersion}
+            userId={user.id}
+            onUpdate={() => {
+              // Reload user videos when training days are updated
+              loadUserVideos();
+            }}
+          />
+        </>
       )}
 
       {activeTab === 'videos' && (

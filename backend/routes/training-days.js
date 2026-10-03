@@ -55,6 +55,7 @@ router.get('/users/:userId/training-days', async (req, res) => {
                             v.file_path,
                             v.duration,
                             v.thumbnail_path,
+                            v.thumbnail_key,
                             v.category
                         FROM training_day_videos tdv
                         INNER JOIN videos v ON tdv.video_id = v.id
@@ -73,7 +74,7 @@ router.get('/users/:userId/training-days', async (req, res) => {
                     const placeholders = assignmentIds.map(() => '?').join(',');
                     const techniqueRows = await new Promise((resolve, reject) => {
                         db.allCallback(`
-                            SELECT tdvt.training_day_video_id, tv.id, tv.title, tv.description, tv.file_path, tv.thumbnail_path
+                            SELECT tdvt.training_day_video_id, tv.id, tv.title, tv.description, tv.file_path, tv.thumbnail_path, tv.thumbnail_key
                             FROM training_day_video_techniques tdvt
                             INNER JOIN videos tv ON tdvt.technique_id = tv.id AND tv.is_active = 1
                             WHERE tdvt.training_day_video_id IN (${placeholders})
@@ -91,6 +92,7 @@ router.get('/users/:userId/training-days', async (req, res) => {
                             description: row.description,
                             filePath: row.file_path,
                             thumbnailPath: row.thumbnail_path,
+                            thumbnailKey: row.thumbnail_key || null,
                         });
                     }
                 }
@@ -112,6 +114,7 @@ router.get('/users/:userId/training-days', async (req, res) => {
                         filePath: v.file_path,
                         duration: v.duration,
                         thumbnailPath: v.thumbnail_path,
+                        thumbnailKey: v.thumbnail_key || null,
                         category: v.category,
                         techniques: techniquesMap[v.assignment_id] || [],
                         groupId: v.group_id || null,

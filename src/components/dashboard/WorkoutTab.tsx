@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FiSave, FiChevronDown, FiChevronUp, FiCheck, FiClock } from 'react-icons/fi';
 import { apiCall } from '../../utils/dashboardUtils';
+import { Video } from '../../types/dashboard';
+import VideoCard from './VideoCard';
 
 interface Exercise {
   id: number;
@@ -77,7 +79,7 @@ interface LogDraft {
 }
 
 /** Returns the Monday of the current week as YYYY-MM-DD */
-function getCurrentWeekStart(): string {
+export function getCurrentWeekStart(): string {
   const today = new Date();
   const day = today.getDay();
   const diff = day === 0 ? -6 : 1 - day;
@@ -94,7 +96,27 @@ function formatWeekLabel(weekStart: string): string {
   });
 }
 
-const WorkoutTab: React.FC = () => {
+/** A training day as returned by /videos/training-days (only the fields used here). */
+interface PlanDay {
+  dayNumber: number;
+  dayName: string | null;
+  videos: Video[];
+}
+
+interface WorkoutTabProps {
+  /**
+   * 'log' = current-week inputs only, 'history' = past weeks only,
+   * 'all' = both (legacy dashboard), 'merged' = each exercise with its videos
+   * and inputs, plus the day's other videos (needs trainingDays + onPlayVideo).
+   */
+  mode?: 'log' | 'history' | 'all' | 'merged';
+  /** Called after the current week's weights are saved successfully. */
+  onSaved?: () => void;
+  trainingDays?: PlanDay[];
+  onPlayVideo?: (video: Video) => void;
+}
+
+const WorkoutTab: React.FC<WorkoutTabProps> = ({ mode = 'all', onSaved, trainingDays, onPlayVideo }) => {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [drafts, setDrafts] = useState<Record<number, LogDraft>>({});
   const [pastLogs, setPastLogs] = useState<ExerciseLog[]>([]);
@@ -152,16 +174,17 @@ const WorkoutTab: React.FC = () => {
       // Past logs = all logs excluding current week
       setPastLogs(allLogList.filter((l) => l.week_start !== weekStart));
 
-      // Expand all days by default
+      // Expand all days by default — except the merged view, where each day
+      // also holds its videos: there only the first day starts open
       const exp: Record<number, boolean> = {};
-      exList.forEach((ex) => (exp[ex.day_number] = true));
+      if (mode !== 'merged') exList.forEach((ex) => (exp[ex.day_number] = true));
       setExpandedDays(exp);
     } catch (err) {
       console.error('Failed to load workout data:', err);
     } finally {
       setLoading(false);
     }
-  }, [weekStart]);
+  }, [weekStart, mode]);
 
   useEffect(() => {
     loadData();
@@ -201,6 +224,68 @@ const WorkoutTab: React.FC = () => {
     return ex?.day_name || `Giorno ${log.day_number_snapshot ?? '?'}`;
   };
 
+  // ── Autosave (merged view) ────────────────────────────────────────────────
+  // Each exercise saves on its own: 1.2s after the last keystroke, or right
+  // away when its field loses focus. Refs give the timers the latest values.
+  const [saveStatus, setSaveStatus] = useState<Record<number, 'saving' | 'saved' | 'error'>>({});
+  const draftsRef = useRef(drafts);
+  draftsRef.current = drafts;
+  const dirtyRef = useRef(dirty);
+  dirtyRef.current = dirty;
+  const timersRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
+  const onSavedRef = useRef(onSaved);
+  onSavedRef.current = onSaved;
+
+  const saveExercise = useCallback(async (exerciseId: number) => {
+    clearTimeout(timersRef.current[exerciseId]);
+    delete timersRef.current[exerciseId];
+    const draft = draftsRef.current[exerciseId];
+    if (!draft) return;
+
+    setSaveStatus((prev) => ({ ...prev, [exerciseId]: 'saving' }));
+    try {
+      await apiCall('/workout/logs', {
+        method: 'POST',
+        body: JSON.stringify({
+          exerciseId,
+          weekStart,
+          weight: draft.weight || null,
+          setsDone: draft.sets_done ? parseInt(draft.sets_done) : null,
+          repsDone: draft.reps_done || null,
+          notes: draft.notes || null,
+        }),
+      });
+      // Only clear "dirty" if nothing was typed while the request was in flight
+      if (draftsRef.current[exerciseId] === draft) {
+        setDirty((prev) => ({ ...prev, [exerciseId]: false }));
+      }
+      setSaveStatus((prev) => ({ ...prev, [exerciseId]: 'saved' }));
+      onSavedRef.current?.();
+    } catch (err) {
+      console.error('Failed to autosave log:', err);
+      setSaveStatus((prev) => ({ ...prev, [exerciseId]: 'error' }));
+    }
+  }, [weekStart]);
+
+  /** Saves right away an exercise with unsaved changes (on blur / leaving the page). */
+  const flushExercise = useCallback((exerciseId: number) => {
+    if (dirtyRef.current[exerciseId]) saveExercise(exerciseId);
+  }, [saveExercise]);
+
+  // Don't lose pending changes when the user switches section or app
+  useEffect(() => {
+    if (mode !== 'merged') return;
+    const flushAll = () => Object.keys(timersRef.current).forEach((id) => flushExercise(Number(id)));
+    const onVisibility = () => { if (document.visibilityState === 'hidden') flushAll(); };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', flushAll);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', flushAll);
+      flushAll();
+    };
+  }, [mode, flushExercise]);
+
   const updateDraft = (exerciseId: number, field: keyof LogDraft, value: string) => {
     setDrafts((prev) => ({
       ...prev,
@@ -210,6 +295,16 @@ const WorkoutTab: React.FC = () => {
       },
     }));
     setDirty((prev) => ({ ...prev, [exerciseId]: true }));
+
+    if (mode === 'merged') {
+      setSaveStatus((prev) => {
+        const next = { ...prev };
+        delete next[exerciseId];
+        return next;
+      });
+      clearTimeout(timersRef.current[exerciseId]);
+      timersRef.current[exerciseId] = setTimeout(() => saveExercise(exerciseId), 1200);
+    }
   };
 
   const dirtyIds = Object.entries(dirty)
@@ -243,6 +338,7 @@ const WorkoutTab: React.FC = () => {
       );
       setDirty({});
       setAllSaved(true);
+      onSaved?.();
       setTimeout(() => setAllSaved(false), 2500);
     } catch (err) {
       console.error('Failed to save logs:', err);
@@ -273,7 +369,21 @@ const WorkoutTab: React.FC = () => {
     );
   }
 
-  if (exercises.length === 0 && pastLogs.length === 0) {
+  if (mode === 'history' && pastWeeks.length === 0) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center">
+          <div className="text-4xl mb-3">📈</div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Ancora nessuno storico</h3>
+          <p className="text-gray-500 text-sm">
+            I pesi che salvi in Allenamento › Pesi compariranno qui settimana dopo settimana.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if ((mode === 'log' && exercises.length === 0) || (mode === 'all' && exercises.length === 0 && pastLogs.length === 0)) {
     return (
       <div className="max-w-2xl mx-auto">
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center">
@@ -286,6 +396,114 @@ const WorkoutTab: React.FC = () => {
       </div>
     );
   }
+
+  /** One exercise: header (name, sets/reps/rest, notes), optional videos, weight/reps inputs. */
+  const renderExercise = (ex: Exercise, exIdx: number, videos?: Video[]) => {
+    const draft = drafts[ex.id] || { weight: '', sets_done: '', reps_done: '', notes: '' };
+    const slots = ex.weight_slots || 1;
+    const suggested = getSuggestedWeights(ex.notes, slots);
+    const individualWeights = parseWeightsFromDraft(draft.weight, slots);
+    const inputClass = 'w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent';
+    // Merged view autosaves: leaving a field saves that exercise right away
+    const onBlur = mode === 'merged' ? () => flushExercise(ex.id) : undefined;
+    const status = mode === 'merged' ? saveStatus[ex.id] : undefined;
+
+    return (
+      <div key={ex.id} className="bg-gray-50 rounded-xl p-4">
+        {/* Exercise header */}
+        <div className="flex items-start gap-2.5 mb-3">
+          <span className="flex-shrink-0 mt-0.5 text-xs font-bold text-gray-400 w-5 text-right">
+            {exIdx + 1}.
+          </span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <p className="font-semibold text-gray-900 leading-snug">{ex.name}</p>
+              {status === 'saving' && <span className="flex-shrink-0 text-xs text-gray-400 mt-0.5">Salvataggio…</span>}
+              {status === 'saved' && (
+                <span className="flex-shrink-0 flex items-center gap-1 text-xs font-medium text-green-600 mt-0.5">
+                  {React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: 'w-3.5 h-3.5' })}
+                  Salvato
+                </span>
+              )}
+              {status === 'error' && (
+                <button onClick={() => saveExercise(ex.id)} className="flex-shrink-0 text-xs font-medium text-red-600 underline mt-0.5">
+                  Non salvato · Riprova
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1.5 mt-1.5">
+              {ex.sets && (
+                <span className="text-xs bg-white border border-gray-200 rounded-full px-2 py-0.5 text-gray-600">
+                  {ex.sets} serie
+                </span>
+              )}
+              {ex.reps && (
+                <span className="text-xs bg-white border border-gray-200 rounded-full px-2 py-0.5 text-gray-600">
+                  {ex.reps} reps
+                </span>
+              )}
+              {ex.rest && (
+                <span className="text-xs bg-white border border-gray-200 rounded-full px-2 py-0.5 text-gray-600">
+                  ⏱ {ex.rest}
+                </span>
+              )}
+            </div>
+            {ex.notes && (
+              <p className="text-xs text-gray-400 mt-1 italic">{ex.notes}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Videos linked to this exercise (merged view only) */}
+        {videos && videos.length > 0 && onPlayVideo && (
+          <div className="space-y-2 mb-3">
+            {videos.map((video) => (
+              <VideoCard key={video.assignmentId ?? video.id} video={video} onPlay={onPlayVideo} variant="row" />
+            ))}
+          </div>
+        )}
+
+        {/* Inputs */}
+        <div className="grid grid-cols-2 gap-2">
+          {slots === 1 ? (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Peso (kg)</label>
+              <input type="text" inputMode="decimal" value={draft.weight}
+                onChange={(e) => updateDraft(ex.id, 'weight', e.target.value)}
+                onBlur={onBlur}
+                placeholder={suggested[0] ? `es. ${suggested[0]}` : 'es. 70'}
+                className={inputClass} />
+            </div>
+          ) : (
+            <div className="col-span-2">
+              <label className="block text-xs text-gray-500 mb-1">Pesi (kg)</label>
+              <div className={`grid gap-2 ${slots === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                {individualWeights.map((w, i) => (
+                  <input key={i} type="text" inputMode="decimal" value={w}
+                    onChange={(e) => {
+                      const updated = [...individualWeights];
+                      updated[i] = e.target.value;
+                      updateDraft(ex.id, 'weight', serializeWeights(updated, slots));
+                    }}
+                    onBlur={onBlur}
+                    placeholder={suggested[i] ? `es. ${suggested[i]}` : ''}
+                    className={inputClass} />
+                ))}
+              </div>
+            </div>
+          )}
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Reps fatte</label>
+            <input type="text" inputMode="numeric" value={draft.reps_done}
+              onChange={(e) => updateDraft(ex.id, 'reps_done', e.target.value)}
+              onBlur={onBlur}
+              placeholder={ex.reps || '—'}
+              className={inputClass} />
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const SaveAllButton = () => (
     <button
@@ -306,8 +524,93 @@ const WorkoutTab: React.FC = () => {
     </button>
   );
 
+  if (mode === 'merged') {
+    const planDays = trainingDays || [];
+    const exerciseIds = new Set(exercises.map((e) => e.id));
+    const videosByExercise = new Map<number, Video[]>();
+    for (const day of planDays) {
+      for (const video of day.videos) {
+        if (video.exerciseId != null && exerciseIds.has(video.exerciseId)) {
+          videosByExercise.set(video.exerciseId, [...(videosByExercise.get(video.exerciseId) || []), video]);
+        }
+      }
+    }
+    const allDayNumbers = Array.from(new Set([...sortedDayNumbers, ...planDays.map((d) => d.dayNumber)])).sort((a, b) => a - b);
+    const firstDay = allDayNumbers[0];
+
+    return (
+      <div className="max-w-3xl mx-auto space-y-4">
+        <p className="text-sm text-gray-500 px-1">
+          Settimana dal {formatWeekLabel(weekStart)} · segna i pesi mentre ti alleni, si salvano da soli.
+        </p>
+
+        {allDayNumbers.map((dayNum) => {
+          const planDay = planDays.find((d) => d.dayNumber === dayNum);
+          const dayExercises = days[dayNum]?.exercises || [];
+          const dayName = days[dayNum]?.dayName || planDay?.dayName || `Giorno ${dayNum}`;
+          // Day videos not attached to any exercise (e.g. stretching)
+          const extras = (planDay?.videos || []).filter((v) => v.exerciseId == null || !exerciseIds.has(v.exerciseId));
+          // A day whose videos are all linked to exercises of other days has nothing left to show
+          if (dayExercises.length === 0 && extras.length === 0) return null;
+          const isExpanded = expandedDays[dayNum] ?? dayNum === firstDay;
+
+          const dashIdx = dayName.indexOf(' - ');
+          const dayLabel = dashIdx !== -1 ? dayName.slice(0, dashIdx) : dayName;
+          const daySubtitle = dashIdx !== -1 ? dayName.slice(dashIdx + 3) : '';
+
+          return (
+            <div key={dayNum} className="rounded-xl overflow-hidden shadow-sm border border-gray-200">
+              <button
+                onClick={() => setExpandedDays((prev) => ({ ...prev, [dayNum]: !isExpanded }))}
+                className="w-full flex items-center justify-between px-4 py-3.5 bg-gray-900 hover:bg-gray-800 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-white/15 flex items-center justify-center text-sm font-bold text-white">
+                    {dayNum}
+                  </span>
+                  <div className="text-left">
+                    <p className="font-semibold text-white leading-tight">{dayLabel}</p>
+                    {daySubtitle && <p className="text-xs text-gray-400 leading-tight">{daySubtitle}</p>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-xs text-gray-400">
+                    {dayExercises.length > 0 ? `${dayExercises.length} esercizi` : `${extras.length} video`}
+                  </span>
+                  {isExpanded
+                    ? React.createElement(FiChevronUp as React.ComponentType<{ className?: string }>, { className: 'w-5 h-5 text-gray-400' })
+                    : React.createElement(FiChevronDown as React.ComponentType<{ className?: string }>, { className: 'w-5 h-5 text-gray-400' })}
+                </div>
+              </button>
+
+              {isExpanded && (
+                <div className="bg-white p-3 space-y-2">
+                  {dayExercises.map((ex, exIdx) => renderExercise(ex, exIdx, videosByExercise.get(ex.id) || []))}
+
+                  {extras.length > 0 && onPlayVideo && (
+                    <div className="pt-2">
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 px-1">
+                        {dayExercises.length > 0 ? 'Altri video del giorno' : 'Video del giorno'}
+                      </p>
+                      <div className="space-y-2">
+                        {extras.map((video) => (
+                          <VideoCard key={video.assignmentId ?? video.id} video={video} onPlay={onPlayVideo} variant="row" />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-3xl mx-auto space-y-4">
+      {mode !== 'history' && (<>
 
       {/* ── Settimana corrente ───────────────────────────────────────────── */}
       <div className="bg-gray-900 text-white rounded-xl px-5 py-4">
@@ -363,83 +666,7 @@ const WorkoutTab: React.FC = () => {
 
             {isExpanded && (
               <div className="bg-white p-3 space-y-2">
-                {dayExercises.map((ex, exIdx) => {
-                  const draft = drafts[ex.id] || { weight: '', sets_done: '', reps_done: '', notes: '' };
-                  const slots = ex.weight_slots || 1;
-                  const suggested = getSuggestedWeights(ex.notes, slots);
-                  const individualWeights = parseWeightsFromDraft(draft.weight, slots);
-                  const inputClass = 'w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent';
-
-                  return (
-                    <div key={ex.id} className="bg-gray-50 rounded-xl p-4">
-                      {/* Exercise header */}
-                      <div className="flex items-start gap-2.5 mb-3">
-                        <span className="flex-shrink-0 mt-0.5 text-xs font-bold text-gray-400 w-5 text-right">
-                          {exIdx + 1}.
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-900 leading-snug">{ex.name}</p>
-                          <div className="flex flex-wrap gap-1.5 mt-1.5">
-                            {ex.sets && (
-                              <span className="text-xs bg-white border border-gray-200 rounded-full px-2 py-0.5 text-gray-600">
-                                {ex.sets} serie
-                              </span>
-                            )}
-                            {ex.reps && (
-                              <span className="text-xs bg-white border border-gray-200 rounded-full px-2 py-0.5 text-gray-600">
-                                {ex.reps} reps
-                              </span>
-                            )}
-                            {ex.rest && (
-                              <span className="text-xs bg-white border border-gray-200 rounded-full px-2 py-0.5 text-gray-600">
-                                ⏱ {ex.rest}
-                              </span>
-                            )}
-                          </div>
-                          {ex.notes && (
-                            <p className="text-xs text-gray-400 mt-1 italic">{ex.notes}</p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Inputs */}
-                      <div className="grid grid-cols-2 gap-2">
-                        {slots === 1 ? (
-                          <div>
-                            <label className="block text-xs text-gray-500 mb-1">Peso (kg)</label>
-                            <input type="text" inputMode="decimal" value={draft.weight}
-                              onChange={(e) => updateDraft(ex.id, 'weight', e.target.value)}
-                              placeholder={suggested[0] ? `es. ${suggested[0]}` : 'es. 70'}
-                              className={inputClass} />
-                          </div>
-                        ) : (
-                          <div className="col-span-2">
-                            <label className="block text-xs text-gray-500 mb-1">Pesi (kg)</label>
-                            <div className={`grid gap-2 ${slots === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
-                              {individualWeights.map((w, i) => (
-                                <input key={i} type="text" inputMode="decimal" value={w}
-                                  onChange={(e) => {
-                                    const updated = [...individualWeights];
-                                    updated[i] = e.target.value;
-                                    updateDraft(ex.id, 'weight', serializeWeights(updated, slots));
-                                  }}
-                                  placeholder={suggested[i] ? `es. ${suggested[i]}` : ''}
-                                  className={inputClass} />
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        <div>
-                          <label className="block text-xs text-gray-500 mb-1">Reps fatte</label>
-                          <input type="text" inputMode="numeric" value={draft.reps_done}
-                            onChange={(e) => updateDraft(ex.id, 'reps_done', e.target.value)}
-                            placeholder={ex.reps || '—'}
-                            className={inputClass} />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                {dayExercises.map((ex, exIdx) => renderExercise(ex, exIdx))}
               </div>
             )}
           </div>
@@ -451,13 +678,16 @@ const WorkoutTab: React.FC = () => {
           <SaveAllButton />
         </div>
       )}
+      </>)}
 
       {/* ── Storico settimane precedenti ─────────────────────────────────── */}
-      {pastWeeks.length > 0 && (
-        <div className="space-y-3 pt-2">
+      {(mode === 'history' || (mode === 'all' && pastWeeks.length > 0)) && (
+        <div className="space-y-3">
           <div className="flex items-center gap-2 text-gray-500">
             {React.createElement(FiClock as React.ComponentType<{ className?: string }>, { className: 'w-4 h-4' })}
-            <span className="text-sm font-semibold uppercase tracking-wide">Storico settimane precedenti</span>
+            <span className="text-sm font-semibold uppercase tracking-wide">
+              {mode === 'all' ? 'Storico settimane precedenti' : 'Settimane precedenti'}
+            </span>
           </div>
 
           {pastWeeks.map((week) => {

@@ -8,11 +8,13 @@ import UserManagement from '../components/admin/UserManagement';
 import UserDetail from '../components/admin/UserDetail';
 import VideoManagement from '../components/admin/VideoManagement';
 import ReviewManagement from '../components/admin/ReviewManagement';
+import IntegrationManagement from '../components/admin/IntegrationManagement';
 import {
   FiUsers,
   FiVideo,
   FiLogOut,
-  FiStar
+  FiStar,
+  FiShoppingBag
 } from 'react-icons/fi';
 import { apiCall, STORAGE_KEY } from '../utils/adminUtils';
 import { AdminState } from '../types/admin';
@@ -26,7 +28,7 @@ const AdminCMS: React.FC = () => {
     loading: true,
     error: null
   });
-  const [activeTab, setActiveTab] = useState<'users' | 'videos' | 'reviews'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'videos' | 'reviews' | 'integration'>('users');
 
   // Check if we're on a user detail page
   const userDetailMatch = location.pathname.match(/^\/admin\/users\/(\d+)$/);
@@ -172,6 +174,18 @@ const AdminCMS: React.FC = () => {
                 {React.createElement(FiStar as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
                 <span className="hidden sm:inline">{t('admin.reviews.tabTitle')}</span>
               </button>
+
+              <button
+                onClick={() => setActiveTab('integration')}
+                className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors flex-1 sm:flex-initial ${
+                  activeTab === 'integration'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {React.createElement(FiShoppingBag as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+                <span className="hidden sm:inline">Integrazione</span>
+              </button>
             </div>
           )}
 
@@ -182,8 +196,10 @@ const AdminCMS: React.FC = () => {
             <UserManagement />
           ) : activeTab === 'videos' ? (
             <VideoManagement />
-          ) : (
+          ) : activeTab === 'reviews' ? (
             <ReviewManagement />
+          ) : (
+            <IntegrationManagement />
           )}
 
         </div>

@@ -24,6 +24,17 @@ export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   return data;
 };
 
+// Titles often list several numbers ("(1°) - 30/34 ; (2°) - 38/41"). When
+// searching a bare number, rank by the smallest number that actually
+// contains the searched digits, so searching "5" orders 5, 15, 25… ahead of
+// unrelated numbers in the same title. Numbers followed by "°" (angles like
+// 45°, set markers like (2°)) are ignored.
+export const numberMatchScore = (title: string, searchDigits: string): number => {
+  const numbers = title.match(/\d+(?![\d°])/g) || [];
+  const matching = numbers.filter((n) => n.includes(searchDigits)).map(Number);
+  return matching.length ? Math.min(...matching) : Infinity;
+};
+
 export const formatDate = (dateString: string): string => {
   return new Date(dateString).toLocaleDateString('it-IT', {
     year: 'numeric',

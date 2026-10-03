@@ -11,9 +11,9 @@ import TrainingPlan from '../components/dashboard/TrainingPlan';
 import FeedbackTab from '../components/dashboard/FeedbackTab';
 import ReviewTab from '../components/dashboard/ReviewTab';
 import IntegrazioneTab from '../components/dashboard/IntegrazioneTab';
-import WorkoutTab, { getCurrentWeekStart } from '../components/dashboard/WorkoutTab';
+import WorkoutTab from '../components/dashboard/WorkoutTab';
 import BodyCompositionTab from '../components/dashboard/BodyCompositionTab';
-import { FiGrid, FiLogOut, FiGift, FiMessageSquare, FiCheckCircle, FiActivity, FiTrendingUp, FiCheckSquare, FiMoreHorizontal } from 'react-icons/fi';
+import { FiGrid, FiLogOut, FiVideo, FiFile, FiGift, FiMessageSquare, FiCheckCircle, FiActivity, FiBarChart2, FiShoppingBag } from 'react-icons/fi';
 import { SiInstagram, SiTiktok } from 'react-icons/si';
 
 import { Video, AuthState, VideoState } from '../types/dashboard';
@@ -31,76 +31,11 @@ interface TrainingDay {
 
 interface DashboardProps {}
 
-// Top-level sections shown in the bottom bar (mobile) / top bar (desktop).
-// 'reviews' has no nav entry: it's only reachable via the ?tab=reviews link.
-type Section = 'allenamento' | 'progressi' | 'check' | 'altro' | 'reviews';
-type TrainingView = 'giorni' | 'video' | 'scheda';
-type ProgressView = 'pesi' | 'analisi';
 
-type IconType = React.ComponentType<{ className?: string }>;
-
-const NAV_ITEMS: { id: Exclude<Section, 'reviews'>; label: string; icon: IconType }[] = [
-  { id: 'allenamento', label: 'Allenamento', icon: FiActivity as IconType },
-  { id: 'progressi', label: 'Progressi', icon: FiTrendingUp as IconType },
-  { id: 'check', label: 'Check', icon: FiCheckSquare as IconType },
-  { id: 'altro', label: 'Altro', icon: FiMoreHorizontal as IconType },
-];
-
-// 'warn' = something to do soon, 'alert' = needs attention now
-type Badge = 'warn' | 'alert' | null;
-
-const BADGE_COLORS: Record<Exclude<Badge, null>, { dot: string; ping: string }> = {
-  warn: { dot: 'bg-orange-500', ping: 'bg-orange-400' },
-  alert: { dot: 'bg-red-500', ping: 'bg-red-400' },
-};
-
-/** Pulsing dot that draws the eye to a section/sub-section needing action. */
-const BadgeDot: React.FC<{ badge: Badge; className?: string }> = ({ badge, className = '' }) => {
-  if (!badge) return null;
-  const colors = BADGE_COLORS[badge];
-  return (
-    <span className={`absolute flex w-3 h-3 ${className}`}>
-      <span className={`absolute inline-flex w-full h-full rounded-full opacity-75 animate-ping ${colors.ping}`} />
-      <span className={`relative inline-flex w-3 h-3 rounded-full border-2 border-white ${colors.dot}`} />
-    </span>
-  );
-};
-
-/**
- * Sub-sections inside a section, rendered as separate tiles (icon + label)
- * rather than a flat segmented control, so it's obvious there are several
- * pages to explore. A badge dot flags the ones that need the user's attention.
- */
-function SubTabs<T extends string>({ items, active, onChange }: {
-  items: { id: T; label: string; badge?: Badge }[];
-  active: T;
-  onChange: (id: T) => void;
-}) {
-  return (
-    <div className={`grid gap-2 sm:gap-3 mb-6 ${items.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
-      {items.map((item) => {
-        const isActive = active === item.id;
-        return (
-          <button
-            key={item.id}
-            onClick={() => onChange(item.id)}
-            className={`relative flex items-center justify-center px-2 py-3 rounded-xl text-sm font-semibold border-2 transition-all ${
-              isActive
-                ? 'bg-gray-900 border-gray-900 text-white shadow-md'
-                : 'bg-white border-gray-200 text-gray-700 hover:border-gray-400 shadow-sm'
-            }`}
-          >
-            <span>{item.label}</span>
-            <BadgeDot badge={item.badge ?? null} className="-top-1 -right-1" />
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-
-const Dashboard: React.FC<DashboardProps> = () => {
+// TEMPORARY: the dashboard clients currently see (tabs on top). Kept side by
+// side with the new bottom-nav Dashboard while it is being rolled out — see
+// DashboardSwitch. Delete this file once the new dashboard is the default.
+const DashboardLegacy: React.FC<DashboardProps> = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -123,14 +58,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
   });
 
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
-  const [section, setSection] = useState<Section>('allenamento');
-  const [trainingView, setTrainingView] = useState<TrainingView>('giorni');
-  const [progressView, setProgressView] = useState<ProgressView>('pesi');
+  const [activeTab, setActiveTab] = useState<'videos' | 'training-plan' | 'reviews' | 'feedback' | 'workout' | 'body-composition' | 'integrazione'>('training-plan');
   const [hasTrainingPlan, setHasTrainingPlan] = useState(false);
-  const [planExpirationDate, setPlanExpirationDate] = useState<string | null>(null);
-  const [weightsPending, setWeightsPending] = useState(false);
-  // null while loading; decides between the merged Giorni view and the plain day videos
-  const [hasExercises, setHasExercises] = useState<boolean | null>(null);
   const [trainingDays, setTrainingDays] = useState<TrainingDay[]>([]);
   const [trainingDaysLoading, setTrainingDaysLoading] = useState(true);
   const [checkInRequired, setCheckInRequired] = useState(false);
@@ -201,29 +130,9 @@ const Dashboard: React.FC<DashboardProps> = () => {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       setHasTrainingPlan(response.success && response.data);
-      setPlanExpirationDate(response.data?.expirationDate || null);
     } catch (error) {
       console.error('Failed to check training plan:', error);
       setHasTrainingPlan(false);
-    }
-  }, []);
-
-  // Weights are "pending" when the plan has exercises but nothing was logged
-  // yet this week — drives the reminder dot on Allenamento › Pesi.
-  const checkWeightsPending = useCallback(async (authToken: string) => {
-    try {
-      const headers = { Authorization: `Bearer ${authToken}` };
-      const [planRes, logsRes] = await Promise.all([
-        apiCall('/workout/plan', { headers }),
-        apiCall(`/workout/logs?weekStart=${getCurrentWeekStart()}`, { headers }),
-      ]);
-      const hasExercises = (planRes.data?.exercises || []).length > 0;
-      const loggedThisWeek = (logsRes.data?.logs || []).length > 0;
-      setWeightsPending(hasExercises && !loggedThisWeek);
-      setHasExercises(hasExercises);
-    } catch (error) {
-      console.error('Failed to check weekly weights:', error);
-      setHasExercises(false);
     }
   }, []);
 
@@ -236,7 +145,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
       const shouldShow = response.data?.shouldShow || false;
       setCheckInRequired(shouldShow);
       if (shouldShow) {
-        setSection('check');
+        setActiveTab('feedback');
       }
     } catch (error) {
       console.error('Failed to check check status:', error);
@@ -332,7 +241,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
           // Set the active tab if specified in URL
           if (tabParam === 'reviews') {
-            setSection('reviews');
+            setActiveTab('reviews');
           }
         } else {
           // Try to use stored token
@@ -344,7 +253,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
           loadVideos(authToken),
           loadTrainingDays(authToken),
           checkTrainingPlan(authToken),
-          checkWeightsPending(authToken),
           checkIfCheckInRequired(authToken),
           checkTrainerSeenNotifications(authToken)
         ]);
@@ -362,7 +270,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     };
 
     initializeDashboard();
-  }, [token, navigate, authenticateWithToken, verifyStoredToken, loadVideos, loadTrainingDays, checkTrainingPlan, checkWeightsPending, checkIfCheckInRequired, checkTrainerSeenNotifications]);
+  }, [token, navigate, authenticateWithToken, verifyStoredToken, loadVideos, loadTrainingDays, checkTrainingPlan, checkIfCheckInRequired, checkTrainerSeenNotifications]);
 
   // Filtered videos based on selected category and search query
   const filteredVideos = useMemo(() => {
@@ -428,30 +336,11 @@ const Dashboard: React.FC<DashboardProps> = () => {
     setSelectedVideo(null);
   }, []);
 
-  // While a check-in is pending, every section except Check is locked.
-  // Reminder dots: expired plan = alert, expiring within a week = warn.
-  const planDaysLeft = planExpirationDate
-    ? Math.ceil((new Date(planExpirationDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-    : null;
-  const planBadge: Badge = planDaysLeft === null ? null : planDaysLeft < 0 ? 'alert' : planDaysLeft < 7 ? 'warn' : null;
-  const weightsBadge: Badge = weightsPending ? 'warn' : null;
-  // The bottom-bar "Allenamento" item shows the most urgent of its sub-badges
-  const trainingBadge: Badge = planBadge === 'alert' ? 'alert' : planBadge || weightsBadge;
-  const navBadge = (id: Section): Badge =>
-    id === 'check' && checkInRequired ? 'alert' : id === 'allenamento' && !checkInRequired ? trainingBadge : null;
-
-  const goToSection = useCallback((id: Section) => {
-    if (checkInRequired && id !== 'check') return;
-    setSection(id);
-    window.scrollTo({ top: 0 });
-  }, [checkInRequired]);
-
   useEffect(() => console.log(trainingDays), [trainingDays]);
 
   // Component styles
   const pageClassName = 'min-h-screen bg-gray-50';
-  // Extra bottom padding on mobile so content clears the fixed bottom nav
-  const mainClassName = 'pt-28 sm:pt-40 px-4 sm:px-6 lg:px-16 pb-28 sm:pb-16 lg:pb-20';
+  const mainClassName = 'pt-28 sm:pt-40 px-6 lg:px-16 pb-16 lg:pb-20';
   const containerClassName = 'max-w-7xl mx-auto';
 
   // Loading state
@@ -507,9 +396,9 @@ const Dashboard: React.FC<DashboardProps> = () => {
       <main className={mainClassName}>
         <div className={containerClassName}>
           {/* User Welcome Section */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">
+              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
                 {t('dashboard.welcome')}{authState.user?.firstName ? `, ${authState.user.firstName}` : ''}!
               </h1>
               <p className="text-gray-600">
@@ -527,102 +416,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
             </button>
           </div>
 
-          {/* Trainer Seen Notification Banner */}
-          {trainerSeenNotifications.length > 0 && (
-            <div className="mb-6 bg-green-50 border-2 border-green-400 rounded-xl p-4">
-              <div className="flex items-center space-x-3">
-                <div className="flex-shrink-0">
-                  {React.createElement(FiCheckCircle as React.ComponentType<{ className?: string }>, { className: "w-8 h-8 text-green-500" })}
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-green-800">Il tuo PT ha visto il tuo check!</h3>
-                  <p className="text-green-700 text-sm">
-                    {trainerSeenNotifications.length === 1
-                      ? `Check del ${formatDate(trainerSeenNotifications[0].feedback_date)} letto dal tuo PT.`
-                      : `${trainerSeenNotifications.length} tuoi check letti dal tuo PT.`}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Check Required Banner */}
-          {checkInRequired && (
-            <div className="mb-6 bg-orange-50 border-2 border-orange-400 rounded-xl p-4">
-              <div className="flex items-center space-x-3">
-                <div className="flex-shrink-0">
-                  {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-8 h-8 text-orange-500" })}
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-orange-800">Check settimanale richiesto</h3>
-                  <p className="text-orange-700 text-sm">Compila il check per continuare ad accedere alla tua dashboard.</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Section Nav — desktop (mobile uses the bottom bar below) */}
-          <div className="hidden sm:flex space-x-1 bg-gray-200 p-1 rounded-xl mb-6">
-            {NAV_ITEMS.map((item) => {
-              const disabled = checkInRequired && item.id !== 'check';
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => goToSection(item.id)}
-                  disabled={disabled}
-                  className={`relative flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-medium transition-all ${
-                    section === item.id
-                      ? 'bg-white text-gray-900 shadow'
-                      : disabled
-                        ? 'text-gray-400 cursor-not-allowed'
-                        : 'text-gray-600 hover:text-gray-900'
-                  } ${item.id === 'check' && checkInRequired ? 'ring-2 ring-orange-400' : ''}`}
-                >
-                  {React.createElement(item.icon, { className: 'w-5 h-5' })}
-                  <span>{item.label}</span>
-                  <BadgeDot badge={navBadge(item.id)} className="top-1 right-1" />
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Sub-sections */}
-          {section === 'allenamento' && (
-            <SubTabs
-              items={[
-                { id: 'giorni', label: 'Giorni', badge: weightsBadge },
-                { id: 'video', label: 'Video' },
-                { id: 'scheda', label: 'Scheda', badge: planBadge },
-              ]}
-              active={trainingView}
-              onChange={setTrainingView}
-            />
-          )}
-          {section === 'progressi' && (
-            <SubTabs
-              items={[
-                { id: 'pesi', label: 'Storico pesi' },
-                { id: 'analisi', label: 'Analisi corporea' },
-              ]}
-              active={progressView}
-              onChange={setProgressView}
-            />
-          )}
-
-          {/* Section Content */}
-          {section === 'reviews' ? (
-            <ReviewTab />
-          ) : section === 'check' ? (
-            <FeedbackTab
-              user={authState.user}
-              onCheckInCompleted={() => {
-                setCheckInRequired(false);
-                setSection('allenamento');
-              }}
-            />
-          ) : section === 'altro' ? (
-            <div className="space-y-10">
-              <div>
           {/* Referral Banner - Only shown when user has an active training plan */}
           {hasTrainingPlan && (
             <div className="mb-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 shadow-lg">
@@ -691,29 +484,157 @@ const Dashboard: React.FC<DashboardProps> = () => {
               </a>
             </div>
           )}
+
+          {/* Trainer Seen Notification Banner */}
+          {trainerSeenNotifications.length > 0 && (
+            <div className="mb-6 bg-green-50 border-2 border-green-400 rounded-xl p-4">
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  {React.createElement(FiCheckCircle as React.ComponentType<{ className?: string }>, { className: "w-8 h-8 text-green-500" })}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-green-800">Il tuo PT ha visto il tuo check!</h3>
+                  <p className="text-green-700 text-sm">
+                    {trainerSeenNotifications.length === 1
+                      ? `Check del ${formatDate(trainerSeenNotifications[0].feedback_date)} letto dal tuo PT.`
+                      : `${trainerSeenNotifications.length} tuoi check letti dal tuo PT.`}
+                  </p>
+                </div>
               </div>
-              <IntegrazioneTab />
             </div>
-          ) : section === 'progressi' ? (
-            progressView === 'pesi' ? <WorkoutTab mode="history" /> : <BodyCompositionTab />
-          ) : trainingView === 'scheda' ? (
+          )}
+
+          {/* Check Required Banner */}
+          {checkInRequired && (
+            <div className="mb-6 bg-orange-50 border-2 border-orange-400 rounded-xl p-4">
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-8 h-8 text-orange-500" })}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-orange-800">Check settimanale richiesto</h3>
+                  <p className="text-orange-700 text-sm">Compila il check per continuare ad accedere alla tua dashboard.</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Navigation Tabs */}
+          <div className="overflow-x-auto mb-8">
+            <div className="flex space-x-1 bg-gray-200 p-1 rounded-lg w-max min-w-full">
+            <button
+              onClick={() => !checkInRequired && setActiveTab('training-plan')}
+              disabled={checkInRequired}
+              className={`flex-shrink-0 sm:flex-1 flex items-center justify-center space-x-1.5 px-3 sm:px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
+                activeTab === 'training-plan'
+                  ? 'bg-white text-gray-900 shadow'
+                  : checkInRequired
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:text-gray-900'
+              }`}
+              title={t('dashboard.tabs.trainingPlan') || 'Scheda'}
+            >
+              {React.createElement(FiFile as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+              <span className="text-xs sm:text-base">{t('dashboard.tabs.trainingPlan') || 'Scheda'}</span>
+            </button>
+            <button
+              onClick={() => !checkInRequired && setActiveTab('videos')}
+              disabled={checkInRequired}
+              className={`flex-shrink-0 sm:flex-1 flex items-center justify-center space-x-1.5 px-3 sm:px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
+                activeTab === 'videos'
+                  ? 'bg-white text-gray-900 shadow'
+                  : checkInRequired
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:text-gray-900'
+              }`}
+              title={t('dashboard.tabs.videos') || 'Video'}
+            >
+              {React.createElement(FiVideo as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+              <span className="text-xs sm:text-base">{t('dashboard.tabs.videos') || 'Video'}</span>
+            </button>
+            <button
+              onClick={() => !checkInRequired && setActiveTab('workout')}
+              disabled={checkInRequired}
+              className={`flex-shrink-0 sm:flex-1 flex items-center justify-center space-x-1.5 px-3 sm:px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
+                activeTab === 'workout'
+                  ? 'bg-white text-gray-900 shadow'
+                  : checkInRequired
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:text-gray-900'
+              }`}
+              title="I miei pesi"
+            >
+              {React.createElement(FiActivity as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+              <span className="text-xs sm:text-base">Pesi</span>
+            </button>
+            <button
+              onClick={() => !checkInRequired && setActiveTab('body-composition')}
+              disabled={checkInRequired}
+              className={`flex-shrink-0 sm:flex-1 flex items-center justify-center space-x-1.5 px-3 sm:px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
+                activeTab === 'body-composition'
+                  ? 'bg-white text-gray-900 shadow'
+                  : checkInRequired
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:text-gray-900'
+              }`}
+              title="Analisi Corporea"
+            >
+              {React.createElement(FiBarChart2 as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+              <span className="text-xs sm:text-base">Analisi</span>
+            </button>
+            <button
+              onClick={() => !checkInRequired && setActiveTab('integrazione')}
+              disabled={checkInRequired}
+              className={`flex-shrink-0 sm:flex-1 flex items-center justify-center space-x-1.5 px-3 sm:px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
+                activeTab === 'integrazione'
+                  ? 'bg-white text-gray-900 shadow'
+                  : checkInRequired
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:text-gray-900'
+              }`}
+              title="Integrazione"
+            >
+              {React.createElement(FiShoppingBag as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+              <span className="text-xs sm:text-base">Integrazione</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('feedback')}
+              className={`flex-shrink-0 sm:flex-1 flex items-center justify-center space-x-1.5 px-3 sm:px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
+                activeTab === 'feedback'
+                  ? 'bg-white text-gray-900 shadow'
+                  : 'text-gray-600 hover:text-gray-900'
+              } ${checkInRequired ? 'ring-2 ring-orange-400' : ''}`}
+              title="Check"
+            >
+              {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
+              <span className="text-xs sm:text-base">{t('dashboard.tabs.feedback')}</span>
+            </button>
+            </div>
+          </div>
+
+          {/* Tab Content */}
+          {activeTab === 'training-plan' ? (
             <TrainingPlan />
-          ) : trainingView === 'giorni' && (hasExercises === null || trainingDaysLoading) ? (
-            <div className="flex justify-center py-16">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900" />
-            </div>
-          ) : trainingView === 'giorni' && hasExercises ? (
-            // Each exercise with its videos and weight inputs, plus the day's other videos
-            <WorkoutTab
-              mode="merged"
-              trainingDays={trainingDays}
-              onPlayVideo={handleVideoPlay}
-              onSaved={() => setWeightsPending(false)}
+          ) : activeTab === 'workout' ? (
+            <WorkoutTab />
+          ) : activeTab === 'body-composition' ? (
+            <BodyCompositionTab />
+          ) : activeTab === 'reviews' ? (
+            <ReviewTab />
+          ) : activeTab === 'integrazione' ? (
+            <IntegrazioneTab />
+          ) : activeTab === 'feedback' ? (
+            <FeedbackTab
+              user={authState.user}
+              onCheckInCompleted={() => {
+                setCheckInRequired(false);
+                setActiveTab('training-plan');
+              }}
             />
           ) : (
             <>
               {/* Video Categories Filter - Hidden when viewing training days */}
-              {videoState.categories.length > 0 && (trainingView === 'video' || trainingDays.length === 0 || videoState.searchQuery.trim() || videoState.selectedCategory) && (
+              {videoState.categories.length > 0 && (trainingDays.length === 0 || videoState.searchQuery.trim() || videoState.selectedCategory) && (
                 <CategoryFilter
                   categories={videoState.categories}
                   selectedCategory={videoState.selectedCategory}
@@ -724,7 +645,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               )}
 
               {/* Search Bar - Hidden when viewing training days */}
-              {(trainingView === 'video' || trainingDays.length === 0 || videoState.searchQuery.trim() || videoState.selectedCategory) && (
+              {(trainingDays.length === 0 || videoState.searchQuery.trim() || videoState.selectedCategory) && (
                 <SearchBar
                   searchQuery={videoState.searchQuery}
                   onSearch={handleSearch}
@@ -787,13 +708,13 @@ const Dashboard: React.FC<DashboardProps> = () => {
           ) : (
             <>
               {/* Show training days if available and no search/filter is active */}
-              {trainingView === 'giorni' && trainingDays.length > 0 && !videoState.searchQuery.trim() && !videoState.selectedCategory ? (
+              {trainingDays.length > 0 && !videoState.searchQuery.trim() && !videoState.selectedCategory ? (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xl font-bold text-gray-900">{t('dashboard.trainingDays.title')}</h3>
                     {videoState.videos.length > 0 && (
                       <button
-                        onClick={() => setTrainingView('video')}
+                        onClick={() => setVideoState(prev => ({ ...prev, selectedCategory: 'all' }))}
                         className="text-sm text-gray-600 hover:text-gray-900"
                       >
                         {t('dashboard.trainingDays.viewAllVideos')}
@@ -896,7 +817,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                         {videoState.searchQuery.trim() && ` trovati per "${videoState.searchQuery}"`}
                         {videoState.selectedCategory && videoState.selectedCategory !== 'all' && ` nella categoria "${videoState.selectedCategory}"`}
                       </div>
-                      {trainingView === 'giorni' && trainingDays.length > 0 && (
+                      {trainingDays.length > 0 && (
                         <button
                           onClick={() => setVideoState(prev => ({ ...prev, searchQuery: '', selectedCategory: null }))}
                           className="text-sm text-gray-600 hover:text-gray-900 font-medium"
@@ -922,7 +843,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
           )}
 
           {/* Video Stats */}
-          {trainingView === 'video' && videoState.videos.length > 0 && (
+          {videoState.videos.length > 0 && (
             <div className="mt-16 bg-white rounded-xl p-6 shadow-lg">
               <h3 className="text-xl font-bold text-gray-900 mb-4">Le tue statistiche</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -948,30 +869,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
         </div>
       </main>
 
-      {/* Bottom Nav — mobile only */}
-      <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 pb-[env(safe-area-inset-bottom)]">
-        <div className="grid grid-cols-4">
-          {NAV_ITEMS.map((item) => {
-            const disabled = checkInRequired && item.id !== 'check';
-            const active = section === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => goToSection(item.id)}
-                disabled={disabled}
-                className={`relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${
-                  active ? 'text-gray-900' : disabled ? 'text-gray-300' : 'text-gray-500'
-                }`}
-              >
-                {React.createElement(item.icon, { className: 'w-6 h-6' })}
-                <span>{item.label}</span>
-                <BadgeDot badge={navBadge(item.id)} className="top-1.5 left-1/2 ml-2" />
-              </button>
-            );
-          })}
-        </div>
-      </nav>
-
       {/* Video Player Modal */}
       {selectedVideo && (
         <VideoPlayer
@@ -983,4 +880,4 @@ const Dashboard: React.FC<DashboardProps> = () => {
   );
 };
 
-export default Dashboard;
+export default DashboardLegacy;

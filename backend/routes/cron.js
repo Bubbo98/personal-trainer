@@ -38,4 +38,46 @@ router.get('/send-reminders', requireCronSecret, async (req, res) => {
     }
 });
 
+// GET /api/cron/cleanup-users[?dryRun=1]
+// Called by Vercel Cron daily: permanently deletes deactivated clients and
+// clients whose plan expired more than DELETE_AFTER_DAYS ago (see userRetention).
+// With ?dryRun=1 it only lists who would be deleted.
+router.get('/cleanup-users', requireCronSecret, async (req, res) => {
+    const dryRun = req.query.dryRun === '1';
+    console.log(`🧹 Cron: cleanup-users${dryRun ? ' (dry run)' : ''} triggered at`, new Date().toISOString());
+
+    const { createDatabase } = require('../utils/database');
+    const { findUsersToDelete, deleteUserCompletely } = require('../utils/userRetention');
+    const db = createDatabase();
+
+    try {
+        const users = await findUsersToDelete(db);
+        const deleted = [];
+        const failed = [];
+
+        for (const user of users) {
+            const label = { id: user.id, username: user.username, name: `${user.first_name || ''} ${user.last_name || ''}`.trim() };
+            if (dryRun) {
+                deleted.push(label);
+                continue;
+            }
+            try {
+                await deleteUserCompletely(db, user.id);
+                deleted.push(label);
+                console.log(`🗑️  Deleted user ${user.id} (${user.username})`);
+            } catch (err) {
+                console.error(`Failed to delete user ${user.id}:`, err);
+                failed.push({ ...label, error: err.message });
+            }
+        }
+
+        db.close();
+        res.json({ success: true, dryRun, deletedCount: deleted.length, deleted, failed });
+    } catch (err) {
+        db.close();
+        console.error('Cron cleanup-users error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 module.exports = router;

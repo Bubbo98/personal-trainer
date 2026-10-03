@@ -3,9 +3,24 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { createDatabase } = require('../utils/database');
 const { v4: uuidv4 } = require('uuid');
+const { isAccessExpired, PLAN_EXPIRED_MESSAGE } = require('../utils/userRetention');
 require('dotenv').config();
 
 const router = express.Router();
+
+/** Client links stop working some days after the plan expired (see userRetention). */
+async function planAccessExpired(userId) {
+    const db = createDatabase();
+    try {
+        return await isAccessExpired(db, userId);
+    } catch (err) {
+        // Never lock clients out because of a failed check
+        console.error('Plan expiry check failed:', err);
+        return false;
+    } finally {
+        db.close();
+    }
+}
 
 // Generate JWT Token
 const generateToken = (user) => {
@@ -154,7 +169,7 @@ router.post('/login-link', (req, res) => {
             db.getCallback(
                 'SELECT * FROM users WHERE id = ? AND is_active = 1',
                 [decoded.userId],
-                (err, user) => {
+                async (err, user) => {
                     db.close();
 
                     if (err) {
@@ -170,6 +185,10 @@ router.post('/login-link', (req, res) => {
                             success: false,
                             error: 'User not found or inactive'
                         });
+                    }
+
+                    if (await planAccessExpired(user.id)) {
+                        return res.status(403).json({ success: false, code: 'PLAN_EXPIRED', error: PLAN_EXPIRED_MESSAGE });
                     }
 
                     // Generate a new regular token for the session
@@ -241,7 +260,7 @@ router.get('/verify', (req, res) => {
         db.getCallback(
             'SELECT id, username, email, first_name, last_name, trainer_id FROM users WHERE id = ? AND is_active = 1',
             [decoded.userId],
-            (err, user) => {
+            async (err, user) => {
                 db.close();
 
                 if (err || !user) {
@@ -249,6 +268,10 @@ router.get('/verify', (req, res) => {
                         success: false,
                         error: 'User not found'
                     });
+                }
+
+                if (await planAccessExpired(user.id)) {
+                    return res.status(403).json({ success: false, code: 'PLAN_EXPIRED', error: PLAN_EXPIRED_MESSAGE });
                 }
 
                 res.json({

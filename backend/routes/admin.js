@@ -721,6 +721,7 @@ router.get('/videos/:id/preview', async (req, res) => {
             v.file_path,
             v.duration,
             v.thumbnail_path,
+            v.thumbnail_key,
             v.category,
             v.created_at
         FROM videos v
@@ -768,6 +769,7 @@ router.get('/videos/:id/preview', async (req, res) => {
                     signedUrl: signedUrl,
                     duration: video.duration,
                     thumbnailPath: video.thumbnail_path,
+                    thumbnailKey: video.thumbnail_key || null,
                     category: video.category,
                     createdAt: video.created_at
                 }
@@ -781,7 +783,7 @@ router.get('/videos/:id/preview', async (req, res) => {
 // Query params: page, limit (pagination), search (title), muscleGroup
 // Without page param: returns all videos (backward compatible)
 router.get('/videos', (req, res) => {
-    const { page, limit, search, muscleGroup } = req.query;
+    const { page, limit, search, muscleGroup, missingThumbnail } = req.query;
     const isPaginated = page !== undefined;
     const pageNum = Math.max(1, parseInt(page) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20));
@@ -801,13 +803,23 @@ router.get('/videos', (req, res) => {
         conditions.push('v.muscle_group = ?');
         filterParams.push(muscleGroup);
     }
+    // Thumbnails now live on R2: a video without thumbnail_key has no photo
+    if (missingThumbnail === '1') {
+        conditions.push('v.thumbnail_key IS NULL');
+    }
 
     const whereClause = conditions.join(' AND ');
+    // Searching a bare number ("5") should surface titles in numeric order
+    // (5, 15, 25…) rather than created_at order — sorted in JS below since
+    // extracting the number from the title isn't practical in plain SQL.
+    const isNumericSearch = !!(search && /^\d+$/.test(search.trim()));
     const db = createDatabase();
 
     // Step 1: get total count matching the filters
     db.getCallback(
-        `SELECT COUNT(*) as total FROM videos v WHERE ${whereClause}`,
+        `SELECT COUNT(*) as total,
+                (SELECT COUNT(*) FROM videos WHERE is_active = 1 AND thumbnail_key IS NULL) as missing_thumbnails
+         FROM videos v WHERE ${whereClause}`,
         filterParams,
         (err, countRow) => {
             if (err) {
@@ -831,7 +843,9 @@ router.get('/videos', (req, res) => {
                 ORDER BY v.created_at DESC
             `;
 
-            if (isPaginated) {
+            // When sorting numerically we need every matching row before we
+            // can slice the right page, so pagination is skipped in SQL.
+            if (isPaginated && !isNumericSearch) {
                 dataQuery += ` LIMIT ? OFFSET ?`;
                 dataParams.push(limitNum, offset);
             }
@@ -844,6 +858,23 @@ router.get('/videos', (req, res) => {
                     return res.status(500).json({ success: false, error: 'Database error' });
                 }
 
+                if (isNumericSearch) {
+                    // Titles often list several numbers ("(1°) - 30/34 ; (2°) - 38/41").
+                    // Rank by the smallest number that actually contains the searched
+                    // digits, so searching "5" orders 5, 15, 25… ahead of unrelated numbers.
+                    // Numbers followed by "°" (angles like 45°, set markers like (2°)) are ignored.
+                    const searchDigits = search.trim();
+                    const matchScore = (title) => {
+                        const numbers = title.match(/\d+(?![\d°])/g) || [];
+                        const matching = numbers.filter((n) => n.includes(searchDigits)).map(Number);
+                        return matching.length ? Math.min(...matching) : Infinity;
+                    };
+                    videos = [...videos].sort((a, b) => matchScore(a.title) - matchScore(b.title));
+                    if (isPaginated) {
+                        videos = videos.slice(offset, offset + limitNum);
+                    }
+                }
+
                 const responseData = {
                     videos: videos.map(video => ({
                         id: video.id,
@@ -852,6 +883,7 @@ router.get('/videos', (req, res) => {
                         filePath: video.file_path,
                         duration: video.duration,
                         thumbnailPath: video.thumbnail_path,
+                        thumbnailKey: video.thumbnail_key || null,
                         category: video.category,
                         muscleGroup: video.muscle_group || null,
                         createdAt: video.created_at,
@@ -865,11 +897,71 @@ router.get('/videos', (req, res) => {
                     responseData.totalPages = Math.ceil(total / limitNum);
                     responseData.currentPage = pageNum;
                 }
+                responseData.missingThumbnailCount = Number(countRow?.missing_thumbnails || 0);
 
                 res.json({ success: true, data: responseData });
             });
         }
     );
+});
+
+// ── Video thumbnails on R2 ───────────────────────────────────────────────────
+
+const THUMBNAIL_TYPES = { 'image/webp': 'webp', 'image/jpeg': 'jpg', 'image/png': 'png' };
+
+// POST /api/admin/videos/:id/thumbnail/upload-url  Body: { contentType }
+// Presigned PUT for a new thumbnail. The key is unique per upload, so a
+// replaced thumbnail never shows a stale cached image.
+router.post('/videos/:id/thumbnail/upload-url', async (req, res) => {
+    const videoId = parseInt(req.params.id, 10);
+    const extension = THUMBNAIL_TYPES[req.body.contentType];
+    if (Number.isNaN(videoId) || !extension) {
+        return res.status(400).json({ success: false, error: 'Valid video id and image type (webp/jpeg/png) required' });
+    }
+
+    try {
+        const { getThumbnailUploadUrl, THUMBNAIL_PREFIX } = require('../utils/r2');
+        const key = `${THUMBNAIL_PREFIX}${videoId}-${Date.now()}.${extension}`;
+        const uploadUrl = await getThumbnailUploadUrl(key, req.body.contentType);
+        res.json({ success: true, data: { uploadUrl, key } });
+    } catch (err) {
+        console.error('Thumbnail upload URL error:', err);
+        res.status(500).json({ success: false, error: 'Failed to create upload URL' });
+    }
+});
+
+// PUT /api/admin/videos/:id/thumbnail  Body: { key } (null removes the thumbnail)
+// Saves the uploaded thumbnail and deletes the previous one from R2.
+router.put('/videos/:id/thumbnail', (req, res) => {
+    const videoId = parseInt(req.params.id, 10);
+    const { key } = req.body;
+    if (Number.isNaN(videoId) || (key !== null && (typeof key !== 'string' || !key.startsWith(`thumbnails/${videoId}-`)))) {
+        return res.status(400).json({ success: false, error: 'Invalid thumbnail key' });
+    }
+
+    const db = createDatabase();
+    db.getCallback('SELECT thumbnail_key FROM videos WHERE id = ?', [videoId], (err, video) => {
+        if (err || !video) {
+            db.close();
+            return res.status(err ? 500 : 404).json({ success: false, error: err ? 'Database error' : 'Video not found' });
+        }
+
+        db.runCallback(
+            'UPDATE videos SET thumbnail_key = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            [key, videoId],
+            async (updateErr) => {
+                db.close();
+                if (updateErr) return res.status(500).json({ success: false, error: 'Database error' });
+
+                if (video.thumbnail_key && video.thumbnail_key !== key) {
+                    const { deleteObject } = require('../utils/r2');
+                    deleteObject(video.thumbnail_key).catch((e) => console.error('Old thumbnail delete failed:', e.message));
+                }
+                console.log(`Admin ${req.user.username} set thumbnail of video ${videoId}: ${key}`);
+                res.json({ success: true, data: { thumbnailKey: key } });
+            }
+        );
+    });
 });
 
 // POST /api/admin/videos/upload-url

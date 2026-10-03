@@ -18,9 +18,10 @@ function parseWeightSlots(notes) {
   const match = notes.match(/Peso consigliato:\s*(.+)/i);
   if (!match) return 1;
   const w = match[1].trim();
-  if (/\bx\s+(braccio|lato|gamba|mano)\b/i.test(w)) return 1;
   const kgCount = (w.match(/\bkg\b/gi) || []).length;
+  // Several weights ("50 kg / 10 kg x lato", superset) win over "x lato"
   if (kgCount > 1) return kgCount;
+  if (/\bx\s+(braccio|lato|gamba|mano)\b/i.test(w)) return 1;
   if (kgCount === 1) return Math.max(1, (w.match(/\d+(?:\.\d+)?/g) || []).length);
   return 1;
 }
@@ -46,6 +47,7 @@ function parsePdfText(text) {
   let inWorkout = false;
   let inTable = false;
   let pendingName = '';
+  let pendingTechnique = '';
   let inParenthetical = false;
 
   const PRIME = "''′‘’ʼʹ";
@@ -55,17 +57,61 @@ function parsePdfText(text) {
 
   const STATS_RE = new RegExp(
     `(\\d+)\\s+` +
-    `(\\d+[${DQUOTE}${PRIME}]{0,2}(?:\\s*\\+\\s*\\d+[${DQUOTE}${PRIME}]{0,2})*(?:\\s+x\\s+\\w+)?)\\s+` +
+    // reps: "12", "10 + 12", "12/12" (superset), "15 x lato" / "15 per lato"
+    `(\\d+[${DQUOTE}${PRIME}]{0,2}(?:\\s*[+/]\\s*\\d+[${DQUOTE}${PRIME}]{0,2})*(?:\\s+(?:x|per)\\s+\\w+)?)\\s+` +
     `(\\d+(?:[.,]\\d+)?[${PRIME}][${PRIME}\\d]*)`,
     'i'
   );
+
+  // Table format (current PDFs): "Panca piana con bilanciere 4 8 90 sec 70 kg totali"
+  // → name, sets, reps, rest, weight. Rest is in sec/min; reps can be "10+12",
+  // "15 sec", "1 min", "1.30’" or "15 x lato"; the weight column may be
+  // "corpo libero". Long names wrap, leaving the numbers alone on their line.
+  const NUM = '\\d+(?:[.,]\\d+)?';
+  const UNIT = `(?:\\s*(?:sec|min|[${PRIME}${DQUOTE}]{1,2}))`;
+  const TABLE_ROW_RE = new RegExp(
+    `^(.*?)\\s*\\b(\\d+)\\s+` +
+    `((?:${NUM}${UNIT}?(?:\\s*[+/]\\s*${NUM}${UNIT}?)*(?:\\s+(?:x|per)\\s+\\w+)?)|ladder|max)\\s+` +
+    // rest: "90 sec", "1 min 30 sec", or seconds written as 45"
+    `(${NUM}\\s*(?:sec|min)(?:\\s+${NUM}\\s*sec)?|\\d+[${DQUOTE}])(?=\\s|$)\\s*(.*)$`,
+    'i'
+  );
+
+  // A weight cell that wrapped onto its own line(s) after the row ("8 kg",
+  // "10 kg x" + "braccio", "30 kg / 12,5" + "kg x braccio", "Corpo libero"):
+  // it belongs to the previous exercise.
+  const WEIGHT_TAIL_RE = /^(?:(?:\d+(?:[.,]\d+)?|kg|x|\/|\+|braccio|lato|gamba|mano|totali|corpo|libero)\s*)*(?:kg|braccio|lato|gamba|mano|corpo|libero)(?:\s*(?:x|\/|\+|\d+(?:[.,]\d+)?|kg|braccio|lato|gamba|mano|corpo|libero))*$/i;
+
+  // Technique notes written on their own line under the exercise name
+  // ("TUT 3'' solo negativa", "Rest Pause: 12 rip. + …", "Ladder 1-2-3…").
+  // In the table format they're moved to the notes (their "+" would look like
+  // a superset to the video matcher). Older PDFs wrap names mid-sentence
+  // ("… con" / "isometria 5” al mento"), so there they stay in the name.
+  const TECHNIQUE_LINE_RE = /^(?:TUT\b|Isometria\b|Rest\s*Pause\b|Ladder\b|Drop\s*set\b|DS\b|RP\b|Cedimento\b|Lavoro\s+neurale\b)/i;
+  let pendingTechniqueLines = [];
+
+  const appendNameLine = (text) => {
+    const clean = text.replace(/^[-–•]\s*/, '').trim();
+    if (!clean) return;
+    if (pendingName && TECHNIQUE_LINE_RE.test(clean)) pendingTechniqueLines.push(clean);
+    pendingName = pendingName ? `${pendingName} ${clean}` : clean;
+  };
+
+  /** Table format only: moves the technique lines from the pending name to the notes. */
+  const takeTechniqueLines = () => {
+    for (const t of pendingTechniqueLines) pendingName = pendingName.replace(t, ' ');
+    pendingTechnique = pendingTechniqueLines.join(' ');
+    pendingTechniqueLines = [];
+  };
 
   const EMOM_STATS_RE = new RegExp(
     `(\\d+[${PRIME}])\\s+(\\d+)\\s+(\\d+(?:[.,]\\d+)?[${PRIME}])`,
     'i'
   );
 
-  const extractNotes = (afterStats) => {
+  const extractNotes = (rawAfterStats) => {
+    // Rest like 1'30" leaves its closing quote in front of the weight
+    const afterStats = (rawAfterStats || '').replace(/^["“”″]\s*/, '');
     if (!afterStats || !/kg/i.test(afterStats)) return { notes: '', openParen: false };
     const parenIdx = afterStats.indexOf('(');
     if (parenIdx !== -1 && afterStats.indexOf(')', parenIdx) === -1) {
@@ -77,12 +123,16 @@ function parsePdfText(text) {
   const flushExercise = (sets, reps, rest, notes) => {
     const name = pendingName.replace(/\s+/g, ' ').trim();
     if (name && currentDay) {
+      // Technique first: "Peso consigliato: …" must stay last, it's parsed up to the end
+      const allNotes = [pendingTechnique, notes].filter(Boolean).join(' · ');
       currentDay.exercises.push({
         name, sets: sets || '', reps: reps || '', rest: rest || '',
-        notes: notes || '', weightSlots: parseWeightSlots(notes),
+        notes: allNotes, weightSlots: parseWeightSlots(notes),
       });
     }
     pendingName = '';
+    pendingTechnique = '';
+    pendingTechniqueLines = [];
   };
 
   for (const line of lines) {
@@ -91,6 +141,7 @@ function parsePdfText(text) {
     const dayMatch = line.match(/^GIORNO\s+(\d+)\s*(.*)$/i);
     if (dayMatch) {
       pendingName = '';
+      pendingTechnique = ''; pendingTechniqueLines = [];
       inWorkout = false;
       inTable = false;
       inParenthetical = false;
@@ -108,8 +159,8 @@ function parsePdfText(text) {
     if (!currentDay) continue;
 
     if (/^WORKOUT:/i.test(line))           { inWorkout = true; inParenthetical = false; continue; }
-    if (/^WARM\s*UP/i.test(line))          { pendingName = ''; inWorkout = false; inTable = false; inParenthetical = false; continue; }
-    if (/^STRETCHING/i.test(line))         { pendingName = ''; inWorkout = false; inTable = false; inParenthetical = false; continue; }
+    if (/^WARM\s*UP/i.test(line))          { pendingName = ''; pendingTechnique = ''; pendingTechniqueLines = []; inWorkout = false; inTable = false; inParenthetical = false; continue; }
+    if (/^STRETCHING/i.test(line))         { pendingName = ''; pendingTechnique = ''; pendingTechniqueLines = []; inWorkout = false; inTable = false; inParenthetical = false; continue; }
     if (!inWorkout) continue;
 
     if (/^CIRCUITO:/i.test(line))          { inTable = false; continue; }
@@ -123,9 +174,34 @@ function parsePdfText(text) {
       continue;
     }
 
+    if (!pendingName && WEIGHT_TAIL_RE.test(line)) {
+      const last = currentDay.exercises[currentDay.exercises.length - 1];
+      if (last) {
+        if (/Peso consigliato:/.test(last.notes)) {
+          // "10 kg x" + "braccio" continue the same value; "8 kg" is another weight
+          // Same value continues ("12,5" + "kg x braccio", "10 kg x" + "braccio") vs another weight ("40 kg" + "8 kg")
+          const continues = /^(?:kg|x\b|braccio|lato|gamba|mano|libero)/i.test(line) || /(?:\d|\bx|\/|corpo)$/i.test(last.notes.trim());
+          const sep = continues ? ' ' : ' / ';
+          last.notes = `${last.notes}${sep}${line}`;
+        } else if (/kg/i.test(line)) {
+          last.notes = [last.notes, `Peso consigliato: ${line}`].filter(Boolean).join(' · ');
+        }
+        last.weightSlots = parseWeightSlots(last.notes);
+      }
+      continue;
+    }
+
+    const tableRow = line.match(TABLE_ROW_RE);
+    if (tableRow) {
+      appendNameLine(tableRow[1]);
+      takeTechniqueLines();
+      const weight = tableRow[5].trim();
+      flushExercise(tableRow[2], tableRow[3].trim(), tableRow[4].trim(), /kg/i.test(weight) ? `Peso consigliato: ${weight}` : '');
+      continue;
+    }
+
     if (!REST_RE.test(line)) {
-      const clean = line.replace(/^[-\u2013\u2022]\s*/, '').trim();
-      if (clean) pendingName = pendingName ? `${pendingName} ${clean}` : clean;
+      appendNameLine(line);
       continue;
     }
 
@@ -154,8 +230,7 @@ function parsePdfText(text) {
     const lineForStats = line.replace(/\([^)]*\)/g, '').replace(/\s+/g, ' ').trim();
     const statsMatch = lineForStats.match(STATS_RE) || line.match(STATS_RE);
     if (!statsMatch) {
-      const clean = line.replace(/^[-\u2013\u2022]\s*/, '').trim();
-      if (clean) pendingName = pendingName ? `${pendingName} ${clean}` : clean;
+      appendNameLine(line);
       continue;
     }
 
@@ -228,10 +303,27 @@ router.get('/admin/plan/:userId', authenticateToken, requireAdmin, (req, res) =>
   );
 });
 
-// POST /api/workout/admin/plan/:userId  — replaces the entire plan
+// Promise helpers for sequential multi-step admin operations
+const dbRun = (db, sql, params = []) =>
+  new Promise((resolve, reject) => db.runCallback(sql, params, function (err) { err ? reject(err) : resolve(this); }));
+const dbAll = (db, sql, params = []) =>
+  new Promise((resolve, reject) => db.allCallback(sql, params, (err, rows) => (err ? reject(err) : resolve(rows || []))));
+
+/** Unlinks training-day videos from exercises that are being deleted. */
+async function unlinkExercises(db, exerciseIds) {
+  if (exerciseIds.length === 0) return;
+  const placeholders = exerciseIds.map(() => '?').join(',');
+  await dbRun(db, `UPDATE training_day_videos SET exercise_id = NULL WHERE exercise_id IN (${placeholders})`, exerciseIds);
+}
+
+// POST /api/workout/admin/plan/:userId  — saves the entire plan
+// Exercises sent with an existing id are updated in place (so their weight
+// logs and video links survive an edit); new ones are inserted; exercises
+// missing from the payload are deleted. A freshly parsed PDF has no ids, so
+// it still replaces the whole plan as before.
 router.post('/admin/plan/:userId', authenticateToken, requireAdmin, async (req, res) => {
   const { userId } = req.params;
-  const { days } = req.body; // [{ dayNumber, dayName, exercises: [{ name, sets, reps, rest, notes }] }]
+  const { days } = req.body; // [{ dayNumber, dayName, exercises: [{ id?, name, sets, reps, rest, notes }] }]
 
   if (!Array.isArray(days)) {
     return res.status(400).json({ success: false, error: 'days must be an array' });
@@ -240,32 +332,38 @@ router.post('/admin/plan/:userId', authenticateToken, requireAdmin, async (req, 
   const db = createDatabase();
 
   try {
-    // Delete existing plan — exercise_id has ON DELETE CASCADE, so this also
-    // wipes exercise_logs for the deleted exercises. Intentional: a new plan
-    // means new exercises, so old weight logs no longer apply.
-    await new Promise((resolve, reject) => {
-      db.runCallback(
-        'DELETE FROM training_exercises WHERE user_id = ?',
-        [userId],
-        (err) => (err ? reject(err) : resolve())
-      );
-    });
+    const existing = await dbAll(db, 'SELECT id FROM training_exercises WHERE user_id = ?', [userId]);
+    const existingIds = new Set(existing.map((e) => e.id));
+    const keptIds = new Set();
 
-    // Insert new exercises
     for (const day of days) {
       let orderIndex = 0;
       for (const ex of day.exercises || []) {
-        await new Promise((resolve, reject) => {
-          db.runCallback(
+        const values = [day.dayNumber, day.dayName || `Giorno ${day.dayNumber}`, orderIndex++,
+          ex.name, ex.sets || '', ex.reps || '', ex.rest || '', ex.notes || '',
+          ex.weightSlots || ex.weight_slots || 1];
+
+        if (ex.id && existingIds.has(ex.id)) {
+          await dbRun(db,
+            `UPDATE training_exercises SET day_number = ?, day_name = ?, order_index = ?, name = ?, sets = ?, reps = ?,
+               rest = ?, notes = ?, weight_slots = ? WHERE id = ? AND user_id = ?`,
+            [...values, ex.id, userId]);
+          keptIds.add(ex.id);
+        } else {
+          await dbRun(db,
             `INSERT INTO training_exercises (user_id, day_number, day_name, order_index, name, sets, reps, rest, notes, weight_slots)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [userId, day.dayNumber, day.dayName || `Giorno ${day.dayNumber}`, orderIndex++,
-             ex.name, ex.sets || '', ex.reps || '', ex.rest || '', ex.notes || '',
-             ex.weightSlots || ex.weight_slots || 1],
-            (err) => (err ? reject(err) : resolve())
-          );
-        });
+            [userId, ...values]);
+        }
       }
+    }
+
+    // Exercises removed from the plan: unlink their videos, then delete them.
+    // Their weight logs keep the name/day snapshots for the history.
+    const removedIds = [...existingIds].filter((id) => !keptIds.has(id));
+    await unlinkExercises(db, removedIds);
+    for (const id of removedIds) {
+      await dbRun(db, 'DELETE FROM training_exercises WHERE id = ? AND user_id = ?', [id, userId]);
     }
 
     db.close();
@@ -283,12 +381,22 @@ router.delete('/admin/plan/:userId', authenticateToken, requireAdmin, (req, res)
   const db = createDatabase();
 
   db.runCallback(
-    'DELETE FROM training_exercises WHERE user_id = ?',
+    'UPDATE training_day_videos SET exercise_id = NULL WHERE exercise_id IN (SELECT id FROM training_exercises WHERE user_id = ?)',
     [userId],
-    function (err) {
-      db.close();
-      if (err) return res.status(500).json({ success: false, error: 'Database error' });
-      res.json({ success: true, message: 'Training plan deleted' });
+    (unlinkErr) => {
+      if (unlinkErr) {
+        db.close();
+        return res.status(500).json({ success: false, error: 'Database error' });
+      }
+      db.runCallback(
+        'DELETE FROM training_exercises WHERE user_id = ?',
+        [userId],
+        function (err) {
+          db.close();
+          if (err) return res.status(500).json({ success: false, error: 'Database error' });
+          res.json({ success: true, message: 'Training plan deleted' });
+        }
+      );
     }
   );
 });
@@ -407,6 +515,205 @@ router.post('/logs', authenticateToken, (req, res) => {
       );
     }
   );
+});
+
+// ─── Admin: Exercise ↔ Video links ───────────────────────────────────────────
+
+const { prepareVideo, suggestLinks } = require('../utils/exerciseMatcher');
+
+// GET /api/workout/admin/links/:userId
+// Per day: each exercise with its linked videos, plus suggestions for
+// exercises that have none yet (see suggestLinks: same day, other days, then
+// the library), and the day's videos not linked to any exercise ("extras").
+router.get('/admin/links/:userId', authenticateToken, requireAdmin, async (req, res) => {
+  const { userId } = req.params;
+  const db = createDatabase();
+
+  try {
+    const exercises = await dbAll(db,
+      'SELECT id, day_number, day_name, order_index, name, sets, reps FROM training_exercises WHERE user_id = ? ORDER BY day_number, order_index',
+      [userId]);
+    const dayVideos = await dbAll(db,
+      `SELECT td.id AS dayId, td.day_number, tdv.id AS assignmentId, tdv.exercise_id, v.id AS videoId, v.title
+       FROM user_training_days td
+       JOIN training_day_videos tdv ON tdv.training_day_id = td.id AND tdv.is_active = 1
+       JOIN videos v ON v.id = tdv.video_id AND v.is_active = 1
+       WHERE td.user_id = ? AND td.is_active = 1
+       ORDER BY td.day_number, tdv.order_index`,
+      [userId]);
+    const library = exercises.length > 0
+      ? (await dbAll(db, 'SELECT id AS videoId, title FROM videos WHERE is_active = 1')).map(prepareVideo)
+      : [];
+    db.close();
+
+    const exerciseIds = new Set(exercises.map((e) => e.id));
+    const toVideo = (v) => ({ assignmentId: v.assignmentId, videoId: v.videoId, title: v.title });
+    const { suggestions, usedAssignments } = suggestLinks(exercises, dayVideos, library);
+
+    // Plan days plus days that only have videos (e.g. all videos put in "Giorno 5")
+    const dayNumbers = [...new Set([...exercises.map((e) => e.day_number), ...dayVideos.map((v) => v.day_number)])]
+      .sort((a, b) => a - b);
+
+    const days = dayNumbers.map((dayNumber) => {
+      const dayExercises = exercises.filter((e) => e.day_number === dayNumber);
+      const linksOf = (exId) => dayVideos.filter((v) => v.exercise_id === exId).map(toVideo);
+      // Videos linked to an exercise that no longer exists count as free
+      const isFree = (v) => v.exercise_id == null || !exerciseIds.has(v.exercise_id);
+
+      return {
+        dayNumber,
+        dayName: (dayExercises[0] && dayExercises[0].day_name) || `Giorno ${dayNumber}`,
+        exercises: dayExercises.map((e) => ({
+          id: e.id,
+          name: e.name,
+          sets: e.sets,
+          reps: e.reps,
+          links: linksOf(e.id),
+          suggestions: linksOf(e.id).length > 0 ? [] : (suggestions.get(e.id) || []).map((s) => ({
+            assignmentId: s.assignmentId,
+            videoId: s.videoId,
+            title: s.title,
+            confidence: s.confidence,
+            fromLibrary: s.source === 'library',
+          })),
+        })),
+        extras: dayVideos
+          .filter((v) => v.day_number === dayNumber && isFree(v) && !usedAssignments.has(v.assignmentId))
+          .map(toVideo),
+      };
+    });
+
+    res.json({ success: true, data: { days } });
+  } catch (err) {
+    db.close();
+    console.error('Error loading exercise links:', err);
+    res.status(500).json({ success: false, error: 'Failed to load exercise links' });
+  }
+});
+
+/**
+ * Makes sure a library video is assigned to the training day of an exercise:
+ * creates the day if missing, reuses an existing assignment of the same video,
+ * and grants the user permission to watch it. Returns the assignment id.
+ *
+ * `cache` holds the user's days, assignments and permissions preloaded by the
+ * caller, so each video only costs the writes it actually needs (the DB is
+ * remote, so per-video lookups made saving a whole plan slow).
+ */
+async function ensureDayAssignment(db, userId, exercise, videoId, adminName, cache) {
+  let dayId = cache.dayIdByNumber.get(exercise.day_number);
+  if (!dayId) {
+    const result = await dbRun(db,
+      'INSERT INTO user_training_days (user_id, day_number, day_name) VALUES (?, ?, ?)',
+      [userId, exercise.day_number, exercise.day_name || null]);
+    dayId = result.lastID;
+    cache.dayIdByNumber.set(exercise.day_number, dayId);
+    cache.nextOrderByDay.set(dayId, 0);
+  }
+
+  const key = `${dayId}:${videoId}`;
+  let assignmentId = cache.assignmentByDayVideo.get(key);
+  if (!assignmentId) {
+    const nextOrder = cache.nextOrderByDay.get(dayId) || 0;
+    const result = await dbRun(db,
+      'INSERT INTO training_day_videos (training_day_id, video_id, order_index, added_by) VALUES (?, ?, ?, ?)',
+      [dayId, videoId, nextOrder, adminName]);
+    assignmentId = result.lastID;
+    cache.assignmentByDayVideo.set(key, assignmentId);
+    cache.nextOrderByDay.set(dayId, nextOrder + 1);
+  }
+
+  const permission = cache.permissionByVideo.get(videoId);
+  if (!permission) {
+    await dbRun(db,
+      'INSERT INTO user_video_permissions (user_id, video_id, granted_by, is_active) VALUES (?, ?, ?, 1)',
+      [userId, videoId, adminName]);
+    cache.permissionByVideo.set(videoId, { is_active: 1 });
+  } else if (!permission.is_active) {
+    await dbRun(db, 'UPDATE user_video_permissions SET is_active = 1 WHERE id = ?', [permission.id]);
+    permission.is_active = 1;
+  }
+
+  return assignmentId;
+}
+
+// PUT /api/workout/admin/links/:userId — replaces all exercise ↔ video links
+// Body: { links: [{ exerciseId, videos: [{ assignmentId?, videoId }] }] }
+// A video without assignmentId comes from the library: it's added to the
+// exercise's training day (created if missing) and granted to the user.
+router.put('/admin/links/:userId', authenticateToken, requireAdmin, async (req, res) => {
+  const { userId } = req.params;
+  const { links } = req.body;
+
+  if (!Array.isArray(links)) {
+    return res.status(400).json({ success: false, error: 'links must be an array' });
+  }
+
+  const db = createDatabase();
+  const adminName = req.user.username || 'admin';
+
+  try {
+    const [exercises, days, assignments, permissions] = await Promise.all([
+      dbAll(db, 'SELECT id, day_number, day_name FROM training_exercises WHERE user_id = ?', [userId]),
+      dbAll(db, 'SELECT id, day_number FROM user_training_days WHERE user_id = ? AND is_active = 1', [userId]),
+      dbAll(db,
+        `SELECT tdv.id, tdv.training_day_id, tdv.video_id, tdv.order_index FROM training_day_videos tdv
+         JOIN user_training_days td ON td.id = tdv.training_day_id
+         WHERE td.user_id = ? AND td.is_active = 1 AND tdv.is_active = 1`,
+        [userId]),
+      dbAll(db, 'SELECT id, video_id, is_active FROM user_video_permissions WHERE user_id = ?', [userId]),
+    ]);
+
+    const exerciseById = new Map(exercises.map((e) => [e.id, e]));
+    const assignmentIds = new Set(assignments.map((a) => a.id));
+    const cache = {
+      dayIdByNumber: new Map(days.map((d) => [d.day_number, d.id])),
+      assignmentByDayVideo: new Map(assignments.map((a) => [`${a.training_day_id}:${a.video_id}`, a.id])),
+      nextOrderByDay: new Map(),
+      permissionByVideo: new Map(permissions.map((p) => [p.video_id, p])),
+    };
+    for (const a of assignments) {
+      cache.nextOrderByDay.set(a.training_day_id, Math.max(cache.nextOrderByDay.get(a.training_day_id) || 0, a.order_index + 1));
+    }
+
+    // Resolve every link to an assignment id, adding library videos to the days
+    const assignmentsByExercise = new Map();
+    let addedVideos = 0;
+    for (const link of links) {
+      const exercise = exerciseById.get(link.exerciseId);
+      if (!exercise || !Array.isArray(link.videos)) continue;
+
+      const ids = [];
+      for (const video of link.videos) {
+        let assignmentId = video.assignmentId && assignmentIds.has(video.assignmentId) ? video.assignmentId : null;
+        if (!assignmentId && video.videoId) {
+          assignmentId = await ensureDayAssignment(db, userId, exercise, video.videoId, adminName, cache);
+          assignmentIds.add(assignmentId);
+          addedVideos++;
+        }
+        if (assignmentId) ids.push(assignmentId);
+      }
+      if (ids.length > 0) assignmentsByExercise.set(exercise.id, ids);
+    }
+
+    // Start from a clean slate for this user's days, then one update per exercise
+    await dbRun(db,
+      `UPDATE training_day_videos SET exercise_id = NULL
+       WHERE training_day_id IN (SELECT id FROM user_training_days WHERE user_id = ?)`,
+      [userId]);
+    for (const [exerciseId, ids] of assignmentsByExercise) {
+      await dbRun(db,
+        `UPDATE training_day_videos SET exercise_id = ? WHERE id IN (${ids.map(() => '?').join(',')})`,
+        [exerciseId, ...ids]);
+    }
+
+    db.close();
+    res.json({ success: true, message: 'Links saved', data: { addedVideos } });
+  } catch (err) {
+    db.close();
+    console.error('Error saving exercise links:', err);
+    res.status(500).json({ success: false, error: 'Failed to save exercise links' });
+  }
 });
 
 module.exports = router;

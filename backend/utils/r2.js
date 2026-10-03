@@ -1,4 +1,4 @@
-const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 // R2 Configuration - Set these in environment variables
@@ -70,8 +70,43 @@ async function getSignedVideoUrls(videoKeys, expiresIn = 3600) {
   return urlMap;
 }
 
+// ── Thumbnails (stored under "thumbnails/" in the same bucket) ──────────────
+
+const THUMBNAIL_PREFIX = 'thumbnails/';
+
+/** Presigned PUT URL so the admin's browser uploads a thumbnail straight to R2. */
+async function getThumbnailUploadUrl(key, contentType, expiresIn = 600) {
+  // Only Content-Type is signed (like video uploads), so the browser's PUT
+  // needs no extra headers that the bucket's CORS rules might reject
+  const command = new PutObjectCommand({
+    Bucket: R2_BUCKET_NAME,
+    Key: key,
+    ContentType: contentType,
+  });
+  return getSignedUrl(r2Client, command, { expiresIn });
+}
+
+/** Server-side upload (used by the migration script). */
+async function putObject(key, body, contentType) {
+  await r2Client.send(new PutObjectCommand({
+    Bucket: R2_BUCKET_NAME,
+    Key: key,
+    Body: body,
+    ContentType: contentType,
+    CacheControl: 'public, max-age=31536000, immutable',
+  }));
+}
+
+async function deleteObject(key) {
+  await r2Client.send(new DeleteObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key }));
+}
+
 module.exports = {
   getSignedVideoUrl,
   getSignedVideoUrls,
+  getThumbnailUploadUrl,
+  putObject,
+  deleteObject,
+  THUMBNAIL_PREFIX,
   r2Client,
 };

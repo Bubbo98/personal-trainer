@@ -14,6 +14,7 @@ export interface TechniqueVideo {
   description: string;
   signedUrl: string | null;
   thumbnailPath?: string | null;
+  thumbnailKey?: string | null;
 }
 
 export interface Video {
@@ -24,6 +25,7 @@ export interface Video {
   signedUrl?: string;
   duration: number;
   thumbnailPath?: string;
+  thumbnailKey?: string | null;
   category: string;
   createdAt: string;
   grantedAt?: string;
@@ -32,6 +34,10 @@ export interface Video {
   techniques?: TechniqueVideo[];
   groupId?: number | null;
   groupLabel?: string | null;
+  /** Id of the video's assignment to a training day (training-days API only). */
+  assignmentId?: number;
+  /** Training-plan exercise this day video belongs to; null = extra video of the day. */
+  exerciseId?: number | null;
 }
 
 export interface Category {
