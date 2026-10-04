@@ -131,12 +131,14 @@ app.use((req, res) => {
     });
 });
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL}`);
-    console.log(`🔒 Environment: ${process.env.NODE_ENV}`);
-    console.log(`💾 Database: ${process.env.DB_PATH}`);
-});
+// Start server only when run directly (`node server.js`): Vercel and the tests import the app
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`🚀 Server running on port ${PORT}`);
+        console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL}`);
+        console.log(`🔒 Environment: ${process.env.NODE_ENV}`);
+        console.log(`💾 Database: ${process.env.DB_PATH}`);
+    });
+}
 
 module.exports = app;
