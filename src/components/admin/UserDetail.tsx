@@ -38,6 +38,11 @@ const UserDetail: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<TabType>('trainingDays');
   const [trainingDaysVersion, setTrainingDaysVersion] = useState(0);
+  const [linkerVersion, setLinkerVersion] = useState(0);
+  // null until the linker has loaded: whether the user has a plan decides if the old days editor is shown
+  const [hasPlan, setHasPlan] = useState<boolean | null>(null);
+  const [showDaysManager, setShowDaysManager] = useState(false);
+  const handleLinkerLoaded = useCallback((has: boolean) => setHasPlan(has), []);
   const [user, setUser] = useState<User | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
   const [userVideos, setUserVideos] = useState<Video[]>([]);
@@ -255,21 +260,45 @@ const UserDetail: React.FC = () => {
       {activeTab === 'trainingDays' && (
         <>
           <ExerciseVideoLinker
+            key={`linker-${linkerVersion}`}
             userId={user.id}
+            onLoaded={handleLinkerLoaded}
             onSaved={() => {
               // Saving may add library videos to the days: remount the days list
               setTrainingDaysVersion((v) => v + 1);
               loadUserVideos();
             }}
           />
-          <TrainingDaysManager
-            key={trainingDaysVersion}
-            userId={user.id}
-            onUpdate={() => {
-              // Reload user videos when training days are updated
-              loadUserVideos();
-            }}
-          />
+          {/* With a plan everything is managed above; the old days editor stays
+              reachable for groups (old dashboard) and as a fallback */}
+          {hasPlan && !showDaysManager ? (
+            <button
+              onClick={() => setShowDaysManager(true)}
+              className="text-xs text-gray-400 hover:text-gray-700 underline"
+            >
+              Mostra la gestione giorni avanzata (vecchia)
+            </button>
+          ) : hasPlan !== null && (
+            <>
+              {hasPlan && (
+                <button
+                  onClick={() => setShowDaysManager(false)}
+                  className="mb-3 text-xs text-gray-400 hover:text-gray-700 underline"
+                >
+                  Nascondi la gestione giorni avanzata
+                </button>
+              )}
+              <TrainingDaysManager
+                key={trainingDaysVersion}
+                userId={user.id}
+                onUpdate={() => {
+                  // Reload user videos when training days are updated
+                  loadUserVideos();
+                  setLinkerVersion((v) => v + 1);
+                }}
+              />
+            </>
+          )}
         </>
       )}
 

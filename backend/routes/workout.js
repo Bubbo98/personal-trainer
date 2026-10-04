@@ -66,13 +66,14 @@ function parsePdfText(text) {
 
   // Table format (current PDFs): "Panca piana con bilanciere 4 8 90 sec 70 kg totali"
   // → name, sets, reps, rest, weight. Rest is in sec/min; reps can be "10+12",
-  // "15 sec", "1 min", "1.30’" or "15 x lato"; the weight column may be
-  // "corpo libero". Long names wrap, leaving the numbers alone on their line.
+  // "15 sec", "1 min", "1.30’", "15 x lato" or "-" (time already in the name,
+  // "Plank - Isometria (30")"); the weight column may be "corpo libero".
+  // Long names wrap, leaving the numbers alone on their line.
   const NUM = '\\d+(?:[.,]\\d+)?';
   const UNIT = `(?:\\s*(?:sec|min|[${PRIME}${DQUOTE}]{1,2}))`;
   const TABLE_ROW_RE = new RegExp(
     `^(.*?)\\s*\\b(\\d+)\\s+` +
-    `((?:${NUM}${UNIT}?(?:\\s*[+/-]\\s*(?:${NUM}${UNIT}?|cedimento|max))*(?:\\s+(?:x|per)\\s+\\w+)?)|ladder|max)\\s+` +
+    `((?:${NUM}${UNIT}?(?:\\s*[+/-]\\s*(?:${NUM}${UNIT}?|cedimento|max))*(?:\\s+(?:x|per)\\s+\\w+)?)|ladder|max|[-–])\\s+` +
     // rest: "90 sec", "1 min 30 sec", or seconds written as 45"
     `(${NUM}\\s*(?:sec|min)(?:\\s+${NUM}\\s*sec)?|\\d+[${DQUOTE}])(?=\\s|$)\\s*(.*)$`,
     'i'
@@ -197,7 +198,13 @@ function parsePdfText(text) {
       appendNameLine(tableRow[1]);
       takeTechniqueLines();
       const weight = tableRow[5].trim();
-      flushExercise(tableRow[2], tableRow[3].trim(), tableRow[4].trim(), /kg/i.test(weight) ? `Peso consigliato: ${weight}` : '');
+      let reps = tableRow[3].trim();
+      if (/^[-–]$/.test(reps)) {
+        // "Plank - Isometria (30")" + "3 - 45"": the hold time is in the name
+        const hold = pendingName.match(new RegExp(`Isometria\\D{0,3}(\\d+\\s*(?:sec|[${DQUOTE}${PRIME}]{1,2}))`, 'i'));
+        reps = hold ? hold[1].replace(/\s+/g, '') : '';
+      }
+      flushExercise(tableRow[2], reps, tableRow[4].trim(), /kg/i.test(weight) ? `Peso consigliato: ${weight}` : '');
       continue;
     }
 
@@ -546,13 +553,32 @@ router.get('/admin/links/:userId', authenticateToken, requireAdmin, async (req, 
        WHERE td.user_id = ? AND td.is_active = 1
        ORDER BY td.day_number, tdv.order_index`,
       [userId]);
+    const techniqueRows = await dbAll(db,
+      `SELECT tdvt.training_day_video_id AS assignmentId, v.id, v.title
+       FROM training_day_video_techniques tdvt
+       JOIN videos v ON v.id = tdvt.technique_id AND v.is_active = 1
+       JOIN training_day_videos tdv ON tdv.id = tdvt.training_day_video_id
+       JOIN user_training_days td ON td.id = tdv.training_day_id
+       WHERE td.user_id = ?
+       ORDER BY tdvt.order_index`,
+      [userId]);
     const library = exercises.length > 0
       ? (await dbAll(db, 'SELECT id AS videoId, title FROM videos WHERE is_active = 1')).map(prepareVideo)
       : [];
     db.close();
 
+    const techniquesOf = new Map();
+    for (const t of techniqueRows) {
+      techniquesOf.set(t.assignmentId, [...(techniquesOf.get(t.assignmentId) || []), { id: t.id, title: t.title }]);
+    }
+    const dayOfAssignment = new Map(dayVideos.map((v) => [v.assignmentId, v.day_number]));
+
     const exerciseIds = new Set(exercises.map((e) => e.id));
-    const toVideo = (v) => ({ assignmentId: v.assignmentId, videoId: v.videoId, title: v.title });
+    // dayNumber: the day the video sits in (a link may point to another day's video)
+    const toVideo = (v) => ({
+      assignmentId: v.assignmentId, videoId: v.videoId, title: v.title,
+      dayNumber: v.day_number, techniques: techniquesOf.get(v.assignmentId) || [],
+    });
     const { suggestions, usedAssignments } = suggestLinks(exercises, dayVideos, library);
 
     // Plan days plus days that only have videos (e.g. all videos put in "Giorno 5")
@@ -578,6 +604,8 @@ router.get('/admin/links/:userId', authenticateToken, requireAdmin, async (req, 
             assignmentId: s.assignmentId,
             videoId: s.videoId,
             title: s.title,
+            dayNumber: s.assignmentId ? dayOfAssignment.get(s.assignmentId) : dayNumber,
+            techniques: (s.assignmentId && techniquesOf.get(s.assignmentId)) || [],
             confidence: s.confidence,
             fromLibrary: s.source === 'library',
           })),
@@ -643,15 +671,23 @@ async function ensureDayAssignment(db, userId, exercise, videoId, adminName, cac
 }
 
 // PUT /api/workout/admin/links/:userId — replaces all exercise ↔ video links
-// Body: { links: [{ exerciseId, videos: [{ assignmentId?, videoId }] }] }
+// Body: {
+//   links:  [{ exerciseId, videos: [{ assignmentId?, videoId, techniqueIds? }] }],
+//   extras: [{ dayNumber, videos: [{ assignmentId?, videoId, techniqueIds? }] }]   (optional)
+// }
 // A video without assignmentId comes from the library: it's added to the
 // exercise's training day (created if missing) and granted to the user.
+// With `extras` the payload describes the user's whole set of day videos: the
+// order follows the payload, and day videos missing from it are removed from
+// the days (access revoked when the video is in no other day), like removing
+// them from the training-days manager. Without it only the links change.
+// `techniqueIds`, when present, replaces that video's techniques.
 router.put('/admin/links/:userId', authenticateToken, requireAdmin, async (req, res) => {
   const { userId } = req.params;
-  const { links } = req.body;
+  const { links, extras } = req.body;
 
-  if (!Array.isArray(links)) {
-    return res.status(400).json({ success: false, error: 'links must be an array' });
+  if (!Array.isArray(links) || (extras !== undefined && !Array.isArray(extras))) {
+    return res.status(400).json({ success: false, error: 'links (and extras) must be arrays' });
   }
 
   const db = createDatabase();
@@ -662,8 +698,10 @@ router.put('/admin/links/:userId', authenticateToken, requireAdmin, async (req, 
       dbAll(db, 'SELECT id, day_number, day_name FROM training_exercises WHERE user_id = ?', [userId]),
       dbAll(db, 'SELECT id, day_number FROM user_training_days WHERE user_id = ? AND is_active = 1', [userId]),
       dbAll(db,
+        // Same rows the editor shows (GET /admin/links): deactivated videos are left alone
         `SELECT tdv.id, tdv.training_day_id, tdv.video_id, tdv.order_index FROM training_day_videos tdv
          JOIN user_training_days td ON td.id = tdv.training_day_id
+         JOIN videos v ON v.id = tdv.video_id AND v.is_active = 1
          WHERE td.user_id = ? AND td.is_active = 1 AND tdv.is_active = 1`,
         [userId]),
       dbAll(db, 'SELECT id, video_id, is_active FROM user_video_permissions WHERE user_id = ?', [userId]),
@@ -681,24 +719,39 @@ router.put('/admin/links/:userId', authenticateToken, requireAdmin, async (req, 
       cache.nextOrderByDay.set(a.training_day_id, Math.max(cache.nextOrderByDay.get(a.training_day_id) || 0, a.order_index + 1));
     }
 
-    // Resolve every link to an assignment id, adding library videos to the days
-    const assignmentsByExercise = new Map();
+    // Resolve every video to an assignment id, adding library videos to the days.
+    // `ordered` keeps the payload order: exercises first, then each day's extras.
     let addedVideos = 0;
+    const ordered = []; // [{ assignmentId, techniqueIds? }]
+    const resolve = async (owner, video) => {
+      let assignmentId = video.assignmentId && assignmentIds.has(video.assignmentId) ? video.assignmentId : null;
+      if (!assignmentId && video.videoId) {
+        assignmentId = await ensureDayAssignment(db, userId, owner, video.videoId, adminName, cache);
+        if (!assignmentIds.has(assignmentId)) addedVideos++;
+        assignmentIds.add(assignmentId);
+      }
+      if (assignmentId) ordered.push({ assignmentId, techniqueIds: video.techniqueIds });
+      return assignmentId;
+    };
+
+    const assignmentsByExercise = new Map();
     for (const link of links) {
       const exercise = exerciseById.get(link.exerciseId);
       if (!exercise || !Array.isArray(link.videos)) continue;
 
       const ids = [];
       for (const video of link.videos) {
-        let assignmentId = video.assignmentId && assignmentIds.has(video.assignmentId) ? video.assignmentId : null;
-        if (!assignmentId && video.videoId) {
-          assignmentId = await ensureDayAssignment(db, userId, exercise, video.videoId, adminName, cache);
-          assignmentIds.add(assignmentId);
-          addedVideos++;
-        }
+        const assignmentId = await resolve(exercise, video);
         if (assignmentId) ids.push(assignmentId);
       }
       if (ids.length > 0) assignmentsByExercise.set(exercise.id, ids);
+    }
+
+    for (const day of extras || []) {
+      if (!Array.isArray(day.videos)) continue;
+      const planExercise = exercises.find((e) => e.day_number === day.dayNumber);
+      const owner = { day_number: day.dayNumber, day_name: planExercise ? planExercise.day_name : `Giorno ${day.dayNumber}` };
+      for (const video of day.videos) await resolve(owner, video);
     }
 
     // Start from a clean slate for this user's days, then one update per exercise
@@ -712,8 +765,73 @@ router.put('/admin/links/:userId', authenticateToken, requireAdmin, async (req, 
         [exerciseId, ...ids]);
     }
 
+    // Techniques: replace the set of each video that sent techniqueIds
+    const withTechniques = ordered.filter((o) => Array.isArray(o.techniqueIds));
+    if (withTechniques.length > 0) {
+      const ids = withTechniques.map((o) => o.assignmentId);
+      const current = await dbAll(db,
+        `SELECT training_day_video_id, technique_id FROM training_day_video_techniques
+         WHERE training_day_video_id IN (${ids.map(() => '?').join(',')}) ORDER BY order_index`,
+        ids);
+      for (const { assignmentId, techniqueIds } of withTechniques) {
+        const wanted = [...new Set(techniqueIds.map(Number).filter(Boolean))];
+        const have = current.filter((t) => t.training_day_video_id === assignmentId).map((t) => t.technique_id);
+        if (wanted.join(',') === have.join(',')) continue;
+        await dbRun(db, 'DELETE FROM training_day_video_techniques WHERE training_day_video_id = ?', [assignmentId]);
+        for (const [i, techniqueId] of wanted.entries()) {
+          await dbRun(db,
+            'INSERT OR IGNORE INTO training_day_video_techniques (training_day_video_id, technique_id, order_index) VALUES (?, ?, ?)',
+            [assignmentId, techniqueId, i]);
+        }
+      }
+    }
+
+    let removedVideos = 0;
+    if (extras !== undefined) {
+      // Order: position in the payload within each day (only rows that change)
+      const dayOfAssignment = new Map(assignments.map((a) => [a.id, a.training_day_id]));
+      const orderOf = new Map(assignments.map((a) => [a.id, a.order_index]));
+      const positionByDay = new Map();
+      const seen = new Set();
+      for (const { assignmentId } of ordered) {
+        if (seen.has(assignmentId) || !dayOfAssignment.has(assignmentId)) continue; // new rows are already appended in order
+        seen.add(assignmentId);
+        const dayId = dayOfAssignment.get(assignmentId);
+        const position = positionByDay.get(dayId) || 0;
+        positionByDay.set(dayId, position + 1);
+        if (orderOf.get(assignmentId) !== position) {
+          await dbRun(db, 'UPDATE training_day_videos SET order_index = ? WHERE id = ?', [position, assignmentId]);
+        }
+      }
+
+      // Day videos left out of the payload are removed from the days
+      const kept = new Set(ordered.map((o) => o.assignmentId));
+      const removed = assignments.filter((a) => !kept.has(a.id));
+      if (removed.length > 0) {
+        const ids = removed.map((a) => a.id);
+        const placeholders = ids.map(() => '?').join(',');
+        await dbRun(db, `DELETE FROM training_day_video_techniques WHERE training_day_video_id IN (${placeholders})`, ids);
+        await dbRun(db, `DELETE FROM training_day_videos WHERE id IN (${placeholders})`, ids);
+        removedVideos = removed.length;
+
+        // Revoke access to videos that are no longer in any of the user's days
+        const stillAssigned = await dbAll(db,
+          `SELECT DISTINCT tdv.video_id FROM training_day_videos tdv
+           JOIN user_training_days td ON td.id = tdv.training_day_id
+           WHERE td.user_id = ? AND tdv.is_active = 1`,
+          [userId]);
+        const stillIds = new Set(stillAssigned.map((r) => r.video_id));
+        const toRevoke = [...new Set(removed.map((a) => a.video_id))].filter((id) => !stillIds.has(id));
+        if (toRevoke.length > 0) {
+          await dbRun(db,
+            `UPDATE user_video_permissions SET is_active = 0 WHERE user_id = ? AND video_id IN (${toRevoke.map(() => '?').join(',')})`,
+            [userId, ...toRevoke]);
+        }
+      }
+    }
+
     db.close();
-    res.json({ success: true, message: 'Links saved', data: { addedVideos } });
+    res.json({ success: true, message: 'Links saved', data: { addedVideos, removedVideos } });
   } catch (err) {
     db.close();
     console.error('Error saving exercise links:', err);
