@@ -32,6 +32,12 @@ describe('auth', () => {
         assert.equal(res.body.data.user.id, TEST_USER.id);
     });
 
+    it('a login-link token is not a session token', async () => {
+        const link = tokenFor(TEST_USER, { type: 'login_link' });
+        assert.equal((await api('GET', '/api/workout/plan', { token: link })).status, 403);
+        assert.equal((await api('GET', '/api/videos', { token: link })).status, 403);
+    });
+
     it('POST /api/auth/login-link refuses a session token', async () => {
         const res = await api('POST', '/api/auth/login-link', { body: { token: userToken() } });
         assert.equal(res.status, 401);

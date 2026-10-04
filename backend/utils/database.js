@@ -1,103 +1,101 @@
 const { createClient } = require('@libsql/client');
-const sqlite3 = require('sqlite3').verbose();
 require('dotenv').config();
 
-// ── Turso singleton ──────────────────────────────────────────────────────────
-// One client for the lifetime of the process — avoids per-request connection overhead.
-let _tursoClient = null;
+/**
+ * One libsql client for the whole process: Turso in production, a local file
+ * otherwise (TURSO_DATABASE_URL="file:…", or DB_PATH as a fallback).
+ *
+ * Promise API (use this):
+ *   db.query(sql, params)   → rows
+ *   db.get(sql, params)     → first row or null
+ *   db.run(sql, params)     → { lastId, changes }
+ *   db.batch([{ sql, params }])        → runs every statement in one transaction
+ *   db.transaction(async (tx) => …)    → tx has query/get/run; commits or rolls back
+ *
+ * The old callback methods (getCallback / allCallback / runCallback) remain
+ * while routes are migrated.
+ */
 
-function getTursoClient() {
-    if (!_tursoClient) {
-        _tursoClient = createClient({
-            url: process.env.TURSO_DATABASE_URL,
-            authToken: process.env.TURSO_AUTH_TOKEN,
-        });
-    }
-    return _tursoClient;
+let client = null;
+
+function databaseUrl() {
+    if (process.env.TURSO_DATABASE_URL) return process.env.TURSO_DATABASE_URL;
+    return `file:${process.env.DB_PATH || './database/app.db'}`;
 }
 
-// ── Local SQLite singleton ───────────────────────────────────────────────────
-let _localDb = null;
-
-function getLocalDb() {
-    if (!_localDb) {
-        const dbPath = process.env.DB_PATH || './database/app.db';
-        _localDb = new sqlite3.Database(dbPath);
+function getClient() {
+    if (!client) {
+        const url = databaseUrl();
+        client = createClient(url.startsWith('file:') ? { url } : { url, authToken: process.env.TURSO_AUTH_TOKEN });
     }
-    return _localDb;
+    return client;
 }
 
-// ── Factory ──────────────────────────────────────────────────────────────────
+/** libsql rejects undefined (sqlite3 used to bind it as NULL). */
+const toArgs = (params = []) => params.map((p) => (p === undefined ? null : p));
+
+const toRunResult = (result) => ({
+    lastId: result.lastInsertRowid != null ? Number(result.lastInsertRowid) : undefined,
+    changes: result.rowsAffected,
+});
+
+/** query/get/run on anything with libsql's execute() (the client or a transaction). */
+function executor(target) {
+    const execute = (sql, params) => target.execute({ sql, args: toArgs(params) });
+    return {
+        query: async (sql, params) => (await execute(sql, params)).rows,
+        get: async (sql, params) => (await execute(sql, params)).rows[0] || null,
+        run: async (sql, params) => toRunResult(await execute(sql, params)),
+    };
+}
+
+const db = {
+    ...executor({ execute: (stmt) => getClient().execute(stmt) }),
+
+    async batch(statements) {
+        if (statements.length === 0) return [];
+        const results = await getClient().batch(
+            statements.map(({ sql, params }) => ({ sql, args: toArgs(params) })),
+            'write'
+        );
+        return results.map(toRunResult);
+    },
+
+    async transaction(work) {
+        const tx = await getClient().transaction('write');
+        try {
+            const result = await work(executor(tx));
+            await tx.commit();
+            return result;
+        } catch (err) {
+            await tx.rollback().catch(() => {});
+            throw err;
+        } finally {
+            tx.close();
+        }
+    },
+};
+
+// ── Legacy callback API ──────────────────────────────────────────────────────
+
 function createDatabase() {
-    if (process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN) {
-        return createTursoWrapper();
-    }
-    return createLocalWrapper();
-}
-
-function createTursoWrapper() {
-    const client = getTursoClient();
-
     return {
-        get: async (query, params = []) => {
-            const result = await client.execute({ sql: query, args: params });
-            return result.rows[0] || null;
+        ...db,
+        close: () => { /* shared client — never closed */ },
+
+        getCallback(sql, params, callback) {
+            db.get(sql, params).then((row) => callback(null, row), (err) => callback(err, null));
         },
-
-        all: async (query, params = []) => {
-            const result = await client.execute({ sql: query, args: params });
-            return result.rows;
+        allCallback(sql, params, callback) {
+            db.query(sql, params).then((rows) => callback(null, rows), (err) => callback(err, null));
         },
-
-        run: async (query, params = []) => {
-            const result = await client.execute({ sql: query, args: params });
-            return {
-                lastInsertRowid: result.lastInsertRowid,
-                changes: result.rowsAffected,
-            };
-        },
-
-        close: () => { /* singleton — never close */ },
-
-        getCallback: (query, params, callback) => {
-            client.execute({ sql: query, args: params })
-                .then(result => callback(null, result.rows[0] || null))
-                .catch(err => callback(err, null));
-        },
-
-        allCallback: (query, params, callback) => {
-            client.execute({ sql: query, args: params })
-                .then(result => callback(null, result.rows))
-                .catch(err => callback(err, null));
-        },
-
-        runCallback: (query, params, callback) => {
-            client.execute({ sql: query, args: params })
-                .then(result => {
-                    const lastID = result.lastInsertRowid != null
-                        ? Number(result.lastInsertRowid)
-                        : undefined;
-                    callback.call({ lastID, changes: result.rowsAffected }, null);
-                })
-                .catch(err => callback(err));
+        runCallback(sql, params, callback) {
+            db.run(sql, params).then(
+                ({ lastId, changes }) => callback.call({ lastID: lastId, changes }, null),
+                (err) => callback(err)
+            );
         },
     };
 }
 
-function createLocalWrapper() {
-    const db = getLocalDb();
-
-    return {
-        get: (query, params, callback) => db.get(query, params, callback),
-        all: (query, params, callback) => db.all(query, params, callback),
-        run: (query, params, callback) => db.run(query, params, callback),
-
-        close: () => { /* singleton — never close */ },
-
-        getCallback(query, params, callback) { this.get(query, params, callback); },
-        allCallback(query, params, callback) { this.all(query, params, callback); },
-        runCallback(query, params, callback) { this.run(query, params, callback); },
-    };
-}
-
-module.exports = { createDatabase };
+module.exports = { db, createDatabase };

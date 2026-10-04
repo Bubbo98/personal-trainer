@@ -20,6 +20,7 @@ const bodyCompositionRoutes = require('./routes/body-composition');
 const integrationRoutes = require('./routes/integration');
 const thumbnailRoutes = require('./routes/thumbnails');
 const { authenticateToken } = require('./middleware/auth');
+const { errorHandler } = require('./utils/http');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -101,35 +102,11 @@ app.use('/api/thumbnails', thumbnailRoutes);
 // SEO Routes (sitemap.xml, robots.txt)
 app.use('/', sitemapRoutes);
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error('Error:', err);
-
-    // Default error response
-    let statusCode = err.statusCode || 500;
-    let message = err.message || 'Internal Server Error';
-
-    // Don't leak error details in production
-    if (process.env.NODE_ENV === 'production' && statusCode === 500) {
-        message = 'Internal Server Error';
-    }
-
-    res.status(statusCode).json({
-        success: false,
-        error: message,
-        ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-    });
-});
-
-// 404 handler
+// 404 for unknown endpoints, then the central error handler
 app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        error: 'Endpoint not found',
-        path: req.path,
-        method: req.method
-    });
+    res.status(404).json({ success: false, error: 'Endpoint not found', path: req.path, method: req.method });
 });
+app.use(errorHandler);
 
 // Start server only when run directly (`node server.js`): Vercel and the tests import the app
 if (require.main === module) {

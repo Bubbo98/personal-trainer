@@ -1,108 +1,57 @@
 const jwt = require('jsonwebtoken');
-const { createDatabase } = require('../utils/database');
+const { db } = require('../utils/database');
 require('dotenv').config();
 
-// JWT Authentication Middleware
-const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+const adminUsername = () => process.env.ADMIN_USERNAME || 'admin';
 
+/** True when the authenticated user is the admin account. */
+const isAdmin = (user) => !!user && user.username === adminUsername();
+
+/**
+ * Bearer session token → req.user ({ userId, username, email }).
+ * Login-link tokens (type "login_link") are only valid for POST /api/auth/login-link,
+ * which exchanges them for a session token.
+ */
+function authenticateToken(req, res, next) {
+    const header = req.headers.authorization;
+    const token = header && header.split(' ')[1];
     if (!token) {
-        return res.status(401).json({
-            success: false,
-            error: 'Access token required'
-        });
+        return res.status(401).json({ success: false, error: 'Access token required' });
     }
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) {
-            console.error('JWT verification failed:', err.message);
-            return res.status(403).json({
-                success: false,
-                error: 'Invalid or expired token'
-            });
+    jwt.verify(token, process.env.JWT_SECRET, (err, payload) => {
+        if (err || payload.type === 'login_link') {
+            return res.status(403).json({ success: false, error: 'Invalid or expired token' });
         }
-
-        req.user = user;
+        req.user = payload;
         next();
     });
-};
+}
 
-// Middleware to verify user exists and is active
-const verifyActiveUser = (req, res, next) => {
-    const db = createDatabase();
-
-    db.getCallback(
-        'SELECT id, username, email, is_active FROM users WHERE id = ? AND is_active = 1',
-        [req.user.userId],
-        (err, user) => {
-            db.close();
-
-            if (err) {
-                console.error('Database error:', err.message);
-                return res.status(500).json({
-                    success: false,
-                    error: 'Database error'
-                });
-            }
-
-            if (!user) {
-                return res.status(403).json({
-                    success: false,
-                    error: 'User not found or inactive'
-                });
-            }
-
-            req.user.userData = user;
-            next();
-        }
-    );
-};
-
-// Middleware for admin-only routes
-const requireAdmin = (req, res, next) => {
-    // For now, we'll use a simple admin username check
-    // In a more complex system, you'd have roles/permissions in the database
-    const adminUsername = process.env.ADMIN_USERNAME || 'admin';
-
-    if (req.user.username !== adminUsername) {
-        return res.status(403).json({
-            success: false,
-            error: 'Admin access required'
-        });
+/** Admin-only routes (after authenticateToken). */
+function requireAdmin(req, res, next) {
+    if (!isAdmin(req.user)) {
+        return res.status(403).json({ success: false, error: 'Admin access required' });
     }
-
-    // Set role to admin for use in other routes
     req.user.role = 'admin';
-
     next();
-};
+}
 
-// Middleware to log access attempts
-const logAccess = (req, res, next) => {
-    const logData = {
-        user_id: req.user ? req.user.userId : null,
-        access_time: new Date().toISOString(),
-        ip_address: req.ip || req.connection.remoteAddress,
-        user_agent: req.get('User-Agent'),
-        endpoint: req.path,
-        method: req.method
-    };
+/** Rejects tokens of users that were deleted or deactivated. */
+async function verifyActiveUser(req, res, next) {
+    try {
+        const user = await db.get(
+            'SELECT id, username, email FROM users WHERE id = ? AND is_active = 1',
+            [req.user.userId]
+        );
+        if (!user) {
+            return res.status(403).json({ success: false, error: 'User not found or inactive' });
+        }
+        req.user.userData = user;
+        next();
+    } catch (err) {
+        next(err);
+    }
+}
 
-    // This is a simple access log - you could extend this for video-specific logging
-    console.log('Access logged:', {
-        user: req.user ? req.user.username : 'anonymous',
-        endpoint: `${req.method} ${req.path}`,
-        ip: logData.ip_address,
-        time: logData.access_time
-    });
-
-    next();
-};
-
-module.exports = {
-    authenticateToken,
-    verifyActiveUser,
-    requireAdmin,
-    logAccess
-};
+module.exports = { authenticateToken, requireAdmin, verifyActiveUser, isAdmin };

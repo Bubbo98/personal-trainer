@@ -42,7 +42,7 @@ describe('admin users', () => {
         assert.equal(dup.status, 409);
     });
 
-    it('POST /api/admin/users works without first/last name', { todo: 'foundations: libsql rejects undefined params (500)' }, async () => {
+    it('POST /api/admin/users works without first/last name', async () => {
         const res = await api('POST', '/api/admin/users', { token: token(), body: { username: 'test.noname' } });
         assert.equal(res.status, 201);
     });
