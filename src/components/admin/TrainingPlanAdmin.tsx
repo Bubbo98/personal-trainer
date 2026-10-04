@@ -39,7 +39,7 @@ interface Day {
 
 interface ExerciseLog {
   id: number;
-  exercise_id: number;
+  exercise_id: number | null;
   exercise_name: string;
   day_number: number;
   day_name: string;

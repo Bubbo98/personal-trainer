@@ -60,7 +60,7 @@ function formatWeightDisplay(weight: string | null): string | null {
 
 interface ExerciseLog {
   id: number;
-  exercise_id: number;
+  exercise_id: number | null; // null once the exercise left the plan: name/day come from the snapshots
   week_start: string;
   weight: string | null;
   sets_done: number | null;
@@ -721,8 +721,8 @@ const WorkoutTab: React.FC<WorkoutTabProps> = ({ mode = 'all', onSaved, training
                   <div className="divide-y divide-gray-100">
                     {Object.entries(byDay)
                       .sort(([a], [b]) => Number(a) - Number(b))
-                      .map(([, dayLogs]) => (
-                        <div key={dayLogs[0].exercise_id} className="px-5 py-3">
+                      .map(([dayKey, dayLogs]) => (
+                        <div key={dayKey} className="px-5 py-3">
                           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
                             {resolveDayName(dayLogs[0])}
                           </p>
