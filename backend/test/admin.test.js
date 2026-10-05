@@ -382,6 +382,57 @@ describe('admin PDF', () => {
     });
 });
 
+describe('client files on R2', () => {
+    const r2 = () => require('../utils/r2');
+    const user = 240;
+    const pdfForm = (content, name) => {
+        const form = new FormData();
+        form.append('pdf', new Blob([content], { type: 'application/pdf' }), name);
+        return form;
+    };
+
+    it('a plan stored before the move (base64 in the row) still downloads', async () => {
+        const row = (await db().execute({ sql: 'SELECT file_key, length(file_data) n FROM user_pdf_files WHERE user_id = ?', args: [user] })).rows[0];
+        assert.equal(row.file_key, null);
+        assert.ok(Number(row.n) > 0);
+        const res = await api('GET', `/api/pdf/download?userId=${user}`, { token: token() });
+        assert.equal(res.body.subarray(0, 4).toString(), '%PDF');
+    });
+
+    it('an uploaded plan goes to R2, not into the row; replacing it deletes the old file', async () => {
+        // A real plan (Michela's, from the snapshot) so parse-pdf can read it back from R2
+        const stored = (await db().execute({ sql: 'SELECT file_data FROM user_pdf_files WHERE user_id = ?', args: [user] })).rows[0];
+        const first = Buffer.from(stored.file_data, 'base64');
+        assert.equal((await api('POST', `/api/pdf/admin/upload/${user}`, { token: token(), body: pdfForm(first, 'Scheda 1.pdf') })).status, 200);
+        const row1 = (await db().execute({ sql: 'SELECT file_key, file_data FROM user_pdf_files WHERE user_id = ?', args: [user] })).rows[0];
+        assert.match(row1.file_key, new RegExp(`^plans/${user}/\\d+-[0-9a-f-]+\\.pdf$`));
+        assert.equal(row1.file_data, '');
+        assert.deepEqual(r2().bucket.get(row1.file_key), first);
+
+        const download = await api('GET', '/api/pdf/download', { token: tokenFor({ id: user, username: 'Michela Sciocchetti' }) });
+        assert.deepEqual(download.body, first);
+        const parsed = await api('POST', `/api/workout/admin/parse-pdf/${user}`, { token: token() });
+        assert.equal(parsed.status, 200);
+        assert.equal(parsed.body.data.days.flatMap((d) => d.exercises).length, 24);
+
+        const second = Buffer.concat([fakePdf(), Buffer.from('% second')]);
+        await api('POST', `/api/pdf/admin/upload/${user}`, { token: token(), body: pdfForm(second, 'Scheda 2.pdf') });
+        const row2 = (await db().execute({ sql: 'SELECT file_key FROM user_pdf_files WHERE user_id = ?', args: [user] })).rows[0];
+        assert.notEqual(row2.file_key, row1.file_key);
+        assert.ok(!r2().bucket.has(row1.file_key), 'old plan deleted from R2');
+
+        assert.equal((await api('DELETE', `/api/pdf/admin/delete/${user}`, { token: token() })).status, 200);
+        assert.ok(!r2().bucket.has(row2.file_key), 'deleted plan removed from R2');
+    });
+
+    it('if the row cannot be saved, the uploaded file is removed again', async () => {
+        const before = r2().bucket.size;
+        const res = await api('POST', '/api/body-composition/admin/upload/999999', { token: token(), body: pdfForm(fakePdf(), 'x.pdf') });
+        assert.equal(res.status, 404);
+        assert.equal(r2().bucket.size, before);
+    });
+});
+
 describe('admin feedback', () => {
     it('lists, summarizes, counts and marks checks as seen', async () => {
         const all = await api('GET', '/api/feedback/admin/all?page=1&limit=5', { token: token() });

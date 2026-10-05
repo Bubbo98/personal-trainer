@@ -96,6 +96,12 @@ async function putObject(key, body, contentType) {
   }));
 }
 
+/** Whole object as a Buffer (plan PDFs and body composition reports, a few MB at most). */
+async function getObjectBuffer(key) {
+  const result = await r2Client.send(new GetObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key }));
+  return Buffer.from(await result.Body.transformToByteArray());
+}
+
 async function deleteObject(key) {
   await r2Client.send(new DeleteObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key }));
 }
@@ -107,6 +113,7 @@ module.exports = {
   objectExists,
   getThumbnailUploadUrl,
   putObject,
+  getObjectBuffer,
   deleteObject,
   THUMBNAIL_PREFIX,
   r2Client,

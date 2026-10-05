@@ -5,8 +5,9 @@ const { db } = require('../utils/database');
 const { authenticateToken, requireAdmin, isAdmin } = require('../middleware/auth');
 const { route, id, badRequest, forbidden, notFound, attachment } = require('../utils/http');
 const { parseBodyCompositionPDF, parseBodyCompositionText } = require('../services/bodyCompositionParser');
+const { storeFileFor, readFile, deleteFiles } = require('../services/storedFiles');
 
-// Body composition reports (PDF or photo of the scale's printout), parsed into measurements
+// Body composition reports (PDF or photo of the scale's printout), parsed into measurements; files on R2
 const router = express.Router();
 const admin = [authenticateToken, requireAdmin];
 
@@ -48,12 +49,11 @@ router.post('/admin/upload/:userId', admin, upload.single('pdf'), route(async (r
 
     const parsed = await parseReport(req.file, req.body.ocrText);
     const measurementDate = req.body.measurementDate || null;
-    const { lastId } = await db.run(
-        `INSERT INTO body_composition_reports (user_id, measurement_date, uploaded_by, original_name, file_size, file_data, parsed_data)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [userId, measurementDate, req.user.username, req.file.originalname, req.file.size,
-            req.file.buffer.toString('base64'), parsed ? JSON.stringify(parsed) : null]
-    );
+    const { lastId } = await storeFileFor('report', userId, req.file, (fileKey) => db.run(
+        `INSERT INTO body_composition_reports (user_id, measurement_date, uploaded_by, original_name, file_size, file_key, file_data, parsed_data)
+         VALUES (?, ?, ?, ?, ?, ?, '', ?)`,
+        [userId, measurementDate, req.user.username, req.file.originalname, req.file.size, fileKey, parsed ? JSON.stringify(parsed) : null]
+    ));
     res.status(201).json({ success: true, message: 'Report caricato', data: { id: lastId, measurementDate } });
 }));
 
@@ -75,8 +75,11 @@ router.get('/admin/:userId', admin, route(async (req, res) => {
 
 // DELETE /api/body-composition/admin/report/:reportId
 router.delete('/admin/report/:reportId', admin, route(async (req, res) => {
-    const { changes } = await db.run('DELETE FROM body_composition_reports WHERE id = ?', [id(req.params.reportId, 'report ID')]);
-    if (changes === 0) throw notFound('Report non trovato');
+    const reportId = id(req.params.reportId, 'report ID');
+    const report = await db.get('SELECT file_key FROM body_composition_reports WHERE id = ?', [reportId]);
+    if (!report) throw notFound('Report non trovato');
+    await db.run('DELETE FROM body_composition_reports WHERE id = ?', [reportId]);
+    await deleteFiles([report.file_key]);
     res.json({ success: true, message: 'Report eliminato' });
 }));
 
@@ -100,13 +103,13 @@ router.get('/my-reports', authenticateToken, route(async (req, res) => {
 // GET /api/body-composition/download/:reportId — own reports; the admin any
 router.get('/download/:reportId', authenticateToken, route(async (req, res) => {
     const report = await db.get(
-        'SELECT user_id, file_data, original_name FROM body_composition_reports WHERE id = ?',
+        'SELECT user_id, file_key, file_data, original_name FROM body_composition_reports WHERE id = ?',
         [id(req.params.reportId, 'report ID')]
     );
     if (!report) throw notFound('Report non trovato');
     if (!isAdmin(req.user) && report.user_id !== req.user.userId) throw forbidden('Accesso negato');
 
-    const file = Buffer.from(report.file_data, 'base64');
+    const file = await readFile(report);
     res.set({
         'Content-Type': MIME_BY_EXTENSION[path.extname(report.original_name || '').toLowerCase()] || 'application/octet-stream',
         'Content-Disposition': attachment(report.original_name),

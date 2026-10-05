@@ -45,17 +45,33 @@ function prepareEnv() {
     });
 }
 
+async function applySchemaMigrations() {
+    const dir = path.join(__dirname, '..', 'scripts', 'migrations');
+    for (const file of fs.readdirSync(dir).filter((f) => f.endsWith('.js')).sort()) {
+        await require(path.join(dir, file)).migrate(db());
+    }
+}
+
 async function start() {
     if (server) return baseUrl;
     prepareEnv();
     // The test runner reads the child's stdout: the app's chatty logs can corrupt it
     console.log = () => {};
     console.info = () => {};
-    // R2 calls that reach the network are faked; presigning stays real (it's local)
+    // R2 calls that reach the network are faked with an in-memory bucket; presigning stays real (it's local)
     const r2 = require('../utils/r2');
-    r2.objectExists = async (key) => r2.existingKeys.has(key);
+    r2.bucket = new Map();
     r2.existingKeys = new Set();
-    r2.deleteObject = async () => {};
+    r2.objectExists = async (key) => r2.existingKeys.has(key) || r2.bucket.has(key);
+    r2.putObject = async (key, body) => { r2.bucket.set(key, Buffer.from(body)); };
+    r2.getObjectBuffer = async (key) => {
+        if (!r2.bucket.has(key)) throw Object.assign(new Error(`NoSuchKey: ${key}`), { name: 'NoSuchKey' });
+        return r2.bucket.get(key);
+    };
+    r2.deleteObject = async (key) => { r2.bucket.delete(key); };
+
+    // Schema migrations not yet in the snapshot run on the copy, as they will in production
+    await applySchemaMigrations();
     const app = require('../server');
     if (!process.env.TURSO_DATABASE_URL.startsWith('file:')) {
         throw new Error('Refusing to run tests against a remote database');

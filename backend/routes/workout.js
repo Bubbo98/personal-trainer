@@ -4,6 +4,7 @@ const { db } = require('../utils/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { route, id, badRequest, forbidden, notFound } = require('../utils/http');
 const { parsePdfText } = require('../services/planParser');
+const { readFile } = require('../services/storedFiles');
 const { loadLinks, saveLinks } = require('../services/exerciseLinks');
 
 // Training plan (exercises), weekly weight logs, exercise ↔ video links
@@ -14,9 +15,9 @@ const admin = [authenticateToken, requireAdmin];
 
 // POST /api/workout/admin/parse-pdf/:userId — proposes days/exercises from the user's PDF (nothing saved)
 router.post('/admin/parse-pdf/:userId', admin, route(async (req, res) => {
-    const pdf = await db.get('SELECT file_data FROM user_pdf_files WHERE user_id = ?', [id(req.params.userId, 'user ID')]);
-    if (!pdf || !pdf.file_data) throw notFound('No PDF found for this user');
-    const { text } = await pdfParse(Buffer.from(pdf.file_data, 'base64'));
+    const pdf = await db.get('SELECT file_key, file_data FROM user_pdf_files WHERE user_id = ?', [id(req.params.userId, 'user ID')]);
+    if (!pdf || (!pdf.file_key && !pdf.file_data)) throw notFound('No PDF found for this user');
+    const { text } = await pdfParse(await readFile(pdf));
     res.json({ success: true, data: { days: parsePdfText(text) } });
 }));
 

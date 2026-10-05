@@ -9,6 +9,7 @@
  * RETENTION_PROTECTED_USER_IDS (comma separated, default "165" = Test User).
  */
 const { db } = require('./database');
+const { deleteFiles } = require('../services/storedFiles');
 
 const ACCESS_GRACE_DAYS = 10;
 const DELETE_AFTER_DAYS = 21;
@@ -49,8 +50,14 @@ async function findUsersToDelete() {
     return rows.filter((u) => !protectedIds.includes(u.id));
 }
 
-/** Deletes a user and every row that belongs to them, in one transaction (children first). */
+/** Deletes a user and every row that belongs to them (one transaction, children first), then their files on R2. */
 async function deleteUserCompletely(userId) {
+    const files = await db.query(
+        `SELECT file_key FROM user_pdf_files WHERE user_id = ? AND file_key IS NOT NULL
+         UNION ALL
+         SELECT file_key FROM body_composition_reports WHERE user_id = ? AND file_key IS NOT NULL`,
+        [userId, userId]
+    );
     const dayIds = 'SELECT id FROM user_training_days WHERE user_id = ?';
     const tables = [
         'user_training_days', 'exercise_logs', 'training_exercises', 'user_video_permissions', 'user_pdf_files',
@@ -66,6 +73,7 @@ async function deleteUserCompletely(userId) {
         ...tables.map((table) => ({ sql: `DELETE FROM ${table} WHERE user_id = ?`, params: [userId] })),
         { sql: 'DELETE FROM users WHERE id = ?', params: [userId] },
     ]);
+    await deleteFiles(files.map((f) => f.file_key));
 }
 
 module.exports = {

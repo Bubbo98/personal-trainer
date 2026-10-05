@@ -3,8 +3,9 @@ const multer = require('multer');
 const { db } = require('../utils/database');
 const { authenticateToken, requireAdmin, isAdmin } = require('../middleware/auth');
 const { route, id, badRequest, forbidden, notFound, attachment } = require('../utils/http');
+const { storeFileFor, readFile, deleteFiles } = require('../services/storedFiles');
 
-// The client's training plan PDF (one per user, stored base64 in user_pdf_files)
+// The client's training plan PDF (one per user; the file is on R2, see services/storedFiles)
 const router = express.Router();
 const admin = [authenticateToken, requireAdmin];
 
@@ -43,21 +44,24 @@ router.post('/admin/upload/:userId', admin, upload.single('pdf'), route(async (r
 
     if (!(await db.get('SELECT id FROM users WHERE id = ?', [userId]))) throw notFound('User not found');
 
+    const previous = await db.get('SELECT file_key FROM user_pdf_files WHERE user_id = ?', [userId]);
+
     // updated_at marks a new plan version: it restarts the check-in schedule
-    const { changes } = await db.run(
-        `INSERT INTO user_pdf_files (user_id, original_name, file_data, file_size, mime_type, uploaded_by,
+    const { changes } = await storeFileFor('plan', userId, req.file, (fileKey) => db.run(
+        `INSERT INTO user_pdf_files (user_id, original_name, file_key, file_data, file_size, mime_type, uploaded_by,
                                      duration_months, duration_days, expiration_date, visible_from)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', ?, ?), ?)
+         VALUES (?, ?, ?, '', ?, ?, ?, ?, ?, datetime('now', ?, ?), ?)
          ON CONFLICT(user_id) DO UPDATE SET
-            original_name = excluded.original_name, file_data = excluded.file_data, file_size = excluded.file_size,
+            original_name = excluded.original_name, file_key = excluded.file_key, file_data = '', file_size = excluded.file_size,
             mime_type = excluded.mime_type, uploaded_by = excluded.uploaded_by,
             duration_months = excluded.duration_months, duration_days = excluded.duration_days,
             expiration_date = excluded.expiration_date, visible_from = excluded.visible_from,
             updated_at = CURRENT_TIMESTAMP`,
-        [userId, req.file.originalname, req.file.buffer.toString('base64'), req.file.size, req.file.mimetype,
+        [userId, req.file.originalname, fileKey, req.file.size, req.file.mimetype,
             req.user.username, months, days, modifier(months, 'months'), modifier(days, 'days'), req.body.visibleFrom || null]
-    );
+    ));
     if (changes === 0) throw new Error('PDF not saved');
+    if (previous) await deleteFiles([previous.file_key]);
 
     res.json({
         success: true,
@@ -68,8 +72,11 @@ router.post('/admin/upload/:userId', admin, upload.single('pdf'), route(async (r
 
 // DELETE /api/pdf/admin/delete/:userId
 router.delete('/admin/delete/:userId', admin, route(async (req, res) => {
-    const { changes } = await db.run('DELETE FROM user_pdf_files WHERE user_id = ?', [id(req.params.userId, 'user ID')]);
-    if (changes === 0) throw notFound('No PDF found for this user');
+    const userId = id(req.params.userId, 'user ID');
+    const pdf = await db.get('SELECT file_key FROM user_pdf_files WHERE user_id = ?', [userId]);
+    if (!pdf) throw notFound('No PDF found for this user');
+    await db.run('DELETE FROM user_pdf_files WHERE user_id = ?', [userId]);
+    await deleteFiles([pdf.file_key]);
     res.json({ success: true, message: 'PDF deleted successfully' });
 }));
 
@@ -184,11 +191,11 @@ router.get('/download', authenticateToken, route(async (req, res) => {
     if (req.query.userId && !admin) throw forbidden('Access denied');
     const userId = req.query.userId ? id(req.query.userId, 'user ID') : req.user.userId;
 
-    const pdf = await db.get('SELECT file_data, original_name, mime_type, visible_from FROM user_pdf_files WHERE user_id = ?', [userId]);
+    const pdf = await db.get('SELECT file_key, file_data, original_name, mime_type, visible_from FROM user_pdf_files WHERE user_id = ?', [userId]);
     if (!pdf) throw notFound('No training plan available');
     if (!admin && isLocked(pdf)) throw forbidden('Training plan not yet available');
 
-    const file = Buffer.from(pdf.file_data, 'base64');
+    const file = await readFile(pdf);
     res.set({
         'Content-Type': pdf.mime_type || 'application/pdf',
         'Content-Disposition': attachment(pdf.original_name),
