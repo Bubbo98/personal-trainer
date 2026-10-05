@@ -1,958 +1,201 @@
 const express = require('express');
-const { createDatabase } = require('../utils/database');
+const { db } = require('../utils/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { route, id, badRequest, notFound, conflict, isUniqueViolation } = require('../utils/http');
+const { loadDaysWithVideos } = require('../services/trainingDays');
+const { grantAccess, revokeUnusedAccess } = require('../services/videoAccess');
 
+// Admin: a user's training days and the videos in them
 const router = express.Router();
+router.use(authenticateToken, requireAdmin);
 
-// Apply authentication and admin check to all routes
-router.use(authenticateToken);
-router.use(requireAdmin);
+const DAYS = '/users/:userId/training-days';
+const DAY = `${DAYS}/:dayId`;
 
-/**
- * GET /api/admin/users/:userId/training-days
- * Get all training days for a specific user with their videos
- */
-router.get('/users/:userId/training-days', async (req, res) => {
-    const { userId } = req.params;
+/** The day, checked to belong to the user; 404 otherwise. */
+async function findDay(userIdParam, dayIdParam, exec = db) {
+    const userId = id(userIdParam, 'user ID');
+    const dayId = id(dayIdParam, 'day ID');
+    const day = await exec.get(
+        'SELECT id FROM user_training_days WHERE id = ? AND user_id = ? AND is_active = 1',
+        [dayId, userId]
+    );
+    if (!day) throw notFound('Training day not found');
+    return { userId, dayId };
+}
 
-    if (!userId || isNaN(userId)) {
-        return res.status(400).json({
-            success: false,
-            error: 'Valid user ID is required'
-        });
-    }
+// GET /api/training-days/users/:userId/training-days
+router.get(DAYS, route(async (req, res) => {
+    const trainingDays = await loadDaysWithVideos(id(req.params.userId, 'user ID'));
+    res.json({ success: true, data: { trainingDays, totalDays: trainingDays.length } });
+}));
 
-    const db = createDatabase();
-
+// POST /api/training-days/users/:userId/training-days  Body: { dayNumber, dayName? }
+router.post(DAYS, route(async (req, res) => {
+    const userId = id(req.params.userId, 'user ID');
+    const dayNumber = id(req.body.dayNumber, 'day number');
+    const { dayName } = req.body;
     try {
-        // Get all training days for the user
-        const days = await new Promise((resolve, reject) => {
-            db.allCallback(`
-                SELECT id, user_id, day_number, day_name, created_at, updated_at
-                FROM user_training_days
-                WHERE user_id = ? AND is_active = 1
-                ORDER BY day_number ASC
-            `, [userId], (err, rows) => {
-                if (err) reject(err);
-                else resolve(rows);
-            });
-        });
-
-        // For each day, get its videos and their techniques
-        const daysWithVideos = await Promise.all(
-            days.map(async (day) => {
-                const videos = await new Promise((resolve, reject) => {
-                    db.allCallback(`
-                        SELECT
-                            tdv.id as assignment_id,
-                            tdv.order_index,
-                            tdv.added_at,
-                            tdv.group_id,
-                            tdv.group_label,
-                            v.id,
-                            v.title,
-                            v.description,
-                            v.file_path,
-                            v.duration,
-                            v.thumbnail_path,
-                            v.thumbnail_key,
-                            v.category
-                        FROM training_day_videos tdv
-                        INNER JOIN videos v ON tdv.video_id = v.id
-                        WHERE tdv.training_day_id = ? AND tdv.is_active = 1 AND v.is_active = 1
-                        ORDER BY tdv.order_index ASC
-                    `, [day.id], (err, rows) => {
-                        if (err) reject(err);
-                        else resolve(rows);
-                    });
-                });
-
-                // Fetch techniques for all assignments in this day in one query
-                const assignmentIds = videos.map(v => v.assignment_id);
-                let techniquesMap = {};
-                if (assignmentIds.length > 0) {
-                    const placeholders = assignmentIds.map(() => '?').join(',');
-                    const techniqueRows = await new Promise((resolve, reject) => {
-                        db.allCallback(`
-                            SELECT tdvt.training_day_video_id, tv.id, tv.title, tv.description, tv.file_path, tv.thumbnail_path, tv.thumbnail_key
-                            FROM training_day_video_techniques tdvt
-                            INNER JOIN videos tv ON tdvt.technique_id = tv.id AND tv.is_active = 1
-                            WHERE tdvt.training_day_video_id IN (${placeholders})
-                            ORDER BY tdvt.training_day_video_id, tdvt.order_index
-                        `, assignmentIds, (err, rows) => {
-                            if (err) reject(err);
-                            else resolve(rows);
-                        });
-                    });
-                    for (const row of techniqueRows) {
-                        if (!techniquesMap[row.training_day_video_id]) techniquesMap[row.training_day_video_id] = [];
-                        techniquesMap[row.training_day_video_id].push({
-                            id: row.id,
-                            title: row.title,
-                            description: row.description,
-                            filePath: row.file_path,
-                            thumbnailPath: row.thumbnail_path,
-                            thumbnailKey: row.thumbnail_key || null,
-                        });
-                    }
-                }
-
-                return {
-                    id: day.id,
-                    userId: day.user_id,
-                    dayNumber: day.day_number,
-                    dayName: day.day_name,
-                    createdAt: day.created_at,
-                    updatedAt: day.updated_at,
-                    videos: videos.map(v => ({
-                        assignmentId: v.assignment_id,
-                        orderIndex: v.order_index,
-                        addedAt: v.added_at,
-                        id: v.id,
-                        title: v.title,
-                        description: v.description,
-                        filePath: v.file_path,
-                        duration: v.duration,
-                        thumbnailPath: v.thumbnail_path,
-                        thumbnailKey: v.thumbnail_key || null,
-                        category: v.category,
-                        techniques: techniquesMap[v.assignment_id] || [],
-                        groupId: v.group_id || null,
-                        groupLabel: v.group_label || null,
-                    }))
-                };
-            })
+        const { lastId } = await db.run(
+            'INSERT INTO user_training_days (user_id, day_number, day_name) VALUES (?, ?, ?)',
+            [userId, dayNumber, dayName || null]
         );
-
-        db.close();
-
-        res.json({
-            success: true,
-            data: {
-                trainingDays: daysWithVideos,
-                totalDays: daysWithVideos.length
-            }
-        });
-    } catch (error) {
-        db.close();
-        console.error('Get training days error:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Database error'
-        });
-    }
-});
-
-/**
- * POST /api/admin/users/:userId/training-days
- * Create a new training day for a user
- */
-router.post('/users/:userId/training-days', (req, res) => {
-    const { userId } = req.params;
-    const { dayNumber, dayName } = req.body;
-
-    if (!userId || isNaN(userId)) {
-        return res.status(400).json({
-            success: false,
-            error: 'Valid user ID is required'
-        });
-    }
-
-    if (!dayNumber || isNaN(dayNumber)) {
-        return res.status(400).json({
-            success: false,
-            error: 'Valid day number is required'
-        });
-    }
-
-    const db = createDatabase();
-
-    db.runCallback(`
-        INSERT INTO user_training_days (user_id, day_number, day_name)
-        VALUES (?, ?, ?)
-    `, [userId, dayNumber, dayName || null], function(err) {
-        if (err) {
-            db.close();
-            if (err.message && err.message.includes('UNIQUE')) {
-                return res.status(409).json({
-                    success: false,
-                    error: 'This day number already exists for this user'
-                });
-            }
-            console.error('Create training day error:', err);
-            return res.status(500).json({
-                success: false,
-                error: 'Database error'
-            });
-        }
-
-        const dayId = this.lastID;
-        db.close();
-
-        console.log(`Admin ${req.user?.username || 'unknown'} created training day ${dayNumber} for user ${userId}`);
-
         res.status(201).json({
             success: true,
             message: 'Training day created successfully',
-            data: {
-                id: dayId,
-                userId: parseInt(userId),
-                dayNumber: parseInt(dayNumber),
-                dayName
-            }
+            data: { id: lastId, userId, dayNumber, dayName },
         });
-    });
-});
+    } catch (err) {
+        if (isUniqueViolation(err)) throw conflict('This day number already exists for this user');
+        throw err;
+    }
+}));
 
-/**
- * PUT /api/admin/users/:userId/training-days/:dayId
- * Update a training day (name only)
- */
-router.put('/users/:userId/training-days/:dayId', (req, res) => {
-    const { userId, dayId } = req.params;
+// PUT /api/training-days/users/:userId/training-days/:dayId  Body: { dayName }
+router.put(DAY, route(async (req, res) => {
+    const { userId, dayId } = await findDay(req.params.userId, req.params.dayId);
     const { dayName } = req.body;
+    await db.run(
+        'UPDATE user_training_days SET day_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?',
+        [dayName || null, dayId, userId]
+    );
+    res.json({ success: true, message: 'Training day updated successfully', data: { id: dayId, dayName } });
+}));
 
-    if (!userId || isNaN(userId) || !dayId || isNaN(dayId)) {
-        return res.status(400).json({
-            success: false,
-            error: 'Valid user ID and day ID are required'
-        });
-    }
-
-    const db = createDatabase();
-
-    db.runCallback(`
-        UPDATE user_training_days
-        SET day_name = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ? AND user_id = ? AND is_active = 1
-    `, [dayName || null, dayId, userId], function(err) {
-        db.close();
-
-        if (err) {
-            console.error('Update training day error:', err);
-            return res.status(500).json({
-                success: false,
-                error: 'Database error'
-            });
-        }
-
-        if (this.changes === 0) {
-            return res.status(404).json({
-                success: false,
-                error: 'Training day not found'
-            });
-        }
-
-        console.log(`Admin ${req.user.username} updated training day ${dayId}`);
-
-        res.json({
-            success: true,
-            message: 'Training day updated successfully',
-            data: {
-                id: parseInt(dayId),
-                dayName
-            }
-        });
+// DELETE /api/training-days/users/:userId/training-days/:dayId
+// Deletes the day and its videos; access is revoked for videos in no other day.
+router.delete(DAY, route(async (req, res) => {
+    const revoked = await db.transaction(async (tx) => {
+        const { userId, dayId } = await findDay(req.params.userId, req.params.dayId, tx);
+        const videos = await tx.query('SELECT video_id FROM training_day_videos WHERE training_day_id = ?', [dayId]);
+        // Techniques go with their videos (ON DELETE CASCADE)
+        await tx.run('DELETE FROM training_day_videos WHERE training_day_id = ?', [dayId]);
+        await tx.run('DELETE FROM user_training_days WHERE id = ?', [dayId]);
+        return revokeUnusedAccess(userId, videos.map((v) => v.video_id), tx);
     });
-});
+    res.json({ success: true, message: 'Training day deleted successfully', data: { revokedVideos: revoked } });
+}));
 
-/**
- * DELETE /api/admin/users/:userId/training-days/:dayId
- * Delete a training day (hard delete)
- */
-router.delete('/users/:userId/training-days/:dayId', (req, res) => {
-    const { userId, dayId } = req.params;
-
-    if (!userId || isNaN(userId) || !dayId || isNaN(dayId)) {
-        return res.status(400).json({
-            success: false,
-            error: 'Valid user ID and day ID are required'
-        });
-    }
-
-    const db = createDatabase();
-
-    // First verify the training day belongs to the user
-    db.getCallback(
-        'SELECT id FROM user_training_days WHERE id = ? AND user_id = ? AND is_active = 1',
-        [dayId, userId],
-        (err, day) => {
-            if (err || !day) {
-                db.close();
-                return res.status(404).json({
-                    success: false,
-                    error: 'Training day not found'
-                });
-            }
-
-            // Get all videos in this day before deleting
-            db.allCallback(
-                'SELECT video_id FROM training_day_videos WHERE training_day_id = ?',
-                [dayId],
-                (err, videosInDay) => {
-                    if (err) {
-                        db.close();
-                        console.error('Get training day videos error:', err);
-                        return res.status(500).json({
-                            success: false,
-                            error: 'Database error'
-                        });
-                    }
-
-                    const videoIds = videosInDay.map(v => v.video_id);
-
-                    // Hard delete all videos in this day
-                    db.runCallback(`
-                        DELETE FROM training_day_videos
-                        WHERE training_day_id = ?
-                    `, [dayId], function(err) {
-                        if (err) {
-                            db.close();
-                            console.error('Delete training day videos error:', err);
-                            return res.status(500).json({
-                                success: false,
-                                error: 'Database error'
-                            });
-                        }
-
-                        // Hard delete the day itself
-                        db.runCallback(`
-                            DELETE FROM user_training_days
-                            WHERE id = ? AND user_id = ?
-                        `, [dayId, userId], function(err) {
-                            if (err) {
-                                db.close();
-                                console.error('Delete training day error:', err);
-                                return res.status(500).json({
-                                    success: false,
-                                    error: 'Database error'
-                                });
-                            }
-
-                            // Check each video to see if it should be removed from user_video_permissions
-                            if (videoIds.length === 0) {
-                                db.close();
-                                console.log(`Admin ${req.user?.username || 'unknown'} deleted training day ${dayId}`);
-                                return res.json({
-                                    success: true,
-                                    message: 'Training day deleted successfully'
-                                });
-                            }
-
-                            // For each video, check if it's still in other training days
-                            let processed = 0;
-                            const videosToRevoke = [];
-
-                            videoIds.forEach(videoId => {
-                                db.getCallback(`
-                                    SELECT COUNT(*) as count
-                                    FROM training_day_videos tdv
-                                    INNER JOIN user_training_days utd ON tdv.training_day_id = utd.id
-                                    WHERE utd.user_id = ? AND tdv.video_id = ? AND tdv.is_active = 1
-                                `, [userId, videoId], (err, result) => {
-                                    processed++;
-
-                                    if (!err && result.count === 0) {
-                                        videosToRevoke.push(videoId);
-                                    }
-
-                                    // When all videos are processed
-                                    if (processed === videoIds.length) {
-                                        // Revoke permissions for videos not in other days
-                                        if (videosToRevoke.length > 0) {
-                                            const placeholders = videosToRevoke.map(() => '?').join(',');
-                                            db.runCallback(
-                                                `UPDATE user_video_permissions SET is_active = 0 WHERE user_id = ? AND video_id IN (${placeholders})`,
-                                                [userId, ...videosToRevoke],
-                                                function(err) {
-                                                    db.close();
-                                                    if (err) {
-                                                        console.error('Revoke video permissions error:', err);
-                                                    }
-                                                    console.log(`Admin ${req.user?.username || 'unknown'} deleted training day ${dayId} and revoked ${videosToRevoke.length} video(s)`);
-                                                    res.json({
-                                                        success: true,
-                                                        message: 'Training day deleted successfully'
-                                                    });
-                                                }
-                                            );
-                                        } else {
-                                            db.close();
-                                            console.log(`Admin ${req.user?.username || 'unknown'} deleted training day ${dayId}`);
-                                            res.json({
-                                                success: true,
-                                                message: 'Training day deleted successfully'
-                                            });
-                                        }
-                                    }
-                                });
-                            });
-                        });
-                    });
-                }
-            );
-        }
-    );
-});
-
-/**
- * POST /api/admin/users/:userId/training-days/:dayId/videos/:videoId
- * Assign a video to a training day
- */
-router.post('/users/:userId/training-days/:dayId/videos/:videoId', (req, res) => {
-    const { userId, dayId, videoId } = req.params;
-
-    if (!userId || isNaN(userId) || !dayId || isNaN(dayId) || !videoId || isNaN(videoId)) {
-        return res.status(400).json({
-            success: false,
-            error: 'Valid user ID, day ID, and video ID are required'
-        });
-    }
-
-    const db = createDatabase();
-
-    // First verify the training day belongs to the user
-    db.getCallback(
-        'SELECT id FROM user_training_days WHERE id = ? AND user_id = ? AND is_active = 1',
-        [dayId, userId],
-        (err, day) => {
-            if (err || !day) {
-                db.close();
-                return res.status(404).json({
-                    success: false,
-                    error: 'Training day not found'
-                });
-            }
-
-            // Get the next order index
-            db.getCallback(
-                'SELECT COALESCE(MAX(order_index), -1) + 1 as next_order FROM training_day_videos WHERE training_day_id = ? AND is_active = 1',
-                [dayId],
-                (err, result) => {
-                    if (err) {
-                        db.close();
-                        return res.status(500).json({
-                            success: false,
-                            error: 'Database error'
-                        });
-                    }
-
-                    const nextOrder = result.next_order;
-
-                    // Check if video already exists in this training day
-                    db.getCallback(
-                        'SELECT id FROM training_day_videos WHERE training_day_id = ? AND video_id = ? AND is_active = 1',
-                        [dayId, videoId],
-                        (err, existingAssignment) => {
-                            if (err) {
-                                db.close();
-                                return res.status(500).json({
-                                    success: false,
-                                    error: 'Database error'
-                                });
-                            }
-
-                            // If video already exists in this day, don't add it again
-                            if (existingAssignment) {
-                                db.close();
-                                return res.status(400).json({
-                                    success: false,
-                                    error: 'Video already assigned to this training day'
-                                });
-                            }
-
-                            // Insert the video assignment
-                            db.runCallback(`
-                                INSERT INTO training_day_videos
-                                (training_day_id, video_id, order_index, added_by)
-                                VALUES (?, ?, ?, ?)
-                            `, [dayId, videoId, nextOrder, req.user.username], function(err) {
-                                if (err) {
-                                    db.close();
-                                    console.error('Assign video to day error:', err);
-                                    return res.status(500).json({
-                                        success: false,
-                                        error: 'Database error'
-                                    });
-                                }
-
-                                const assignmentId = this.lastID;
-
-                                // Check if user already has access to this video
-                                db.getCallback(
-                                    'SELECT id, is_active FROM user_video_permissions WHERE user_id = ? AND video_id = ?',
-                                    [userId, videoId],
-                                    (err, permission) => {
-                                        if (err) {
-                                            db.close();
-                                            console.error('Check permission error:', err);
-                                            return res.json({
-                                                success: true,
-                                                message: 'Video assigned to training day successfully',
-                                                data: {
-                                                    assignmentId,
-                                                    dayId: parseInt(dayId),
-                                                    videoId: parseInt(videoId),
-                                                    orderIndex: nextOrder
-                                                }
-                                            });
-                                        }
-
-                                        if (permission) {
-                                            // Permission exists, activate it if needed
-                                            if (Number(permission.is_active) === 0) {
-                                                db.runCallback(
-                                                    'UPDATE user_video_permissions SET is_active = 1 WHERE user_id = ? AND video_id = ?',
-                                                    [userId, videoId],
-                                                    function(err) {
-                                                        db.close();
-                                                        console.log(`Admin ${req.user.username} assigned video ${videoId} to training day ${dayId} and reactivated permission`);
-                                                        res.json({
-                                                            success: true,
-                                                            message: 'Video assigned to training day successfully',
-                                                            data: {
-                                                                assignmentId,
-                                                                dayId: parseInt(dayId),
-                                                                videoId: parseInt(videoId),
-                                                                orderIndex: nextOrder
-                                                            }
-                                                        });
-                                                    }
-                                                );
-                                            } else {
-                                                // Already has access
-                                                db.close();
-                                                console.log(`Admin ${req.user.username} assigned video ${videoId} to training day ${dayId}`);
-                                                res.json({
-                                                    success: true,
-                                                    message: 'Video assigned to training day successfully',
-                                                    data: {
-                                                        assignmentId,
-                                                        dayId: parseInt(dayId),
-                                                        videoId: parseInt(videoId),
-                                                        orderIndex: nextOrder
-                                                    }
-                                                });
-                                            }
-                                        } else {
-                                            // Create new permission
-                                            db.runCallback(
-                                                'INSERT INTO user_video_permissions (user_id, video_id, granted_by, is_active) VALUES (?, ?, ?, 1)',
-                                                [userId, videoId, req.user.username],
-                                                function(err) {
-                                                    db.close();
-                                                    console.log(`Admin ${req.user.username} assigned video ${videoId} to training day ${dayId} and granted access`);
-                                                    res.json({
-                                                        success: true,
-                                                        message: 'Video assigned to training day successfully',
-                                                        data: {
-                                                            assignmentId,
-                                                            dayId: parseInt(dayId),
-                                                            videoId: parseInt(videoId),
-                                                            orderIndex: nextOrder
-                                                        }
-                                                    });
-                                                }
-                                            );
-                                        }
-                                    }
-                                );
-                            });
-                        }
-                    );
-                }
-            );
-        }
-    );
-});
-
-/**
- * PUT /api/admin/users/:userId/training-days/:dayId/videos/reorder
- * Reorder videos in a training day
- * Body: { videoOrders: [{ videoId: number, orderIndex: number }] }
- */
-router.put('/users/:userId/training-days/:dayId/videos/reorder', async (req, res) => {
-    const { userId, dayId } = req.params;
+// PUT /api/training-days/users/:userId/training-days/:dayId/videos/reorder
+// Body: { videoOrders: [{ videoId, orderIndex }] }
+router.put(`${DAY}/videos/reorder`, route(async (req, res) => {
     const { videoOrders } = req.body;
+    if (!Array.isArray(videoOrders)) throw badRequest('videoOrders must be an array');
+    const { dayId } = await findDay(req.params.userId, req.params.dayId);
+    await db.batch(videoOrders.map(({ videoId, orderIndex }) => ({
+        sql: 'UPDATE training_day_videos SET order_index = ? WHERE training_day_id = ? AND video_id = ?',
+        params: [orderIndex, dayId, videoId],
+    })));
+    res.json({ success: true, message: 'Videos reordered successfully' });
+}));
 
-    if (!userId || isNaN(userId) || !dayId || isNaN(dayId)) {
-        return res.status(400).json({
-            success: false,
-            error: 'Valid user ID and day ID are required'
-        });
-    }
-
-    if (!Array.isArray(videoOrders)) {
-        return res.status(400).json({
-            success: false,
-            error: 'videoOrders must be an array'
-        });
-    }
-
-    const db = createDatabase();
-
-    try {
-        // Verify the training day belongs to the user
-        const day = await new Promise((resolve, reject) => {
-            db.getCallback(
-                'SELECT id FROM user_training_days WHERE id = ? AND user_id = ? AND is_active = 1',
-                [dayId, userId],
-                (err, row) => {
-                    if (err) reject(err);
-                    else resolve(row);
-                }
-            );
-        });
-
-        if (!day) {
-            db.close();
-            return res.status(404).json({
-                success: false,
-                error: 'Training day not found'
-            });
-        }
-
-        // Update each video's order
-        for (const { videoId, orderIndex } of videoOrders) {
-            await new Promise((resolve, reject) => {
-                db.runCallback(`
-                    UPDATE training_day_videos
-                    SET order_index = ?
-                    WHERE training_day_id = ? AND video_id = ? AND is_active = 1
-                `, [orderIndex, dayId, videoId], (err) => {
-                    if (err) reject(err);
-                    else resolve();
-                });
-            });
-        }
-
-        db.close();
-
-        console.log(`Admin ${req.user.username} reordered videos in training day ${dayId}`);
-
-        res.json({
-            success: true,
-            message: 'Videos reordered successfully'
-        });
-    } catch (error) {
-        db.close();
-        console.error('Reorder videos error:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Database error'
-        });
-    }
-});
-
-/**
- * DELETE /api/admin/users/:userId/training-days/:dayId/videos/:videoId
- * Remove a video from a training day
- */
-router.delete('/users/:userId/training-days/:dayId/videos/:videoId', (req, res) => {
-    const { userId, dayId, videoId } = req.params;
-
-    if (!userId || isNaN(userId) || !dayId || isNaN(dayId) || !videoId || isNaN(videoId)) {
-        return res.status(400).json({
-            success: false,
-            error: 'Valid user ID, day ID, and video ID are required'
-        });
-    }
-
-    const db = createDatabase();
-
-    // Verify the training day belongs to the user
-    db.getCallback(
-        'SELECT id FROM user_training_days WHERE id = ? AND user_id = ? AND is_active = 1',
-        [dayId, userId],
-        (err, day) => {
-            if (err || !day) {
-                db.close();
-                return res.status(404).json({
-                    success: false,
-                    error: 'Training day not found'
-                });
-            }
-
-            // Remove the video (hard delete)
-            db.runCallback(`
-                DELETE FROM training_day_videos
-                WHERE training_day_id = ? AND video_id = ?
-            `, [dayId, videoId], function(err) {
-                if (err) {
-                    db.close();
-                    console.error('Remove video from day error:', err);
-                    return res.status(500).json({
-                        success: false,
-                        error: 'Database error'
-                    });
-                }
-
-                if (this.changes === 0) {
-                    db.close();
-                    return res.status(404).json({
-                        success: false,
-                        error: 'Video assignment not found'
-                    });
-                }
-
-                // Check if video still exists in other training days for this user
-                db.getCallback(`
-                    SELECT COUNT(*) as count
-                    FROM training_day_videos tdv
-                    INNER JOIN user_training_days utd ON tdv.training_day_id = utd.id
-                    WHERE utd.user_id = ? AND tdv.video_id = ? AND tdv.is_active = 1
-                `, [userId, videoId], (err, result) => {
-                    if (err) {
-                        db.close();
-                        console.error('Check video in other days error:', err);
-                        return res.json({
-                            success: true,
-                            message: 'Video removed from training day successfully'
-                        });
-                    }
-
-                    // If video is not in any other training day, remove from user_video_permissions
-                    if (result.count === 0) {
-                        db.runCallback(
-                            'UPDATE user_video_permissions SET is_active = 0 WHERE user_id = ? AND video_id = ?',
-                            [userId, videoId],
-                            function(err) {
-                                db.close();
-                                if (err) {
-                                    console.error('Revoke video permission error:', err);
-                                }
-                                console.log(`Admin ${req.user?.username || 'unknown'} removed video ${videoId} from training day ${dayId} and revoked access (not in other days)`);
-                                res.json({
-                                    success: true,
-                                    message: 'Video removed from training day successfully'
-                                });
-                            }
-                        );
-                    } else {
-                        db.close();
-                        console.log(`Admin ${req.user?.username || 'unknown'} removed video ${videoId} from training day ${dayId} (still in ${result.count} other day(s))`);
-                        res.json({
-                            success: true,
-                            message: 'Video removed from training day successfully'
-                        });
-                    }
-                });
-            });
-        }
-    );
-});
-
-/**
- * POST /api/admin/users/:userId/training-days/:dayId/videos/:videoId/techniques/:techniqueId
- * Add a technique to a video in a training day
- */
-router.post('/users/:userId/training-days/:dayId/videos/:videoId/techniques/:techniqueId', async (req, res) => {
-    const { userId, dayId, videoId, techniqueId } = req.params;
-
-    if ([userId, dayId, videoId, techniqueId].some(p => !p || isNaN(p))) {
-        return res.status(400).json({ success: false, error: 'Valid IDs are required' });
-    }
-
-    const db = createDatabase();
-
-    try {
-        const assignment = await new Promise((resolve, reject) => {
-            db.getCallback(
-                `SELECT tdv.id FROM training_day_videos tdv
-                 INNER JOIN user_training_days utd ON tdv.training_day_id = utd.id
-                 WHERE tdv.training_day_id = ? AND tdv.video_id = ? AND utd.user_id = ? AND tdv.is_active = 1`,
-                [dayId, videoId, userId],
-                (err, row) => { if (err) reject(err); else resolve(row); }
-            );
-        });
-
-        if (!assignment) {
-            db.close();
-            return res.status(404).json({ success: false, error: 'Video assignment not found' });
-        }
-
-        const maxOrder = await new Promise((resolve, reject) => {
-            db.getCallback(
-                'SELECT COALESCE(MAX(order_index), -1) + 1 as next FROM training_day_video_techniques WHERE training_day_video_id = ?',
-                [assignment.id],
-                (err, row) => { if (err) reject(err); else resolve(row); }
-            );
-        });
-
-        await new Promise((resolve, reject) => {
-            db.runCallback(
-                'INSERT OR IGNORE INTO training_day_video_techniques (training_day_video_id, technique_id, order_index) VALUES (?, ?, ?)',
-                [assignment.id, techniqueId, maxOrder.next],
-                (err) => { if (err) reject(err); else resolve(); }
-            );
-        });
-
-        db.close();
-        console.log(`Admin ${req.user.username} added technique ${techniqueId} to video ${videoId} in day ${dayId}`);
-        res.json({ success: true, message: 'Technique added successfully' });
-    } catch (error) {
-        db.close();
-        console.error('Add technique error:', error);
-        res.status(500).json({ success: false, error: 'Database error' });
-    }
-});
-
-/**
- * DELETE /api/admin/users/:userId/training-days/:dayId/videos/:videoId/techniques/:techniqueId
- * Remove a technique from a video in a training day
- */
-router.delete('/users/:userId/training-days/:dayId/videos/:videoId/techniques/:techniqueId', async (req, res) => {
-    const { userId, dayId, videoId, techniqueId } = req.params;
-
-    if ([userId, dayId, videoId, techniqueId].some(p => !p || isNaN(p))) {
-        return res.status(400).json({ success: false, error: 'Valid IDs are required' });
-    }
-
-    const db = createDatabase();
-
-    try {
-        const assignment = await new Promise((resolve, reject) => {
-            db.getCallback(
-                `SELECT tdv.id FROM training_day_videos tdv
-                 INNER JOIN user_training_days utd ON tdv.training_day_id = utd.id
-                 WHERE tdv.training_day_id = ? AND tdv.video_id = ? AND utd.user_id = ? AND tdv.is_active = 1`,
-                [dayId, videoId, userId],
-                (err, row) => { if (err) reject(err); else resolve(row); }
-            );
-        });
-
-        if (!assignment) {
-            db.close();
-            return res.status(404).json({ success: false, error: 'Video assignment not found' });
-        }
-
-        await new Promise((resolve, reject) => {
-            db.runCallback(
-                'DELETE FROM training_day_video_techniques WHERE training_day_video_id = ? AND technique_id = ?',
-                [assignment.id, techniqueId],
-                (err) => { if (err) reject(err); else resolve(); }
-            );
-        });
-
-        db.close();
-        console.log(`Admin ${req.user.username} removed technique ${techniqueId} from video ${videoId} in day ${dayId}`);
-        res.json({ success: true, message: 'Technique removed successfully' });
-    } catch (error) {
-        db.close();
-        console.error('Remove technique error:', error);
-        res.status(500).json({ success: false, error: 'Database error' });
-    }
-});
-
-/**
- * PUT /api/admin/users/:userId/training-days/:dayId/videos/group
- * Group a set of videos together (superset, circuit, etc.)
- * Body: { assignmentIds: number[], groupLabel: string | null }
- * Passing assignmentIds with groupLabel creates/updates the group.
- * Passing assignmentIds with groupLabel=null ungroups those videos.
- */
-router.put('/users/:userId/training-days/:dayId/videos/group', async (req, res) => {
-    const { userId, dayId } = req.params;
+// PUT /api/training-days/users/:userId/training-days/:dayId/videos/group
+// Body: { assignmentIds: number[] (2+), groupLabel }
+router.put(`${DAY}/videos/group`, route(async (req, res) => {
     const { assignmentIds, groupLabel } = req.body;
-
-    if (!userId || isNaN(userId) || !dayId || isNaN(dayId)) {
-        return res.status(400).json({ success: false, error: 'Valid user ID and day ID are required' });
-    }
     if (!Array.isArray(assignmentIds) || assignmentIds.length < 2) {
-        return res.status(400).json({ success: false, error: 'At least 2 assignment IDs are required to group' });
+        throw badRequest('At least 2 assignment IDs are required to group');
     }
+    const { dayId } = await findDay(req.params.userId, req.params.dayId);
+    const label = groupLabel || 'Superset';
+    const groupId = await db.transaction(async (tx) => {
+        const { maxGroup } = await tx.get(
+            'SELECT COALESCE(MAX(group_id), 0) AS maxGroup FROM training_day_videos WHERE training_day_id = ?',
+            [dayId]
+        );
+        const next = Number(maxGroup) + 1;
+        await tx.run(
+            `UPDATE training_day_videos SET group_id = ?, group_label = ?
+             WHERE training_day_id = ? AND id IN (${assignmentIds.map(() => '?').join(',')})`,
+            [next, label, dayId, ...assignmentIds]
+        );
+        return next;
+    });
+    res.json({ success: true, message: 'Videos grouped successfully', data: { groupId, groupLabel: label } });
+}));
 
-    const db = createDatabase();
+// DELETE /api/training-days/users/:userId/training-days/:dayId/videos/group/:groupId
+router.delete(`${DAY}/videos/group/:groupId`, route(async (req, res) => {
+    const { dayId } = await findDay(req.params.userId, req.params.dayId);
+    await db.run(
+        'UPDATE training_day_videos SET group_id = NULL, group_label = NULL WHERE training_day_id = ? AND group_id = ?',
+        [dayId, id(req.params.groupId, 'group ID')]
+    );
+    res.json({ success: true, message: 'Group removed successfully' });
+}));
 
-    try {
-        // Verify the day belongs to the user
-        const day = await new Promise((resolve, reject) => {
-            db.getCallback(
-                'SELECT id FROM user_training_days WHERE id = ? AND user_id = ? AND is_active = 1',
-                [dayId, userId],
-                (err, row) => { if (err) reject(err); else resolve(row); }
-            );
-        });
+// POST /api/training-days/users/:userId/training-days/:dayId/videos/:videoId
+// Appends the video to the day and grants the user access to it.
+router.post(`${DAY}/videos/:videoId`, route(async (req, res) => {
+    const videoId = id(req.params.videoId, 'video ID');
+    const data = await db.transaction(async (tx) => {
+        const { userId, dayId } = await findDay(req.params.userId, req.params.dayId, tx);
+        const existing = await tx.get(
+            'SELECT id FROM training_day_videos WHERE training_day_id = ? AND video_id = ?',
+            [dayId, videoId]
+        );
+        if (existing) throw badRequest('Video already assigned to this training day');
 
-        if (!day) {
-            db.close();
-            return res.status(404).json({ success: false, error: 'Training day not found' });
-        }
+        const { nextOrder } = await tx.get(
+            'SELECT COALESCE(MAX(order_index), -1) + 1 AS nextOrder FROM training_day_videos WHERE training_day_id = ?',
+            [dayId]
+        );
+        const { lastId } = await tx.run(
+            'INSERT INTO training_day_videos (training_day_id, video_id, order_index, added_by) VALUES (?, ?, ?, ?)',
+            [dayId, videoId, nextOrder, req.user.username]
+        );
+        await grantAccess(userId, videoId, req.user.username, tx);
+        return { assignmentId: lastId, dayId, videoId, orderIndex: Number(nextOrder) };
+    });
+    res.json({ success: true, message: 'Video assigned to training day successfully', data });
+}));
 
-        // Find the next available group_id for this training day
-        const maxRow = await new Promise((resolve, reject) => {
-            db.getCallback(
-                'SELECT COALESCE(MAX(group_id), 0) as max_gid FROM training_day_videos WHERE training_day_id = ?',
-                [dayId],
-                (err, row) => { if (err) reject(err); else resolve(row); }
-            );
-        });
+// DELETE /api/training-days/users/:userId/training-days/:dayId/videos/:videoId
+// Access is revoked when the video is in no other day of the user.
+router.delete(`${DAY}/videos/:videoId`, route(async (req, res) => {
+    const videoId = id(req.params.videoId, 'video ID');
+    await db.transaction(async (tx) => {
+        const { userId, dayId } = await findDay(req.params.userId, req.params.dayId, tx);
+        const { changes } = await tx.run(
+            'DELETE FROM training_day_videos WHERE training_day_id = ? AND video_id = ?',
+            [dayId, videoId]
+        );
+        if (changes === 0) throw notFound('Video assignment not found');
+        await revokeUnusedAccess(userId, [videoId], tx);
+    });
+    res.json({ success: true, message: 'Video removed from training day successfully' });
+}));
 
-        const newGroupId = (maxRow.max_gid || 0) + 1;
-        const label = groupLabel || 'Superset';
-        const placeholders = assignmentIds.map(() => '?').join(',');
+/** The day's assignment of a video, for technique changes; 404 otherwise. */
+async function findAssignment(params) {
+    const { dayId } = await findDay(params.userId, params.dayId);
+    const assignment = await db.get(
+        'SELECT id FROM training_day_videos WHERE training_day_id = ? AND video_id = ? AND is_active = 1',
+        [dayId, id(params.videoId, 'video ID')]
+    );
+    if (!assignment) throw notFound('Video assignment not found');
+    return { assignmentId: assignment.id, techniqueId: id(params.techniqueId, 'technique ID') };
+}
 
-        await new Promise((resolve, reject) => {
-            db.runCallback(
-                `UPDATE training_day_videos SET group_id = ?, group_label = ? WHERE id IN (${placeholders}) AND training_day_id = ?`,
-                [newGroupId, label, ...assignmentIds, dayId],
-                (err) => { if (err) reject(err); else resolve(); }
-            );
-        });
+// POST /api/training-days/users/:userId/training-days/:dayId/videos/:videoId/techniques/:techniqueId
+router.post(`${DAY}/videos/:videoId/techniques/:techniqueId`, route(async (req, res) => {
+    const { assignmentId, techniqueId } = await findAssignment(req.params);
+    await db.run(
+        `INSERT OR IGNORE INTO training_day_video_techniques (training_day_video_id, technique_id, order_index)
+         SELECT ?, ?, COALESCE(MAX(order_index), -1) + 1 FROM training_day_video_techniques WHERE training_day_video_id = ?`,
+        [assignmentId, techniqueId, assignmentId]
+    );
+    res.json({ success: true, message: 'Technique added successfully' });
+}));
 
-        db.close();
-        console.log(`Admin ${req.user.username} grouped ${assignmentIds.length} videos in day ${dayId}`);
-        res.json({ success: true, message: 'Videos grouped successfully', data: { groupId: newGroupId, groupLabel: label } });
-    } catch (error) {
-        db.close();
-        console.error('Group videos error:', error);
-        res.status(500).json({ success: false, error: 'Database error' });
-    }
-});
-
-/**
- * DELETE /api/admin/users/:userId/training-days/:dayId/videos/group/:groupId
- * Remove grouping for all videos that share the given group_id in this day
- */
-router.delete('/users/:userId/training-days/:dayId/videos/group/:groupId', async (req, res) => {
-    const { userId, dayId, groupId } = req.params;
-
-    if (!userId || isNaN(userId) || !dayId || isNaN(dayId) || !groupId || isNaN(groupId)) {
-        return res.status(400).json({ success: false, error: 'Valid IDs required' });
-    }
-
-    const db = createDatabase();
-
-    try {
-        const day = await new Promise((resolve, reject) => {
-            db.getCallback(
-                'SELECT id FROM user_training_days WHERE id = ? AND user_id = ? AND is_active = 1',
-                [dayId, userId],
-                (err, row) => { if (err) reject(err); else resolve(row); }
-            );
-        });
-
-        if (!day) {
-            db.close();
-            return res.status(404).json({ success: false, error: 'Training day not found' });
-        }
-
-        await new Promise((resolve, reject) => {
-            db.runCallback(
-                'UPDATE training_day_videos SET group_id = NULL, group_label = NULL WHERE training_day_id = ? AND group_id = ?',
-                [dayId, groupId],
-                (err) => { if (err) reject(err); else resolve(); }
-            );
-        });
-
-        db.close();
-        console.log(`Admin ${req.user.username} ungrouped group ${groupId} in day ${dayId}`);
-        res.json({ success: true, message: 'Group removed successfully' });
-    } catch (error) {
-        db.close();
-        console.error('Ungroup videos error:', error);
-        res.status(500).json({ success: false, error: 'Database error' });
-    }
-});
+// DELETE /api/training-days/users/:userId/training-days/:dayId/videos/:videoId/techniques/:techniqueId
+router.delete(`${DAY}/videos/:videoId/techniques/:techniqueId`, route(async (req, res) => {
+    const { assignmentId, techniqueId } = await findAssignment(req.params);
+    await db.run(
+        'DELETE FROM training_day_video_techniques WHERE training_day_video_id = ? AND technique_id = ?',
+        [assignmentId, techniqueId]
+    );
+    res.json({ success: true, message: 'Technique removed successfully' });
+}));
 
 module.exports = router;

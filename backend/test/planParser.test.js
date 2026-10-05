@@ -1,0 +1,63 @@
+const { describe, it, before, after } = require('node:test');
+const assert = require('node:assert/strict');
+const pdfParse = require('pdf-parse');
+const { start, stop, db } = require('./helpers');
+const { parsePdfText, parseWeightSlots } = require('../services/planParser');
+
+// Stats left inside a name ("… 4 10+cedimento 1'30" 30 kg …") mean two table rows were merged
+const MERGED_ROW = /\b\d+\s+[^\s(]\S*\s+\d+(?:[.,]\d+)?\s*(?:['’′"”″]|sec\b|min\b)/i;
+
+// Plans whose table cells pdf-parse splits irregularly ("Bird dog" / "3" / "8" /
+// "8 per lato" / "1'30""): not supported yet. Any other merged row is a regression.
+const KNOWN_UNSUPPORTED = ['Barni', 'Savioli', 'Tosi', 'Rizzelli', 'LIZZI'];
+
+after(stop);
+
+describe('plan PDF parser', () => {
+    let plans;
+
+    before(async () => {
+        await start();
+        plans = (await db().execute(`SELECT u.id, u.first_name, u.last_name, p.file_data
+                                      FROM user_pdf_files p JOIN users u ON u.id = p.user_id`)).rows;
+    });
+
+    it('parses every stored plan without merging rows', async () => {
+        assert.ok(plans.length > 10);
+        const problems = [];
+        for (const plan of plans) {
+            if (KNOWN_UNSUPPORTED.includes(plan.last_name.trim())) continue;
+            const { text } = await pdfParse(Buffer.from(plan.file_data, 'base64'));
+            for (const day of parsePdfText(text)) {
+                for (const ex of day.exercises) {
+                    if (MERGED_ROW.test(ex.name)) problems.push(`${plan.first_name} ${plan.last_name}, ${day.dayName}: ${ex.name}`);
+                }
+            }
+        }
+        assert.deepEqual(problems, []);
+    });
+
+    it('counts weight slots from the suggested weight', () => {
+        assert.equal(parseWeightSlots('Peso consigliato: 20 kg + 30 kg'), 2);
+        assert.equal(parseWeightSlots('Peso consigliato: 8 - 6 - 4 kg'), 3);
+        assert.equal(parseWeightSlots('Peso consigliato: 10 kg x braccio'), 1);
+        assert.equal(parseWeightSlots('Peso consigliato: 50 kg / 10 kg x lato'), 2);
+        assert.equal(parseWeightSlots(''), 1);
+    });
+
+    it('reads ladder, "cedimento" and dash reps', () => {
+        const text = [
+            'GIORNO 1 (Test)', 'WORKOUT:', 'Esercizio Serie Ripetizioni Recupero Peso',
+            '37. High row + 42. Dip (2° piano) - SS', '4 10+cedimento 1\'30" 30 kg',
+            '44. High curl machine - Ladder 4-6-8-6-4', '1 4-6-8-6-4 1\' 5 kg x lato',
+            '26. Plank - Isometria (30") (1° piano)', '3 - 45" corpo libero',
+            'STRETCHING',
+        ].join('\n');
+        const [day] = parsePdfText(text);
+        assert.deepEqual(day.exercises.map((e) => [e.sets, e.reps, e.rest]), [
+            ['4', '10+cedimento', '1\'30'],
+            ['1', '4-6-8-6-4', '1\''],
+            ['3', '30"', '45"'],
+        ]);
+    });
+});
