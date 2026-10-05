@@ -1,23 +1,13 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const config = require('../../config');
 const { db } = require('../../utils/database');
 const { route, id, badRequest, notFound, conflict, isUniqueViolation } = require('../../utils/http');
+const { loginLink } = require('../../services/loginLinks');
 
 // Admin: trainers, clients, their login links and individual video permissions
 const router = express.Router();
 
 const DEFAULT_TRAINER_ID = 1; // Joshua
-
-/** Dashboard login link (no expiry: links already sent to clients must keep working). */
-function loginLink(user) {
-    const loginToken = jwt.sign(
-        { userId: user.id, username: user.username, email: user.email, type: 'login_link' },
-        config.jwtSecret
-    );
-    return { loginToken, loginUrl: `${config.appUrl}/dashboard/${loginToken}` };
-}
 
 const USER_COLUMNS = `u.id, u.username, u.email, u.first_name, u.last_name, u.is_paying, u.checkin_exempt,
     u.is_active, u.trainer_id, u.created_at, u.updated_at, t.name AS trainer_name`;

@@ -3,6 +3,7 @@ const { db } = require('../utils/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { route, id, badRequest, notFound } = require('../utils/http');
 const { checkinStatusOf } = require('../services/checkins');
+const { loginLink } = require('../services/loginLinks');
 const { sendNewFeedbackNotification, sendTrainerSeenFeedbackNotification } = require('../services/emailService');
 
 // Weekly checks ("feedback"): clients submit them, trainers read them
@@ -165,7 +166,7 @@ router.post('/admin/mark-seen', admin, route(async (req, res) => {
 // POST /api/feedback/admin/:feedbackId/mark-seen — marks one check as seen and emails the client
 router.post('/admin/:feedbackId/mark-seen', admin, route(async (req, res) => {
     const feedback = await db.get(
-        `SELECT f.id, f.trainer_seen_at, f.feedback_date, u.email AS user_email, u.first_name AS user_first_name,
+        `SELECT f.id, f.trainer_seen_at, f.feedback_date, u.id AS user_id, u.username, u.email AS user_email, u.first_name AS user_first_name,
                 t.name AS trainer_name
          FROM user_feedbacks f JOIN users u ON u.id = f.user_id LEFT JOIN trainers t ON t.id = u.trainer_id
          WHERE f.id = ?`,
@@ -180,7 +181,8 @@ router.post('/admin/:feedbackId/mark-seen', admin, route(async (req, res) => {
             feedback.user_email,
             feedback.user_first_name || 'Utente',
             feedback.trainer_name || 'Il tuo PT',
-            feedback.feedback_date
+            feedback.feedback_date,
+            loginLink({ id: feedback.user_id, username: feedback.username, email: feedback.user_email }).loginUrl
         ).catch((err) => console.error('Failed to send trainer-seen email:', err));
     }
     res.json({ success: true });

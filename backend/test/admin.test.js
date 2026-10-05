@@ -541,6 +541,22 @@ describe('cron', () => {
         assert.equal(Number(testUser.rows[0].n), 1);
     });
 
+    it('client emails open the client\'s own dashboard', async () => {
+        const { loginLink } = require('../services/loginLinks');
+        const { renderCheckInReminder, renderTrainerSeen } = require('../services/emailService');
+        const { loginUrl } = loginLink({ id: TEST_USER.id, username: TEST_USER.username, email: null });
+        for (const { html } of [
+            renderCheckInReminder('a@example.com', 'Test', 'Joshua', loginUrl),
+            renderTrainerSeen('a@example.com', 'Test', 'Joshua', '2026-10-01', loginUrl),
+        ]) {
+            const href = html.match(/href="([^"]+)"/)[1];
+            assert.match(href, /\/dashboard\/[\w-]+\.[\w-]+\.[\w-]+$/);
+            const login = await api('POST', '/api/auth/login-link', { body: { token: href.split('/').pop() } });
+            assert.equal(login.status, 200);
+            assert.equal(login.body.data.user.id, TEST_USER.id);
+        }
+    });
+
     it('check-in reminders skip exempt clients', async () => {
         const { clientsToRemind } = require('../services/checkins');
         const exempt = await db().execute(`SELECT u.id FROM users u JOIN user_pdf_files p ON p.user_id = u.id

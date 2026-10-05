@@ -183,8 +183,8 @@ function renderNewFeedback(feedback, trainerName = 'Joshua') {
 
 // ─── Client emails ───────────────────────────────────────────────────────────
 
-/** To a client who is due a weekly check (see services/checkins). */
-function renderCheckInReminder(userEmail, userName, trainerName = 'Joshua') {
+/** To a client who is due a weekly check (see services/checkins); dashboardUrl = their personal link. */
+function renderCheckInReminder(userEmail, userName, trainerName = 'Joshua', dashboardUrl = `${config.appUrl}/dashboard`) {
     const benefit = (text) => `
       <li style="color: #4b5563; font-size: 15px; padding: 8px 0; display: flex; align-items: center;">
         <span style="color: #10b981; margin-right: 12px; font-size: 18px;">✓</span>${text}
@@ -208,7 +208,7 @@ function renderCheckInReminder(userEmail, userName, trainerName = 'Joshua') {
       </ul>
     </div>
     <div style="text-align: center; margin: 32px 0;">
-      ${button(`${config.appUrl}/dashboard`, 'Compila il Check →', '#3b82f6 0%, #1d4ed8 100%', 'rgba(59, 130, 246, 0.4)')}
+      ${button(escape(dashboardUrl), 'Compila il Check →', '#3b82f6 0%, #1d4ed8 100%', 'rgba(59, 130, 246, 0.4)')}
     </div>
     <p style="color: #9ca3af; font-size: 14px; text-align: center; margin: 0;">⏱️ Bastano solo 2 minuti per completarlo!</p>
   </div>
@@ -223,8 +223,8 @@ function renderCheckInReminder(userEmail, userName, trainerName = 'Joshua') {
     return { to: userEmail, subject: `💪 ${userName}, è il momento del tuo check settimanale!`, html };
 }
 
-/** To a client: their trainer read the check of feedbackDate (YYYY-MM-DD). */
-function renderTrainerSeen(userEmail, userName, trainerName, feedbackDate) {
+/** To a client: their trainer read the check of feedbackDate (YYYY-MM-DD); dashboardUrl = their personal link. */
+function renderTrainerSeen(userEmail, userName, trainerName, feedbackDate, dashboardUrl = `${config.appUrl}/dashboard`) {
     const date = feedbackDate
         ? new Date(feedbackDate).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })
         : 'recente';
@@ -246,7 +246,7 @@ function renderTrainerSeen(userEmail, userName, trainerName, feedbackDate) {
       </p>
     </div>
     <div style="text-align: center; margin: 32px 0;">
-      ${button(`${config.appUrl}/dashboard`, 'Vai alla Dashboard →', '#059669 0%, #047857 100%', 'rgba(5, 150, 105, 0.4)')}
+      ${button(escape(dashboardUrl), 'Vai alla Dashboard →', '#059669 0%, #047857 100%', 'rgba(5, 150, 105, 0.4)')}
     </div>
   </div>
 

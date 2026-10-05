@@ -6,6 +6,7 @@
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const { clientsToRemind } = require('../services/checkins');
 const { sendCheckInReminder } = require('../services/emailService');
+const { loginLink } = require('../services/loginLinks');
 
 const DELAY_BETWEEN_EMAILS_MS = 500; // stay under the email provider's rate limit
 
@@ -15,7 +16,9 @@ async function run() {
     let failed = 0;
 
     for (const client of clients) {
-        const result = await sendCheckInReminder(client.email, client.firstName, client.trainerName);
+        // The button opens the client's own dashboard (personal login link)
+        const { loginUrl } = loginLink({ id: client.userId, username: client.username, email: client.email });
+        const result = await sendCheckInReminder(client.email, client.firstName, client.trainerName, loginUrl);
         if (result.success) {
             sent++;
         } else {
