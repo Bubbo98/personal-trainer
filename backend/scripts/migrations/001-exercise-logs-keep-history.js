@@ -11,7 +11,7 @@
  *   node scripts/migrations/001-exercise-logs-keep-history.js --db file:database/prod-copy.db
  *   node scripts/migrations/001-exercise-logs-keep-history.js --apply      (production, from .env)
  */
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '../..', '.env') });
 const fs = require('fs');
 const path = require('path');
 const { createClient } = require('@libsql/client');

@@ -9,7 +9,7 @@
  *   node scripts/migrations/002-missing-indexes.js --db file:database/prod-copy.db
  *   node scripts/migrations/002-missing-indexes.js --apply      (production, from .env)
  */
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '../..', '.env') });
 const { createClient } = require('@libsql/client');
 
 const INDEXES = [

@@ -6,7 +6,7 @@
  *
  * The file holds real client data: it lives under backend/database/, which git ignores.
  */
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const fs = require('fs');
 const path = require('path');
 const { createClient } = require('@libsql/client');

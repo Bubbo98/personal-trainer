@@ -3,7 +3,7 @@
  * client's form, see services/checkins). Run daily by GET /api/cron/send-reminders,
  * or by hand: node scripts/send-checkin-reminders.js
  */
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const { clientsToRemind } = require('../services/checkins');
 const { sendCheckInReminder } = require('../services/emailService');
 
