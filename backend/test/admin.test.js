@@ -131,6 +131,14 @@ describe('admin videos', () => {
         assert.equal(video.status, 200);
         assert.equal(video.body.data.filePath, 'palestra/Squat.mp4');
 
+        // No folders in the name, only known categories, never overwrite an existing file
+        const traversal = await api('POST', '/api/admin/videos/upload-url', { token: token(), body: { fileName: '../../thumbnails/1-1.webp', category: 'palestra' } });
+        assert.equal(traversal.body.data.filePath, 'palestra/1-1.webp');
+        assert.equal((await api('POST', '/api/admin/videos/upload-url', { token: token(), body: { fileName: 'a.mp4', category: 'thumbnails' } })).status, 400);
+        require('../utils/r2').existingKeys.add('palestra/Squat.mp4');
+        const clash = await api('POST', '/api/admin/videos/upload-url', { token: token(), body: { fileName: 'Squat.mp4', category: 'palestra' } });
+        assert.match(clash.body.data.filePath, /^palestra\/Squat-\d+\.mp4$/);
+
         const thumb = await api('POST', '/api/admin/videos/1/thumbnail/upload-url', { token: token(), body: { contentType: 'image/webp' } });
         assert.equal(thumb.status, 200);
         assert.match(thumb.body.data.key, /^thumbnails\/1-\d+\.webp$/);
@@ -448,14 +456,14 @@ describe('cron and analytics', () => {
         assert.ok(Number(users.rows[0].n) >= 38);
     });
 
-    it('check-in reminders skip exempt clients', { todo: 'bugs phase: reminder query ignores checkin_exempt' }, async () => {
-        const { findUsersNeedingReminder } = require('../scripts/send-checkin-reminders');
+    it('check-in reminders skip exempt clients', async () => {
+        const { clientsToRemind } = require('../services/checkins');
         const exempt = await db().execute(`SELECT u.id FROM users u JOIN user_pdf_files p ON p.user_id = u.id
             WHERE u.checkin_exempt = 1 AND u.is_active = 1 AND p.updated_at < datetime('now', '-7 days')
               AND COALESCE(u.email, (SELECT email FROM user_feedbacks f WHERE f.user_id = u.id LIMIT 1)) IS NOT NULL`);
         assert.ok(exempt.rows.length > 0, 'the snapshot has an exempt client who would be reminded');
         const exemptIds = new Set(exempt.rows.map((r) => Number(r.id)));
-        const users = await findUsersNeedingReminder();
+        const users = await clientsToRemind();
         assert.ok(!users.some((u) => exemptIds.has(Number(u.userId))));
     });
 

@@ -144,6 +144,8 @@ describe('client feedback', () => {
     it('POST /api/feedback validates the answers', async () => {
         const res = await api('POST', '/api/feedback', { token: token(), body: { ...validCheck, energyLevel: 'huge' } });
         assert.equal(res.status, 400);
+        // The frontend shows `error`: the Italian message must be there
+        assert.equal(res.body.error, 'Valore non valido per il livello di energia');
         const weight = await api('POST', '/api/feedback', { token: token(), body: { ...validCheck, currentWeight: '5' } });
         assert.equal(weight.status, 400);
     });

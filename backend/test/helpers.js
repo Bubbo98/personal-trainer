@@ -53,6 +53,11 @@ async function start() {
     // The test runner reads the child's stdout: the app's chatty logs can corrupt it
     console.log = () => {};
     console.info = () => {};
+    // R2 calls that reach the network are faked; presigning stays real (it's local)
+    const r2 = require('../utils/r2');
+    r2.objectExists = async (key) => r2.existingKeys.has(key);
+    r2.existingKeys = new Set();
+    r2.deleteObject = async () => {};
     const app = require('../server');
     if (!process.env.TURSO_DATABASE_URL.startsWith('file:')) {
         throw new Error('Refusing to run tests against a remote database');

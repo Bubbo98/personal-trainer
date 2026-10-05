@@ -79,7 +79,7 @@ describe('access control', () => {
         });
     }
 
-    it('a client whose username contains "admin" is not an admin', { todo: 'security phase: feedback routes use username.includes("admin")' }, async () => {
+    it('a client whose username contains "admin" is not an admin', async () => {
         const db = require('./helpers').db();
         const created = await db.execute("INSERT INTO users (username, first_name, last_name) VALUES ('admin.rossi', 'Mario', 'Rossi')");
         const fakeAdmin = { id: Number(created.lastInsertRowid), username: 'admin.rossi' };
