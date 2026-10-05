@@ -3,18 +3,16 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api
 interface VideoWithThumbnail {
   id: number;
   thumbnailKey?: string | null;
-  thumbnailPath?: string | null;
 }
 
 /**
  * URL of a video's thumbnail, or null when it has none. The backend redirects
- * to the image on R2 (or to the old local file for videos not migrated yet);
- * the key in the query string makes browsers reload it when it changes.
+ * to the image on R2; the key in the query string makes browsers reload it
+ * when it changes.
  */
 export function thumbnailUrl(video: VideoWithThumbnail): string | null {
-  const version = video.thumbnailKey || video.thumbnailPath;
-  if (!version) return null;
-  return `${API_BASE_URL}/thumbnails/${video.id}?v=${encodeURIComponent(version)}`;
+  if (!video.thumbnailKey) return null;
+  return `${API_BASE_URL}/thumbnails/${video.id}?v=${encodeURIComponent(video.thumbnailKey)}`;
 }
 
 const MAX_WIDTH = 800;

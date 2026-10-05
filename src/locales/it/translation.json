@@ -425,8 +425,6 @@
       "duration": "Durata (secondi)",
       "category": "Categoria",
       "selectCategory": "Seleziona categoria",
-      "thumbnailPath": "Percorso Thumbnail",
-      "thumbnailPathHelp": "Percorso relativo a /public/thumbnails/",
       "titlePlaceholder": "Nome del video",
       "descriptionPlaceholder": "Descrizione del video",
       "filePathPlaceholder": "categoria/nome-file.mp4",

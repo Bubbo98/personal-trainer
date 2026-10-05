@@ -12,7 +12,7 @@ router.use(authenticateToken, verifyActiveUser);
 /** Videos the user may watch (active permission, not expired), newest first. */
 async function permittedVideos(userId, { videoId, category } = {}) {
     const rows = await db.query(
-        `SELECT v.id, v.title, v.description, v.file_path, v.duration, v.thumbnail_path, v.thumbnail_key,
+        `SELECT v.id, v.title, v.description, v.file_path, v.duration, v.thumbnail_key,
                 v.category, v.created_at, uvp.granted_at, uvp.expires_at
          FROM videos v
          JOIN user_video_permissions uvp ON uvp.video_id = v.id
@@ -30,7 +30,6 @@ async function permittedVideos(userId, { videoId, category } = {}) {
         filePath: v.file_path,
         signedUrl: await signedUrlOrNull(v.file_path),
         duration: v.duration,
-        thumbnailPath: v.thumbnail_path,
         thumbnailKey: v.thumbnail_key || null,
         category: v.category,
         createdAt: v.created_at,

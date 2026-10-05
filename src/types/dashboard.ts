@@ -13,7 +13,6 @@ export interface TechniqueVideo {
   title: string;
   description: string;
   signedUrl: string | null;
-  thumbnailPath?: string | null;
   thumbnailKey?: string | null;
 }
 
@@ -24,7 +23,6 @@ export interface Video {
   filePath: string;
   signedUrl?: string;
   duration: number;
-  thumbnailPath?: string;
   thumbnailKey?: string | null;
   category: string;
   createdAt: string;

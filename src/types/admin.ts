@@ -29,7 +29,6 @@ export interface Video {
   filePath: string;
   signedUrl?: string;
   duration: number;
-  thumbnailPath?: string;
   thumbnailKey?: string | null;
   category: string;
   muscleGroup?: string | null;
@@ -45,7 +44,6 @@ export interface TrainingDayTechnique {
   title: string;
   description: string;
   signedUrl?: string | null;
-  thumbnailPath?: string | null;
   thumbnailKey?: string | null;
 }
 
@@ -73,7 +71,6 @@ export interface CreateVideoForm {
   filePath: string;
   duration: number;
   category: string;
-  thumbnailPath: string;
   muscleGroup: string;
 }
 

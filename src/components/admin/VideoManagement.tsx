@@ -45,7 +45,6 @@ const VideoManagement: React.FC = () => {
   const [editForm, setEditForm] = useState({
     title: '',
     description: '',
-    thumbnailPath: '',
     muscleGroup: ''
   });
 
@@ -55,7 +54,6 @@ const VideoManagement: React.FC = () => {
     filePath: '',
     duration: 0,
     category: '',
-    thumbnailPath: '',
     muscleGroup: ''
   });
 
@@ -202,8 +200,7 @@ const VideoManagement: React.FC = () => {
         filePath: '',
         duration: 0,
         category: '',
-        thumbnailPath: '',
-        muscleGroup: ''
+            muscleGroup: ''
       });
       setSelectedFile(null);
       setShowCreateVideo(false);
@@ -248,7 +245,6 @@ const VideoManagement: React.FC = () => {
     setEditForm({
       title: video.title,
       description: video.description || '',
-      thumbnailPath: video.thumbnailPath || '',
       muscleGroup: video.muscleGroup || ''
     });
   };
@@ -266,12 +262,12 @@ const VideoManagement: React.FC = () => {
       // Update video in list
       setVideos(prev => prev.map(v =>
         v.id === editingVideo.id
-          ? { ...v, title: editForm.title, description: editForm.description, thumbnailPath: editForm.thumbnailPath, muscleGroup: editForm.muscleGroup || null }
+          ? { ...v, title: editForm.title, description: editForm.description, muscleGroup: editForm.muscleGroup || null }
           : v
       ));
 
       setEditingVideo(null);
-      setEditForm({ title: '', description: '', thumbnailPath: '', muscleGroup: '' });
+      setEditForm({ title: '', description: '', muscleGroup: '' });
       alert('Video aggiornato con successo!');
     } catch (error) {
       alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : 'Aggiornamento fallito'}`);

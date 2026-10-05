@@ -51,7 +51,6 @@ interface TechniqueInfo {
   title: string;
   description?: string;
   filePath?: string;
-  thumbnailPath?: string;
 }
 
 interface TrainingDayVideo extends Video {

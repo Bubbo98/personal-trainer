@@ -16,7 +16,6 @@ const toVideo = (v) => ({
     description: v.description,
     filePath: v.file_path,
     duration: v.duration,
-    thumbnailPath: v.thumbnail_path,
     thumbnailKey: v.thumbnail_key || null,
     category: v.category,
     muscleGroup: v.muscle_group || null,
@@ -126,37 +125,37 @@ router.post('/videos/upload-url', route(async (req, res) => {
     res.json({ success: true, data: { uploadUrl, filePath: key, expiresIn } });
 }));
 
-// POST /api/admin/videos — Body: { title, filePath, description?, duration?, thumbnailPath?, category?, muscleGroup? }
+// POST /api/admin/videos — Body: { title, filePath, description?, duration?, category?, muscleGroup? }
 router.post('/videos', route(async (req, res) => {
-    const { title, description, filePath, duration, thumbnailPath, category, muscleGroup } = req.body;
+    const { title, description, filePath, duration, category, muscleGroup } = req.body;
     if (!title || !filePath) throw badRequest('Title and file path are required');
     const { lastId } = await db.run(
-        `INSERT INTO videos (title, description, file_path, duration, thumbnail_path, category, muscle_group)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [title, description || null, filePath, duration || null, thumbnailPath || null, category || null, muscleGroup || null]
+        `INSERT INTO videos (title, description, file_path, duration, category, muscle_group)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [title, description || null, filePath, duration || null, category || null, muscleGroup || null]
     );
     res.status(201).json({
         success: true,
         message: 'Video created successfully',
-        data: { id: lastId, title, description, filePath, duration, thumbnailPath, category, muscleGroup: muscleGroup || null },
+        data: { id: lastId, title, description, filePath, duration, category, muscleGroup: muscleGroup || null },
     });
 }));
 
-// PUT /api/admin/videos/:id — Body: { title, description?, thumbnailPath?, muscleGroup? }
+// PUT /api/admin/videos/:id — Body: { title, description?, muscleGroup? } (thumbnail: see /thumbnail below)
 router.put('/videos/:id', route(async (req, res) => {
     const videoId = id(req.params.id, 'video ID');
-    const { title, description, thumbnailPath, muscleGroup } = req.body;
+    const { title, description, muscleGroup } = req.body;
     if (!title) throw badRequest('Title is required');
     const { changes } = await db.run(
-        `UPDATE videos SET title = ?, description = ?, thumbnail_path = ?, muscle_group = ?, updated_at = CURRENT_TIMESTAMP
+        `UPDATE videos SET title = ?, description = ?, muscle_group = ?, updated_at = CURRENT_TIMESTAMP
          WHERE id = ? AND is_active = 1`,
-        [title, description || null, thumbnailPath || null, muscleGroup || null, videoId]
+        [title, description || null, muscleGroup || null, videoId]
     );
     if (changes === 0) throw notFound('Video not found');
     res.json({
         success: true,
         message: 'Video updated successfully',
-        data: { id: videoId, title, description, thumbnailPath, muscleGroup: muscleGroup || null },
+        data: { id: videoId, title, description, muscleGroup: muscleGroup || null },
     });
 }));
 

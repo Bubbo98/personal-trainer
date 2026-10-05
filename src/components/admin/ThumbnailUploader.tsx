@@ -7,7 +7,7 @@ type IconType = React.ComponentType<{ className?: string }>;
 const icon = (Icon: unknown, className: string) => React.createElement(Icon as IconType, { className });
 
 interface Props {
-  video: { id: number; title: string; thumbnailKey?: string | null; thumbnailPath?: string | null };
+  video: { id: number; title: string; thumbnailKey?: string | null };
   /** Called with the new R2 key once the photo is uploaded and saved. */
   onChange: (thumbnailKey: string) => void;
 }

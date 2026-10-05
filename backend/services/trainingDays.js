@@ -19,7 +19,7 @@ async function loadDaysWithVideos(userId, { signed = false } = {}) {
         db.query(
             `SELECT tdv.training_day_id, tdv.id AS assignment_id, tdv.order_index, tdv.added_at,
                     tdv.group_id, tdv.group_label, tdv.exercise_id,
-                    v.id, v.title, v.description, v.file_path, v.duration, v.thumbnail_path, v.thumbnail_key, v.category
+                    v.id, v.title, v.description, v.file_path, v.duration, v.thumbnail_key, v.category
              FROM training_day_videos tdv
              JOIN user_training_days td ON td.id = tdv.training_day_id
              JOIN videos v ON v.id = tdv.video_id AND v.is_active = 1
@@ -28,7 +28,7 @@ async function loadDaysWithVideos(userId, { signed = false } = {}) {
             [userId]
         ),
         db.query(
-            `SELECT tdvt.training_day_video_id, t.id, t.title, t.description, t.file_path, t.thumbnail_path, t.thumbnail_key
+            `SELECT tdvt.training_day_video_id, t.id, t.title, t.description, t.file_path, t.thumbnail_key
              FROM training_day_video_techniques tdvt
              JOIN training_day_videos tdv ON tdv.id = tdvt.training_day_video_id
              JOIN user_training_days td ON td.id = tdv.training_day_id
@@ -45,7 +45,6 @@ async function loadDaysWithVideos(userId, { signed = false } = {}) {
         title: t.title,
         description: t.description,
         ...(signed ? { signedUrl: await signedUrlOrNull(t.file_path) } : { filePath: t.file_path }),
-        thumbnailPath: t.thumbnail_path,
         thumbnailKey: t.thumbnail_key || null,
     }))), (t) => t.assignmentId);
 
@@ -60,7 +59,6 @@ async function loadDaysWithVideos(userId, { signed = false } = {}) {
         filePath: v.file_path,
         ...(signed ? { signedUrl: await signedUrlOrNull(v.file_path) } : {}),
         duration: v.duration,
-        thumbnailPath: v.thumbnail_path,
         thumbnailKey: v.thumbnail_key || null,
         category: v.category,
         groupId: v.group_id || null,
