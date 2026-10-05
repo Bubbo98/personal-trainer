@@ -7,7 +7,7 @@ import {
   FiTrash2
 } from 'react-icons/fi';
 import { apiCall, formatDate } from '../../utils/adminUtils';
-import { Review } from '../../types/admin';
+import { type Review } from '../../types/admin';
 
 const ReviewManagement: React.FC = () => {
   const { t } = useTranslation();

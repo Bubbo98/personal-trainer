@@ -17,7 +17,7 @@ import {
   FiShoppingBag
 } from 'react-icons/fi';
 import { apiCall, STORAGE_KEY } from '../utils/adminUtils';
-import { AdminState } from '../types/admin';
+import { type AdminState } from '../types/admin';
 
 
 const AdminCMS: React.FC = () => {

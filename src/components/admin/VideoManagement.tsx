@@ -10,7 +10,7 @@ import {
   FiSearch
 } from 'react-icons/fi';
 import { apiCall, formatDate, formatDuration } from '../../utils/adminUtils';
-import { Video, CreateVideoForm } from '../../types/admin';
+import { type Video, type CreateVideoForm } from '../../types/admin';
 import ThumbnailUploader from './ThumbnailUploader';
 
 const MUSCLE_GROUPS = ['Polpaccio','Quadricipite','Femorale','Gluteo','Lombare','Dorsale','Trapezio','Pettorale','Spalle','Bicipite','Tricipite','Addome','Avambraccio','Cardio','Stability','Transizioni','Tecniche','Stretching'];

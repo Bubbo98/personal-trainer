@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiPlay, FiInfo, FiX, FiChevronRight } from 'react-icons/fi';
-import { Video, TechniqueVideo } from '../../types/dashboard';
+import { type Video, type TechniqueVideo } from '../../types/dashboard';
 import { formatDuration, formatDate, getLocalizedText } from '../../utils/dashboardUtils';
 import { thumbnailUrl } from '../../utils/thumbnails';
 

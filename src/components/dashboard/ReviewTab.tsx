@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiStar, FiEdit3, FiTrash2 } from 'react-icons/fi';
-import { Review, ReviewFormData } from '../../types/dashboard';
+import { type Review, type ReviewFormData } from '../../types/dashboard';
 import { STORAGE_KEY, formatDate, apiCall } from '../../utils/dashboardUtils';
 
 const ReviewTab: React.FC = () => {

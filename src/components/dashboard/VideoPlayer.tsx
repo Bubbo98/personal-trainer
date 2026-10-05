@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiClock } from 'react-icons/fi';
-import { Video } from '../../types/dashboard';
+import { type Video } from '../../types/dashboard';
 import { formatDuration } from '../../utils/dashboardUtils';
 
 interface VideoPlayerProps {

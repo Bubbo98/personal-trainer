@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Category } from '../../types/dashboard';
+import { type Category } from '../../types/dashboard';
 
 interface CategoryFilterProps {
   categories: Category[];

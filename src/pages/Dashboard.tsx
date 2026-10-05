@@ -16,7 +16,7 @@ import BodyCompositionTab from '../components/dashboard/BodyCompositionTab';
 import { FiGrid, FiLogOut, FiGift, FiMessageSquare, FiCheckCircle, FiActivity, FiTrendingUp, FiCheckSquare, FiMoreHorizontal } from 'react-icons/fi';
 import { SiInstagram, SiTiktok } from 'react-icons/si';
 
-import { Video, AuthState, VideoState } from '../types/dashboard';
+import { type Video, type AuthState, type VideoState } from '../types/dashboard';
 import { STORAGE_KEY, apiCall, formatDate } from '../utils/dashboardUtils';
 
 interface TrainingDay {

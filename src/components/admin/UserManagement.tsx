@@ -14,7 +14,7 @@ import {
   FiMessageSquare
 } from 'react-icons/fi';
 import { apiCall, formatDate } from '../../utils/adminUtils';
-import { User, CreateUserForm, UpdateUserForm, Trainer } from '../../types/admin';
+import { type User, type CreateUserForm, type UpdateUserForm, type Trainer } from '../../types/admin';
 import FeedbackManagement from './FeedbackManagement';
 
 interface PdfInfo {

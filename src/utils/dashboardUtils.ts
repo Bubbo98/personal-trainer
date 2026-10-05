@@ -1,5 +1,6 @@
 // Dashboard Utilities
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+import { API_BASE_URL } from '../config';
+export { API_BASE_URL };
 export const STORAGE_KEY = 'dashboard_auth_token';
 
 export const formatDuration = (seconds: number): string => {

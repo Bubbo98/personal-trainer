@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiUpload, FiTrash2, FiFile, FiDownload } from 'react-icons/fi';
@@ -47,7 +48,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('admin_auth_token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3002/api'}/pdf/admin/user/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/pdf/admin/user/${userId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -94,7 +95,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
         formData.append('visibleFrom', new Date(visibleFrom).toISOString());
       }
 
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3002/api'}/pdf/admin/upload/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/pdf/admin/upload/${userId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -123,7 +124,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
   const handleDownload = async () => {
     try {
       const token = localStorage.getItem('admin_auth_token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3002/api'}/pdf/download?userId=${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/pdf/download?userId=${userId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -159,7 +160,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
 
     try {
       const token = localStorage.getItem('admin_auth_token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3002/api'}/pdf/admin/delete/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/pdf/admin/delete/${userId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -188,7 +189,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
     try {
       setExtending(true);
       const token = localStorage.getItem('admin_auth_token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3002/api'}/pdf/admin/extend/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/pdf/admin/extend/${userId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -222,7 +223,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
     try {
       setUpdatingVisibleFrom(true);
       const token = localStorage.getItem('admin_auth_token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3002/api'}/pdf/admin/visible-from/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/pdf/admin/visible-from/${userId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

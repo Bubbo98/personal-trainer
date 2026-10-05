@@ -30,8 +30,6 @@ interface DragState {
 
 // Custom hook for drag functionality
 const useDragCarousel = (
-  imagesLength: number,
-  currentIndex: number,
   onNavigate: (direction: 'prev' | 'next') => void
 ) => {
   const [dragState, setDragState] = useState<DragState>({
@@ -191,8 +189,6 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
 
   // Drag functionality
   const { dragState, handleDragStart, handleDragMove, handleDragEnd } = useDragCarousel(
-    images.length,
-    currentIndex,
     handleNavigate
   );
 

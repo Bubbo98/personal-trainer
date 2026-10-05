@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FiSave, FiChevronDown, FiChevronUp, FiCheck, FiClock } from 'react-icons/fi';
 import { apiCall } from '../../utils/dashboardUtils';
-import { Video } from '../../types/dashboard';
+import { type Video } from '../../types/dashboard';
 import VideoCard from './VideoCard';
 
 interface Exercise {

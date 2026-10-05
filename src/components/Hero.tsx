@@ -24,7 +24,7 @@ interface ActionButtonType {
 }
 
 // Components
-const ResponsiveImage: React.FC<HeroImage> = ({ src, alt, className, breakpoint }) => (
+const ResponsiveImage: React.FC<HeroImage> = ({ src, alt, className }) => (
   <img
     src={src}
     alt={alt}

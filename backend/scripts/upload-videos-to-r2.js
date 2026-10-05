@@ -1,7 +1,7 @@
 const { S3Client, PutObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../backend/.env') });
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 // R2 Configuration - Set these in environment variables
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
@@ -75,7 +75,7 @@ function findVideoFiles(dir, baseDir = dir) {
 async function uploadAllVideos() {
   console.log('🚀 Starting video upload to Cloudflare R2...\n');
 
-  const videosDir = path.join(__dirname, '../public/videos');
+  const videosDir = path.join(__dirname, '../../public/videos');
 
   if (!fs.existsSync(videosDir)) {
     console.error('❌ Videos directory not found:', videosDir);

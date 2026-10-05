@@ -1,5 +1,6 @@
 // Constants
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+import { API_BASE_URL } from '../config';
+export { API_BASE_URL };
 export const STORAGE_KEY = 'admin_auth_token';
 
 // Utility functions

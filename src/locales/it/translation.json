@@ -563,5 +563,10 @@
       "removeVideoFailed": "Rimozione video fallita",
       "reorderVideosFailed": "Riordino video fallito"
     }
+  },
+  "notFound": {
+    "title": "Pagina non trovata",
+    "message": "La pagina che cerchi non esiste o è stata spostata.",
+    "backHome": "Torna alla Home"
   }
 }

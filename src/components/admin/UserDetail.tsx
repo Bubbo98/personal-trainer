@@ -13,7 +13,7 @@ import {
   FiBarChart2
 } from 'react-icons/fi';
 import { apiCall, formatDuration } from '../../utils/adminUtils';
-import { Video } from '../../types/admin';
+import { type Video } from '../../types/admin';
 import PdfManagement from './PdfManagement';
 import TrainingDaysManager from './TrainingDaysManager';
 import TrainingPlanAdmin from './TrainingPlanAdmin';

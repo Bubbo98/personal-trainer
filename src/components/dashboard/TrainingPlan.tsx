@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiDownload, FiFile, FiAlertCircle, FiClock, FiLock } from 'react-icons/fi';
@@ -35,7 +36,7 @@ const TrainingPlan: React.FC = () => {
       setError(null);
       const token = localStorage.getItem(STORAGE_KEY);
 
-      const backendUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+      const backendUrl = API_BASE_URL;
 
       const response = await fetch(`${backendUrl}/pdf/my-pdf`, {
         headers: {
@@ -63,7 +64,7 @@ const TrainingPlan: React.FC = () => {
       setDownloading(true);
       const token = localStorage.getItem(STORAGE_KEY);
 
-      const backendUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+      const backendUrl = API_BASE_URL;
 
       const response = await fetch(`${backendUrl}/pdf/download`, {
         headers: {

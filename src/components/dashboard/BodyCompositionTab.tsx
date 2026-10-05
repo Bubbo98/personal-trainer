@@ -1,8 +1,9 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState, useEffect, useCallback } from 'react';
 import { FiDownload, FiCalendar, FiLoader } from 'react-icons/fi';
 import { apiCall, STORAGE_KEY } from '../../utils/dashboardUtils';
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_BASE = API_BASE_URL;
 
 interface ParsedCompositionRow {
   value: number;

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import { FiStar, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { useTranslation } from 'react-i18next';
@@ -32,7 +33,6 @@ interface ReviewsCarouselProps {
 
 // API function
 const fetchReviews = async (type: 'featured' | 'public' = 'featured'): Promise<ReviewsData> => {
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
   const response = await fetch(`${API_BASE_URL}/reviews/${type}`);
   const data = await response.json();

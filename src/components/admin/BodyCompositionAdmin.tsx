@@ -1,9 +1,10 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FiUpload, FiTrash2, FiDownload, FiCalendar, FiLoader, FiImage } from 'react-icons/fi';
 import { apiCall, STORAGE_KEY } from '../../utils/adminUtils';
 import Tesseract from 'tesseract.js';
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_BASE = API_BASE_URL;
 
 interface Report {
   id: number;
