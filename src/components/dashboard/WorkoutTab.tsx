@@ -149,7 +149,8 @@ const WorkoutTab: React.FC<WorkoutTabProps> = ({ mode = 'all', onSaved, training
       // week to week and only reset when a new plan assigns new exercise ids.
       const latestLogByExercise: Record<number, ExerciseLog> = {};
       for (const log of allLogList) {
-        if (!(log.exercise_id in latestLogByExercise)) {
+        // Logs of exercises no longer in the plan have no id: nothing to carry over
+        if (log.exercise_id != null && !(log.exercise_id in latestLogByExercise)) {
           latestLogByExercise[log.exercise_id] = log;
         }
       }
