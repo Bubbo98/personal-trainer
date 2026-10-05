@@ -3,7 +3,7 @@
  * local production snapshot (database/prod-copy.db, see scripts/snapshot-prod-db.js).
  *
  * Every external side effect is switched off before the app is loaded:
- * the database is a local file, emails and Vercel analytics have no keys,
+ * the database is a local file, emails have no key,
  * R2 only presigns URLs (a local computation, nothing is uploaded).
  */
 const fs = require('fs');
@@ -38,8 +38,6 @@ function prepareEnv() {
         CRON_SECRET: 'cron-test-secret',
         RESEND_API_KEY: '',
         ADMIN_EMAIL: '',
-        VERCEL_TOKEN: '',
-        VERCEL_PROJECT_ID: '',
         R2_ACCOUNT_ID: 'test',
         R2_ACCESS_KEY_ID: 'test',
         R2_SECRET_ACCESS_KEY: 'test',

@@ -32,6 +32,12 @@ function id(value, name = 'id') {
     return n;
 }
 
+/** Content-Disposition for a download, safe with quotes and accents in the file name. */
+function attachment(fileName) {
+    const ascii = String(fileName).replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_');
+    return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(fileName)}`;
+}
+
 /** True for a UNIQUE constraint failure (libsql and sqlite3 wording). */
 const isUniqueViolation = (err) => /unique/i.test(`${err && err.code} ${err && err.message}`);
 
@@ -48,4 +54,4 @@ function errorHandler(err, req, res, next) {
     res.status(status).json({ success: false, error: message, ...(err.code && status < 500 ? { code: err.code } : {}) });
 }
 
-module.exports = { HttpError, badRequest, unauthorized, forbidden, notFound, conflict, route, id, isUniqueViolation, errorHandler };
+module.exports = { HttpError, badRequest, unauthorized, forbidden, notFound, conflict, route, id, attachment, isUniqueViolation, errorHandler };

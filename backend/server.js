@@ -1,8 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const path = require('path');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
@@ -12,7 +10,6 @@ const reviewRoutes = require('./routes/reviews');
 const sitemapRoutes = require('./routes/sitemap');
 const pdfRoutes = require('./routes/pdf');
 const feedbackRoutes = require('./routes/feedback');
-const analyticsRoutes = require('./routes/analytics');
 const trainingDaysRoutes = require('./routes/training-days');
 const workoutRoutes = require('./routes/workout');
 const cronRoutes = require('./routes/cron');
@@ -24,6 +21,9 @@ const { errorHandler } = require('./utils/http');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Vercel's proxy sets X-Forwarded-For: req.ip must be the client's (login rate limit)
+app.set('trust proxy', 1);
 
 // Security middleware
 app.use(helmet({
@@ -57,22 +57,9 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Rate limiting - Disabled
-// const limiter = rateLimit({
-//     windowMs: 15 * 60 * 1000, // 15 minutes
-//     max: process.env.NODE_ENV === 'production' ? 100 : 1000, // Higher limit for development
-//     message: 'Too many requests from this IP, please try again later.'
-// });
-// app.use(limiter);
-
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Serve static files (videos, thumbnails, pdf, etc.)
-app.use('/videos', express.static(path.join(__dirname, '..', 'public', 'videos')));
-app.use('/thumbnails', express.static(path.join(__dirname, '..', 'public', 'thumbnails')));
-app.use('/pdf', express.static(path.join(__dirname, '..', 'public', 'pdf')));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -92,7 +79,6 @@ app.use('/api/training-days', trainingDaysRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/pdf', pdfRoutes);
 app.use('/api/feedback', feedbackRoutes);
-app.use('/api/analytics', analyticsRoutes);
 app.use('/api/workout', workoutRoutes);
 app.use('/api/cron', cronRoutes);
 app.use('/api/body-composition', bodyCompositionRoutes);

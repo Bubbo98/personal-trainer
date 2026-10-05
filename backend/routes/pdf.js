@@ -1,595 +1,200 @@
 const express = require('express');
 const multer = require('multer');
-const { createDatabase } = require('../utils/database');
-const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { db } = require('../utils/database');
+const { authenticateToken, requireAdmin, isAdmin } = require('../middleware/auth');
+const { route, id, badRequest, forbidden, notFound, attachment } = require('../utils/http');
 
+// The client's training plan PDF (one per user, stored base64 in user_pdf_files)
 const router = express.Router();
-
-// Configure multer for memory storage (BLOB)
-const storage = multer.memoryStorage();
-
-// File filter to accept only PDFs
-const fileFilter = (req, file, cb) => {
-    if (file.mimetype === 'application/pdf') {
-        cb(null, true);
-    } else {
-        cb(new Error('Only PDF files are allowed'), false);
-    }
-};
+const admin = [authenticateToken, requireAdmin];
 
 const upload = multer({
-    storage: storage,
-    fileFilter: fileFilter,
-    limits: {
-        fileSize: 10 * 1024 * 1024 // 10MB max file size
-    }
+    storage: multer.memoryStorage(),
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype === 'application/pdf') cb(null, true);
+        else cb(badRequest('Only PDF files are allowed'), false);
+    },
+    limits: { fileSize: 10 * 1024 * 1024 },
 });
 
-// ==================== ADMIN ROUTES ====================
+/** Integer from the body, or the default; 400 when it isn't a whole number. */
+function int(value, name, fallback = 0) {
+    if (value === undefined || value === null || value === '') return fallback;
+    const n = Number(value);
+    if (!Number.isInteger(n)) throw badRequest(`${name} must be a whole number`);
+    return n;
+}
 
-// POST /api/pdf/admin/upload/:userId
-// Upload or replace PDF for a specific user (Admin only)
-router.post('/admin/upload/:userId', authenticateToken, requireAdmin, upload.single('pdf'), async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const { durationMonths = 2, durationDays = 0, visibleFrom = null } = req.body;
+/** "+N months" / "-N days" modifier for SQLite datetime(). */
+const modifier = (n, unit) => `${n >= 0 ? '+' : '-'}${Math.abs(n)} ${unit}`;
 
-        if (!req.file) {
-            return res.status(400).json({
-                success: false,
-                error: 'No PDF file uploaded'
-            });
-        }
+/** True while the plan is scheduled to appear later. */
+const isLocked = (pdf) => !!pdf.visible_from && new Date(pdf.visible_from) > new Date();
 
-        const db = createDatabase();
+// ─── Admin ───────────────────────────────────────────────────────────────────
 
-        // Check if user exists
-        db.getCallback('SELECT id FROM users WHERE id = ?', [userId], (err, user) => {
-            if (err) {
-                db.close();
-                console.error('Database error:', err.message);
-                return res.status(500).json({
-                    success: false,
-                    error: 'Database error'
-                });
-            }
+// POST /api/pdf/admin/upload/:userId — uploads or replaces the plan
+// Form: pdf (file), durationMonths (default 2), durationDays (default 0), visibleFrom?
+router.post('/admin/upload/:userId', admin, upload.single('pdf'), route(async (req, res) => {
+    const userId = id(req.params.userId, 'user ID');
+    if (!req.file) throw badRequest('No PDF file uploaded');
+    const months = int(req.body.durationMonths, 'durationMonths', 2);
+    const days = int(req.body.durationDays, 'durationDays', 0);
 
-            if (!user) {
-                db.close();
-                return res.status(404).json({
-                    success: false,
-                    error: 'User not found'
-                });
-            }
+    if (!(await db.get('SELECT id FROM users WHERE id = ?', [userId]))) throw notFound('User not found');
 
-            // Check if user already has a PDF (exclude file_data to avoid large data transfer)
-            db.getCallback('SELECT id, user_id, original_name, file_size FROM user_pdf_files WHERE user_id = ?', [userId], (err, existingPdf) => {
-                if (err) {
-                    db.close();
-                    console.error('Database error:', err.message);
-                    return res.status(500).json({
-                        success: false,
-                        error: 'Database error'
-                    });
-                }
+    // updated_at marks a new plan version: it restarts the check-in schedule
+    const { changes } = await db.run(
+        `INSERT INTO user_pdf_files (user_id, original_name, file_data, file_size, mime_type, uploaded_by,
+                                     duration_months, duration_days, expiration_date, visible_from)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', ?, ?), ?)
+         ON CONFLICT(user_id) DO UPDATE SET
+            original_name = excluded.original_name, file_data = excluded.file_data, file_size = excluded.file_size,
+            mime_type = excluded.mime_type, uploaded_by = excluded.uploaded_by,
+            duration_months = excluded.duration_months, duration_days = excluded.duration_days,
+            expiration_date = excluded.expiration_date, visible_from = excluded.visible_from,
+            updated_at = CURRENT_TIMESTAMP`,
+        [userId, req.file.originalname, req.file.buffer.toString('base64'), req.file.size, req.file.mimetype,
+            req.user.username, months, days, modifier(months, 'months'), modifier(days, 'days'), req.body.visibleFrom || null]
+    );
+    if (changes === 0) throw new Error('PDF not saved');
 
-                // Convert to base64 string for BLOB storage
-                const fileData = req.file.buffer.toString('base64');
-
-                if (existingPdf) {
-                    // Update existing record with new duration
-                    db.runCallback(`
-                        UPDATE user_pdf_files
-                        SET original_name = ?,
-                            file_data = ?,
-                            file_size = ?,
-                            mime_type = ?,
-                            uploaded_by = ?,
-                            duration_months = ?,
-                            duration_days = ?,
-                            expiration_date = datetime('now', '+' || ? || ' months', '+' || ? || ' days'),
-                            visible_from = ?,
-                            updated_at = CURRENT_TIMESTAMP
-                        WHERE user_id = ?
-                    `, [
-                        req.file.originalname,
-                        fileData,
-                        req.file.size,
-                        req.file.mimetype,
-                        req.user.username,
-                        durationMonths,
-                        durationDays,
-                        durationMonths,
-                        durationDays,
-                        visibleFrom || null,
-                        userId
-                    ], (err) => {
-                        db.close();
-
-                        if (err) {
-                            console.error('Database error:', err.message);
-                            return res.status(500).json({
-                                success: false,
-                                error: 'Failed to update PDF record'
-                            });
-                        }
-
-                        console.log(`Admin ${req.user.username} updated PDF for user ID ${userId}`);
-
-                        res.json({
-                            success: true,
-                            message: 'PDF updated successfully',
-                            data: {
-                                originalName: req.file.originalname,
-                                fileSize: req.file.size
-                            }
-                        });
-                    });
-                } else {
-                    // Insert new record with duration
-                    db.runCallback(`
-                        INSERT INTO user_pdf_files (user_id, original_name, file_data, file_size, mime_type, uploaded_by, duration_months, duration_days, expiration_date, visible_from)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+' || ? || ' months', '+' || ? || ' days'), ?)
-                    `, [
-                        userId,
-                        req.file.originalname,
-                        fileData,
-                        req.file.size,
-                        req.file.mimetype,
-                        req.user.username,
-                        durationMonths,
-                        durationDays,
-                        durationMonths,
-                        durationDays,
-                        visibleFrom || null
-                    ], (err) => {
-                        db.close();
-
-                        if (err) {
-                            console.error('Database error:', err.message);
-                            return res.status(500).json({
-                                success: false,
-                                error: 'Failed to save PDF record'
-                            });
-                        }
-
-                        console.log(`Admin ${req.user.username} uploaded PDF for user ID ${userId}`);
-
-                        res.json({
-                            success: true,
-                            message: 'PDF uploaded successfully',
-                            data: {
-                                originalName: req.file.originalname,
-                                fileSize: req.file.size
-                            }
-                        });
-                    });
-                }
-            });
-        });
-    } catch (error) {
-        console.error('Upload error:', error.message);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to upload PDF'
-        });
-    }
-});
+    res.json({
+        success: true,
+        message: 'PDF uploaded successfully',
+        data: { originalName: req.file.originalname, fileSize: req.file.size },
+    });
+}));
 
 // DELETE /api/pdf/admin/delete/:userId
-// Delete PDF for a specific user (Admin only)
-router.delete('/admin/delete/:userId', authenticateToken, requireAdmin, async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const db = createDatabase();
+router.delete('/admin/delete/:userId', admin, route(async (req, res) => {
+    const { changes } = await db.run('DELETE FROM user_pdf_files WHERE user_id = ?', [id(req.params.userId, 'user ID')]);
+    if (changes === 0) throw notFound('No PDF found for this user');
+    res.json({ success: true, message: 'PDF deleted successfully' });
+}));
 
-        // Check if PDF exists
-        db.getCallback('SELECT * FROM user_pdf_files WHERE user_id = ?', [userId], (err, pdf) => {
-            if (err) {
-                db.close();
-                console.error('Database error:', err.message);
-                return res.status(500).json({
-                    success: false,
-                    error: 'Database error'
-                });
-            }
+// GET /api/pdf/admin/user/:userId — plan details (null when there is none)
+router.get('/admin/user/:userId', admin, route(async (req, res) => {
+    const pdf = await db.get(
+        `SELECT id, user_id, original_name, file_size, mime_type, uploaded_at, uploaded_by, updated_at,
+                duration_months, duration_days, expiration_date, visible_from
+         FROM user_pdf_files WHERE user_id = ?`,
+        [id(req.params.userId, 'user ID')]
+    );
+    res.json({
+        success: true,
+        data: pdf && {
+            id: pdf.id,
+            userId: pdf.user_id,
+            originalName: pdf.original_name,
+            fileSize: pdf.file_size,
+            mimeType: pdf.mime_type,
+            uploadedAt: pdf.uploaded_at,
+            uploadedBy: pdf.uploaded_by,
+            updatedAt: pdf.updated_at,
+            durationMonths: pdf.duration_months,
+            durationDays: pdf.duration_days,
+            expirationDate: pdf.expiration_date,
+            visibleFrom: pdf.visible_from,
+        },
+    });
+}));
 
-            if (!pdf) {
-                db.close();
-                return res.status(404).json({
-                    success: false,
-                    error: 'No PDF found for this user'
-                });
-            }
+// PUT /api/pdf/admin/extend/:userId — Body: { additionalMonths?, additionalDays? } (negative values shorten)
+router.put('/admin/extend/:userId', admin, route(async (req, res) => {
+    const userId = id(req.params.userId, 'user ID');
+    const addMonths = int(req.body.additionalMonths, 'additionalMonths');
+    const addDays = int(req.body.additionalDays, 'additionalDays');
+    if (addMonths === 0 && addDays === 0) throw badRequest('Must provide at least additionalMonths or additionalDays');
 
-            // Delete from database (BLOB is removed automatically)
-            db.runCallback('DELETE FROM user_pdf_files WHERE user_id = ?', [userId], (err) => {
-                db.close();
+    const pdf = await db.get('SELECT expiration_date, duration_months, duration_days FROM user_pdf_files WHERE user_id = ?', [userId]);
+    if (!pdf) throw notFound('No PDF found for this user');
 
-                if (err) {
-                    console.error('Database error:', err.message);
-                    return res.status(500).json({
-                        success: false,
-                        error: 'Failed to delete PDF record'
-                    });
-                }
-
-                console.log(`Admin ${req.user.username} deleted PDF for user ID ${userId}`);
-
-                res.json({
-                    success: true,
-                    message: 'PDF deleted successfully'
-                });
-            });
-        });
-    } catch (error) {
-        console.error('Delete error:', error.message);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to delete PDF'
-        });
+    let months = pdf.duration_months + addMonths;
+    let days = pdf.duration_days + addDays;
+    while (days < 0 && months > 0) { // borrow a month (approximated as 30 days)
+        months -= 1;
+        days += 30;
     }
-});
-
-// GET /api/pdf/admin/user/:userId
-// Get PDF info for a specific user (Admin only)
-router.get('/admin/user/:userId', authenticateToken, requireAdmin, async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const db = createDatabase();
-
-        db.getCallback('SELECT id, user_id, original_name, file_size, mime_type, uploaded_at, uploaded_by, updated_at, duration_months, duration_days, expiration_date, visible_from FROM user_pdf_files WHERE user_id = ?', [userId], (err, pdf) => {
-            db.close();
-
-            if (err) {
-                console.error('Database error:', err.message);
-                return res.status(500).json({
-                    success: false,
-                    error: 'Database error'
-                });
-            }
-
-            if (!pdf) {
-                return res.json({
-                    success: true,
-                    data: null
-                });
-            }
-
-            res.json({
-                success: true,
-                data: {
-                    id: pdf.id,
-                    userId: pdf.user_id,
-                    originalName: pdf.original_name,
-                    fileSize: pdf.file_size,
-                    mimeType: pdf.mime_type,
-                    uploadedAt: pdf.uploaded_at,
-                    uploadedBy: pdf.uploaded_by,
-                    updatedAt: pdf.updated_at,
-                    durationMonths: pdf.duration_months,
-                    durationDays: pdf.duration_days,
-                    expirationDate: pdf.expiration_date,
-                    visibleFrom: pdf.visible_from
-                }
-            });
-        });
-    } catch (error) {
-        console.error('Fetch error:', error.message);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch PDF info'
-        });
+    if (months < 0 || (months === 0 && days < 0)) {
+        throw badRequest(`La durata non può essere negativa. Durata attuale: ${pdf.duration_months} mesi e ${pdf.duration_days} giorni.`);
     }
-});
 
-// PUT /api/pdf/admin/extend/:userId
-// Extend PDF duration for a specific user (Admin only)
-router.put('/admin/extend/:userId', authenticateToken, requireAdmin, async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const { additionalMonths = 0, additionalDays = 0 } = req.body;
+    // No expiry yet: count the whole duration from now; otherwise shift the current expiry
+    await db.run(
+        pdf.expiration_date
+            ? `UPDATE user_pdf_files SET duration_months = ?, duration_days = ?, expiration_date = datetime(expiration_date, ?, ?),
+                   updated_at = CURRENT_TIMESTAMP WHERE user_id = ?`
+            : `UPDATE user_pdf_files SET duration_months = ?, duration_days = ?, expiration_date = datetime('now', ?, ?),
+                   updated_at = CURRENT_TIMESTAMP WHERE user_id = ?`,
+        pdf.expiration_date
+            ? [months, days, modifier(addMonths, 'months'), modifier(addDays, 'days'), userId]
+            : [months, days, modifier(months, 'months'), modifier(days, 'days'), userId]
+    );
+    res.json({
+        success: true,
+        message: 'PDF duration extended successfully',
+        data: { newDurationMonths: months, newDurationDays: days },
+    });
+}));
 
-        if (additionalMonths === 0 && additionalDays === 0) {
-            return res.status(400).json({
-                success: false,
-                error: 'Must provide at least additionalMonths or additionalDays'
-            });
-        }
+// PUT /api/pdf/admin/visible-from/:userId — Body: { visibleFrom: date | null } (null unlocks)
+router.put('/admin/visible-from/:userId', admin, route(async (req, res) => {
+    const visibleFrom = req.body.visibleFrom || null;
+    const { changes } = await db.run(
+        'UPDATE user_pdf_files SET visible_from = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
+        [visibleFrom, id(req.params.userId, 'user ID')]
+    );
+    if (changes === 0) throw notFound('No PDF found for this user');
+    res.json({
+        success: true,
+        message: visibleFrom ? `Scheda bloccata fino al ${visibleFrom}` : 'Scheda sbloccata',
+        data: { visibleFrom },
+    });
+}));
 
-        const db = createDatabase();
+// ─── Client ──────────────────────────────────────────────────────────────────
 
-        // Check if PDF exists
-        db.getCallback('SELECT id, expiration_date, duration_months, duration_days FROM user_pdf_files WHERE user_id = ?', [userId], (err, pdf) => {
-            if (err) {
-                db.close();
-                console.error('Database error:', err.message);
-                return res.status(500).json({
-                    success: false,
-                    error: 'Database error'
-                });
-            }
+// GET /api/pdf/my-pdf — plan details, or { locked, visibleFrom } before it becomes visible
+router.get('/my-pdf', authenticateToken, route(async (req, res) => {
+    const pdf = await db.get(
+        `SELECT original_name, file_size, uploaded_at, updated_at, expiration_date, visible_from
+         FROM user_pdf_files WHERE user_id = ?`,
+        [req.user.userId]
+    );
+    if (!pdf) return res.json({ success: true, data: null, message: 'No training plan available yet' });
+    if (isLocked(pdf)) return res.json({ success: true, data: { locked: true, visibleFrom: pdf.visible_from } });
+    res.json({
+        success: true,
+        data: {
+            locked: false,
+            originalName: pdf.original_name,
+            fileSize: pdf.file_size,
+            uploadedAt: pdf.uploaded_at,
+            updatedAt: pdf.updated_at,
+            expirationDate: pdf.expiration_date,
+            visibleFrom: pdf.visible_from,
+        },
+    });
+}));
 
-            if (!pdf) {
-                db.close();
-                return res.status(404).json({
-                    success: false,
-                    error: 'No PDF found for this user'
-                });
-            }
+// GET /api/pdf/download[?userId] — the client's own plan; the admin may pass any userId
+router.get('/download', authenticateToken, route(async (req, res) => {
+    const admin = isAdmin(req.user);
+    if (req.query.userId && !admin) throw forbidden('Access denied');
+    const userId = req.query.userId ? id(req.query.userId, 'user ID') : req.user.userId;
 
-            // Calculate new duration
-            let newDurationMonths = pdf.duration_months + additionalMonths;
-            let newDurationDays = pdf.duration_days + additionalDays;
+    const pdf = await db.get('SELECT file_data, original_name, mime_type, visible_from FROM user_pdf_files WHERE user_id = ?', [userId]);
+    if (!pdf) throw notFound('No training plan available');
+    if (!admin && isLocked(pdf)) throw forbidden('Training plan not yet available');
 
-            // Normalize: if days are negative, subtract from months
-            while (newDurationDays < 0 && newDurationMonths > 0) {
-                newDurationMonths -= 1;
-                newDurationDays += 30; // Approximate month as 30 days
-            }
-
-            // Prevent negative durations
-            if (newDurationMonths < 0 || (newDurationMonths === 0 && newDurationDays < 0)) {
-                db.close();
-                return res.status(400).json({
-                    success: false,
-                    error: 'La durata non può essere negativa. Durata attuale: ' +
-                           pdf.duration_months + ' mesi e ' + pdf.duration_days + ' giorni.'
-                });
-            }
-
-            // If expiration_date is null, calculate from now
-            // Otherwise, modify the existing date
-            let updateQuery;
-            if (!pdf.expiration_date) {
-                // Calculate new expiration from current time with total duration
-                updateQuery = `
-                    UPDATE user_pdf_files
-                    SET duration_months = ?,
-                        duration_days = ?,
-                        expiration_date = datetime('now', '+' || ? || ' months', '+' || ? || ' days'),
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE user_id = ?
-                `;
-            } else {
-                // Build the datetime modifiers correctly for positive and negative values
-                const monthsModifier = additionalMonths >= 0
-                    ? `'+${additionalMonths} months'`
-                    : `'-${Math.abs(additionalMonths)} months'`;
-                const daysModifier = additionalDays >= 0
-                    ? `'+${additionalDays} days'`
-                    : `'-${Math.abs(additionalDays)} days'`;
-
-                updateQuery = `
-                    UPDATE user_pdf_files
-                    SET duration_months = ?,
-                        duration_days = ?,
-                        expiration_date = datetime(expiration_date, ${monthsModifier}, ${daysModifier}),
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE user_id = ?
-                `;
-            }
-
-            db.runCallback(updateQuery, [
-                newDurationMonths,
-                newDurationDays,
-                ...(pdf.expiration_date ? [] : [newDurationMonths, newDurationDays]),
-                userId
-            ], (err) => {
-                db.close();
-
-                if (err) {
-                    console.error('Database error:', err.message);
-                    return res.status(500).json({
-                        success: false,
-                        error: 'Failed to extend PDF duration'
-                    });
-                }
-
-                console.log(`Admin ${req.user.username} extended PDF duration for user ID ${userId} by ${additionalMonths} months and ${additionalDays} days`);
-
-                res.json({
-                    success: true,
-                    message: 'PDF duration extended successfully',
-                    data: {
-                        newDurationMonths,
-                        newDurationDays
-                    }
-                });
-            });
-        });
-    } catch (error) {
-        console.error('Extend error:', error.message);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to extend PDF duration'
-        });
-    }
-});
-
-// PUT /api/pdf/admin/visible-from/:userId
-// Set or clear the visible_from date for a user's PDF (Admin only)
-router.put('/admin/visible-from/:userId', authenticateToken, requireAdmin, async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const { visibleFrom } = req.body; // ISO date string or null to clear
-
-        const db = createDatabase();
-
-        db.getCallback('SELECT id FROM user_pdf_files WHERE user_id = ?', [userId], (err, pdf) => {
-            if (err) {
-                db.close();
-                console.error('Database error:', err.message);
-                return res.status(500).json({ success: false, error: 'Database error' });
-            }
-
-            if (!pdf) {
-                db.close();
-                return res.status(404).json({ success: false, error: 'No PDF found for this user' });
-            }
-
-            db.runCallback(
-                'UPDATE user_pdf_files SET visible_from = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
-                [visibleFrom || null, userId],
-                (err) => {
-                    db.close();
-
-                    if (err) {
-                        console.error('Database error:', err.message);
-                        return res.status(500).json({ success: false, error: 'Failed to update visible_from' });
-                    }
-
-                    console.log(`Admin ${req.user.username} set visible_from=${visibleFrom || 'null'} for user ID ${userId}`);
-
-                    res.json({
-                        success: true,
-                        message: visibleFrom ? 'Scheda bloccata fino al ' + visibleFrom : 'Scheda sbloccata',
-                        data: { visibleFrom: visibleFrom || null }
-                    });
-                }
-            );
-        });
-    } catch (error) {
-        console.error('Visible-from update error:', error.message);
-        res.status(500).json({ success: false, error: 'Failed to update visible_from' });
-    }
-});
-
-// ==================== USER ROUTES ====================
-
-// GET /api/pdf/my-pdf
-// Get current user's PDF info (User)
-router.get('/my-pdf', authenticateToken, async (req, res) => {
-    try {
-        const userId = req.user.userId;
-        const db = createDatabase();
-
-        db.getCallback('SELECT id, original_name, file_size, mime_type, uploaded_at, updated_at, expiration_date, visible_from FROM user_pdf_files WHERE user_id = ?', [userId], (err, pdf) => {
-            db.close();
-
-            if (err) {
-                console.error('Database error:', err.message);
-                return res.status(500).json({
-                    success: false,
-                    error: 'Database error'
-                });
-            }
-
-            if (!pdf) {
-                return res.json({
-                    success: true,
-                    data: null,
-                    message: 'No training plan available yet'
-                });
-            }
-
-            // If visible_from is set and is in the future, return locked state
-            if (pdf.visible_from && new Date(pdf.visible_from) > new Date()) {
-                return res.json({
-                    success: true,
-                    data: {
-                        locked: true,
-                        visibleFrom: pdf.visible_from
-                    }
-                });
-            }
-
-            res.json({
-                success: true,
-                data: {
-                    locked: false,
-                    originalName: pdf.original_name,
-                    fileSize: pdf.file_size,
-                    uploadedAt: pdf.uploaded_at,
-                    updatedAt: pdf.updated_at,
-                    expirationDate: pdf.expiration_date,
-                    visibleFrom: pdf.visible_from
-                }
-            });
-        });
-    } catch (error) {
-        console.error('Fetch error:', error.message);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch PDF info'
-        });
-    }
-});
-
-// GET /api/pdf/download
-// Download current user's PDF (User) or specific user's PDF (Admin with userId query param)
-router.get('/download', authenticateToken, async (req, res) => {
-    try {
-        // Check if user is admin
-        const adminUsername = process.env.ADMIN_USERNAME || 'admin';
-        const isAdmin = req.user.username === adminUsername;
-
-        // Determine target user ID
-        let targetUserId = req.user.userId;
-
-        // If admin and userId is provided, download that user's PDF
-        if (req.query.userId && isAdmin) {
-            targetUserId = parseInt(req.query.userId);
-        } else if (req.query.userId && !isAdmin) {
-            // Non-admin users can't download other users' PDFs
-            return res.status(403).json({
-                success: false,
-                error: 'Access denied'
-            });
-        }
-
-        const db = createDatabase();
-
-        db.getCallback('SELECT file_data, original_name, mime_type, visible_from FROM user_pdf_files WHERE user_id = ?', [targetUserId], (err, pdf) => {
-            db.close();
-
-            if (err) {
-                console.error('Database error:', err.message);
-                return res.status(500).json({
-                    success: false,
-                    error: 'Database error'
-                });
-            }
-
-            if (!pdf) {
-                return res.status(404).json({
-                    success: false,
-                    error: 'No training plan available'
-                });
-            }
-
-            // Block download for non-admin users if visible_from is in the future
-            if (!isAdmin && pdf.visible_from && new Date(pdf.visible_from) > new Date()) {
-                return res.status(403).json({
-                    success: false,
-                    error: 'Training plan not yet available'
-                });
-            }
-
-            // Decode base64 string back to buffer
-            const fileBuffer = Buffer.from(pdf.file_data, 'base64');
-
-            if (isAdmin && targetUserId !== req.user.userId) {
-                console.log(`Admin ${req.user.username} downloaded PDF for user ID ${targetUserId}: ${pdf.original_name}`);
-            } else {
-                console.log(`User ${req.user.username} downloaded their PDF: ${pdf.original_name}`);
-            }
-
-            // Set headers for PDF download
-            res.setHeader('Content-Type', pdf.mime_type || 'application/pdf');
-            res.setHeader('Content-Disposition', `attachment; filename="${pdf.original_name}"`);
-            res.setHeader('Content-Length', fileBuffer.length);
-
-            // Send binary data
-            res.send(fileBuffer);
-        });
-    } catch (error) {
-        console.error('Download error:', error.message);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to download PDF'
-        });
-    }
-});
+    const file = Buffer.from(pdf.file_data, 'base64');
+    res.set({
+        'Content-Type': pdf.mime_type || 'application/pdf',
+        'Content-Disposition': attachment(pdf.original_name),
+        'Content-Length': file.length,
+    });
+    res.send(file);
+}));
 
 module.exports = router;

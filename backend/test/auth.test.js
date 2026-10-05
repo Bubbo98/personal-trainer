@@ -43,10 +43,16 @@ describe('auth', () => {
         assert.equal(res.status, 401);
     });
 
-    it('POST /api/auth/login validates input and credentials', async () => {
-        assert.equal((await api('POST', '/api/auth/login', { body: {} })).status, 400);
-        const res = await api('POST', '/api/auth/login', { body: { username: ADMIN.username, password: 'wrong-password' } });
-        assert.equal(res.status, 401);
+    it('POST /api/auth/login validates input and credentials, and limits attempts', async () => {
+        const headers = { 'X-Forwarded-For': '203.0.113.7' }; // one client, behind the proxy
+        assert.equal((await api('POST', '/api/auth/login', { body: {}, headers })).status, 400);
+        const wrong = () => api('POST', '/api/auth/login', { body: { username: ADMIN.username, password: 'wrong-password' }, headers });
+        assert.equal((await wrong()).status, 401);
+        for (let i = 0; i < 8; i++) await wrong();
+        assert.equal((await wrong()).status, 429);
+        // Another client is not affected
+        const other = await api('POST', '/api/auth/login', { body: { username: ADMIN.username, password: 'x' }, headers: { 'X-Forwarded-For': '203.0.113.8' } });
+        assert.equal(other.status, 401);
     });
 });
 

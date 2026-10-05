@@ -5,15 +5,11 @@ require('dotenv').config();
  * One libsql client for the whole process: Turso in production, a local file
  * otherwise (TURSO_DATABASE_URL="file:…", or DB_PATH as a fallback).
  *
- * Promise API (use this):
  *   db.query(sql, params)   → rows
  *   db.get(sql, params)     → first row or null
  *   db.run(sql, params)     → { lastId, changes }
  *   db.batch([{ sql, params }])        → runs every statement in one transaction
  *   db.transaction(async (tx) => …)    → tx has query/get/run; commits or rolls back
- *
- * The old callback methods (getCallback / allCallback / runCallback) remain
- * while routes are migrated.
  */
 
 let client = null;
@@ -76,26 +72,4 @@ const db = {
     },
 };
 
-// ── Legacy callback API ──────────────────────────────────────────────────────
-
-function createDatabase() {
-    return {
-        ...db,
-        close: () => { /* shared client — never closed */ },
-
-        getCallback(sql, params, callback) {
-            db.get(sql, params).then((row) => callback(null, row), (err) => callback(err, null));
-        },
-        allCallback(sql, params, callback) {
-            db.query(sql, params).then((rows) => callback(null, rows), (err) => callback(err, null));
-        },
-        runCallback(sql, params, callback) {
-            db.run(sql, params).then(
-                ({ lastId, changes }) => callback.call({ lastID: lastId, changes }, null),
-                (err) => callback(err)
-            );
-        },
-    };
-}
-
-module.exports = { db, createDatabase };
+module.exports = { db };

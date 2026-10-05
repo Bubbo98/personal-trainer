@@ -350,6 +350,9 @@ describe('admin PDF', () => {
     it('a plan can be extended and scheduled', async () => {
         const before = (await api('GET', `/api/pdf/admin/user/${user}`, { token: token() })).body.data.expirationDate;
         assert.equal((await api('PUT', `/api/pdf/admin/extend/${user}`, { token: token(), body: {} })).status, 400);
+        // Values reach SQL as parameters: anything but a whole number is refused
+        const injection = await api('PUT', `/api/pdf/admin/extend/${user}`, { token: token(), body: { additionalMonths: "1 months'), file_data = ('x" } });
+        assert.equal(injection.status, 400);
         assert.equal((await api('PUT', `/api/pdf/admin/extend/${user}`, { token: token(), body: { additionalDays: 10 } })).status, 200);
         const after = (await api('GET', `/api/pdf/admin/user/${user}`, { token: token() })).body.data.expirationDate;
         assert.ok(new Date(after) > new Date(before));
@@ -441,7 +444,7 @@ describe('admin integration catalog and body composition', () => {
     });
 });
 
-describe('cron and analytics', () => {
+describe('cron', () => {
     it('cron routes need the secret', async () => {
         assert.equal((await api('GET', '/api/cron/cleanup-users?dryRun=1')).status, 401);
         assert.equal((await api('GET', '/api/cron/cleanup-users?dryRun=1', { headers: { Authorization: 'Bearer wrong' } })).status, 401);
@@ -456,6 +459,25 @@ describe('cron and analytics', () => {
         assert.ok(Number(users.rows[0].n) >= 38);
     });
 
+    it('cleanup-users deletes deactivated clients with all their data, never the Test User', async () => {
+        const created = await api('POST', '/api/admin/users', { token: token(), body: { username: 'to.cleanup', firstName: 'Old', lastName: 'Client' } });
+        const userId = created.body.data.user.id;
+        await api('POST', `/api/training-days/users/${userId}/training-days`, { token: token(), body: { dayNumber: 1 } });
+        await api('DELETE', `/api/admin/users/${userId}`, { token: token() });
+
+        const res = await api('GET', '/api/cron/cleanup-users', { headers: { Authorization: 'Bearer cron-test-secret' } });
+        assert.equal(res.status, 200);
+        assert.ok(res.body.deleted.some((u) => u.id === userId));
+        assert.deepEqual(res.body.failed, []);
+        for (const table of ['users', 'user_training_days']) {
+            const column = table === 'users' ? 'id' : 'user_id';
+            const left = await db().execute({ sql: `SELECT count(*) n FROM ${table} WHERE ${column} = ?`, args: [userId] });
+            assert.equal(Number(left.rows[0].n), 0, table);
+        }
+        const testUser = await db().execute({ sql: 'SELECT count(*) n FROM users WHERE id = ?', args: [TEST_USER.id] });
+        assert.equal(Number(testUser.rows[0].n), 1);
+    });
+
     it('check-in reminders skip exempt clients', async () => {
         const { clientsToRemind } = require('../services/checkins');
         const exempt = await db().execute(`SELECT u.id FROM users u JOIN user_pdf_files p ON p.user_id = u.id
@@ -467,7 +489,4 @@ describe('cron and analytics', () => {
         assert.ok(!users.some((u) => exemptIds.has(Number(u.userId))));
     });
 
-    it('analytics answers 503 when Vercel is not configured', async () => {
-        assert.equal((await api('GET', '/api/analytics', { token: token() })).status, 503);
-    });
 });

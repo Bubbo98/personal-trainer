@@ -1,295 +1,107 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { createDatabase } = require('../utils/database');
-const { v4: uuidv4 } = require('uuid');
+const rateLimit = require('express-rate-limit');
+const { db } = require('../utils/database');
+const { route, badRequest, unauthorized, forbidden } = require('../utils/http');
 const { isAccessExpired, PLAN_EXPIRED_MESSAGE } = require('../utils/userRetention');
-require('dotenv').config();
 
+// Sessions: password login (admin), dashboard login links (clients), token check
 const router = express.Router();
+
+const SESSION_TTL = '7d';
+
+// Password guessing: 10 attempts per IP every 15 minutes
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 10,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: { success: false, error: 'Troppi tentativi di accesso, riprova tra qualche minuto' },
+});
+
+const sessionToken = (user) =>
+    jwt.sign({ userId: user.id, username: user.username, email: user.email }, process.env.JWT_SECRET, { expiresIn: SESSION_TTL });
+
+const toUser = (u) => ({
+    id: u.id,
+    username: u.username,
+    email: u.email,
+    firstName: u.first_name,
+    lastName: u.last_name,
+    trainerId: u.trainer_id || 1,
+});
+
+function recordLogin(userId) {
+    db.run('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?', [userId])
+        .catch((err) => console.error('Error updating last login:', err.message));
+}
 
 /** Client links stop working some days after the plan expired (see userRetention). */
 async function planAccessExpired(userId) {
-    const db = createDatabase();
     try {
-        return await isAccessExpired(db, userId);
+        return await isAccessExpired(userId);
     } catch (err) {
-        // Never lock clients out because of a failed check
-        console.error('Plan expiry check failed:', err);
+        console.error('Plan expiry check failed:', err); // never lock clients out because of a failed check
         return false;
-    } finally {
-        db.close();
     }
 }
 
-// Generate JWT Token
-const generateToken = (user) => {
-    return jwt.sign(
-        {
-            userId: user.id,
-            username: user.username,
-            email: user.email
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: '7d' } // Token expires in 7 days
+const planExpired = () => forbidden(PLAN_EXPIRED_MESSAGE, 'PLAN_EXPIRED');
+
+const verifyJwt = (token) => new Promise((resolve) => {
+    jwt.verify(token, process.env.JWT_SECRET, (err, payload) => resolve(err ? null : payload));
+});
+
+// POST /api/auth/login — Body: { username, password }
+router.post('/login', loginLimiter, route(async (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) throw badRequest('Username and password are required');
+
+    const user = await db.get('SELECT * FROM users WHERE username = ? AND is_active = 1', [username]);
+    if (!user || !user.password_hash || !(await bcrypt.compare(password, user.password_hash))) {
+        throw unauthorized('Invalid credentials');
+    }
+
+    recordLogin(user.id);
+    const { trainerId, ...profile } = toUser(user);
+    res.json({ success: true, message: 'Login successful', data: { token: sessionToken(user), user: profile } });
+}));
+
+// POST /api/auth/login-link — Body: { token } (from the dashboard link) → session token
+router.post('/login-link', route(async (req, res) => {
+    const { token } = req.body;
+    if (!token) throw badRequest('Token is required');
+
+    const payload = await verifyJwt(token);
+    if (!payload) throw unauthorized('Invalid or expired token');
+    if (payload.type !== 'login_link') throw unauthorized('Invalid token type');
+
+    const user = await db.get('SELECT * FROM users WHERE id = ? AND is_active = 1', [payload.userId]);
+    if (!user) throw unauthorized('User not found or inactive');
+    if (await planAccessExpired(user.id)) throw planExpired();
+
+    recordLogin(user.id);
+    res.json({ success: true, message: 'Login successful', data: { token: sessionToken(user), user: toUser(user) } });
+}));
+
+// GET /api/auth/verify — the current session's user
+router.get('/verify', route(async (req, res) => {
+    const header = req.headers.authorization;
+    const token = header && header.split(' ')[1];
+    if (!token) throw unauthorized('No token provided');
+
+    const payload = await verifyJwt(token);
+    if (!payload) throw unauthorized('Invalid token');
+
+    const user = await db.get(
+        'SELECT id, username, email, first_name, last_name, trainer_id FROM users WHERE id = ? AND is_active = 1',
+        [payload.userId]
     );
-};
+    if (!user) throw unauthorized('User not found');
+    if (await planAccessExpired(user.id)) throw planExpired();
 
-// Generate login link token (longer expiration for email links)
-const generateLoginLinkToken = (user) => {
-    return jwt.sign(
-        {
-            userId: user.id,
-            username: user.username,
-            email: user.email,
-            type: 'login_link'
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: '30d' } // Login link expires in 30 days
-    );
-};
-
-// POST /api/auth/login
-// Traditional login with username/password
-router.post('/login', async (req, res) => {
-    try {
-        const { username, password } = req.body;
-
-        if (!username || !password) {
-            return res.status(400).json({
-                success: false,
-                error: 'Username and password are required'
-            });
-        }
-
-        const db = createDatabase();
-
-        db.getCallback(
-            'SELECT * FROM users WHERE username = ? AND is_active = 1',
-            [username],
-            async (err, user) => {
-                db.close();
-
-                if (err) {
-                    console.error('Database error:', err.message);
-                    return res.status(500).json({
-                        success: false,
-                        error: 'Database error'
-                    });
-                }
-
-                if (!user) {
-                    return res.status(401).json({
-                        success: false,
-                        error: 'Invalid credentials'
-                    });
-                }
-
-                // Verify password
-                const validPassword = await bcrypt.compare(password, user.password_hash);
-                if (!validPassword) {
-                    return res.status(401).json({
-                        success: false,
-                        error: 'Invalid credentials'
-                    });
-                }
-
-                // Generate JWT token
-                const token = generateToken(user);
-
-                // Update last login
-                const updateDb = createDatabase();
-                updateDb.runCallback(
-                    'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?',
-                    [user.id],
-                    function(err) {
-                        updateDb.close();
-                        if (err) {
-                            console.error('Error updating last login:', err);
-                        }
-                    }
-                );
-
-                res.json({
-                    success: true,
-                    message: 'Login successful',
-                    data: {
-                        token,
-                        user: {
-                            id: user.id,
-                            username: user.username,
-                            email: user.email,
-                            firstName: user.first_name,
-                            lastName: user.last_name
-                        }
-                    }
-                });
-            }
-        );
-    } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Server error'
-        });
-    }
-});
-
-// POST /api/auth/login-link
-// Verify login link token (for direct access via email/link)
-router.post('/login-link', (req, res) => {
-    try {
-        const { token } = req.body;
-
-        if (!token) {
-            return res.status(400).json({
-                success: false,
-                error: 'Token is required'
-            });
-        }
-
-        jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-            if (err) {
-                console.error('Token verification failed:', err.message);
-                return res.status(401).json({
-                    success: false,
-                    error: 'Invalid or expired token'
-                });
-            }
-
-            if (decoded.type !== 'login_link') {
-                return res.status(401).json({
-                    success: false,
-                    error: 'Invalid token type'
-                });
-            }
-
-            const db = createDatabase();
-
-            db.getCallback(
-                'SELECT * FROM users WHERE id = ? AND is_active = 1',
-                [decoded.userId],
-                async (err, user) => {
-                    db.close();
-
-                    if (err) {
-                        console.error('Database error:', err.message);
-                        return res.status(500).json({
-                            success: false,
-                            error: 'Database error'
-                        });
-                    }
-
-                    if (!user) {
-                        return res.status(401).json({
-                            success: false,
-                            error: 'User not found or inactive'
-                        });
-                    }
-
-                    if (await planAccessExpired(user.id)) {
-                        return res.status(403).json({ success: false, code: 'PLAN_EXPIRED', error: PLAN_EXPIRED_MESSAGE });
-                    }
-
-                    // Generate a new regular token for the session
-                    const sessionToken = generateToken(user);
-
-                    // Update last login
-                    const updateDb = createDatabase();
-                    updateDb.runCallback(
-                        'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?',
-                        [user.id],
-                        function(err) {
-                            updateDb.close();
-                            if (err) {
-                                console.error('Error updating last login:', err);
-                            }
-                        }
-                    );
-
-                    res.json({
-                        success: true,
-                        message: 'Login successful',
-                        data: {
-                            token: sessionToken,
-                            user: {
-                                id: user.id,
-                                username: user.username,
-                                email: user.email,
-                                firstName: user.first_name,
-                                lastName: user.last_name,
-                                trainerId: user.trainer_id || 1
-                            }
-                        }
-                    });
-                }
-            );
-        });
-    } catch (error) {
-        console.error('Login link error:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Server error'
-        });
-    }
-});
-
-// GET /api/auth/verify
-// Verify current token and return user info
-router.get('/verify', (req, res) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) {
-        return res.status(401).json({
-            success: false,
-            error: 'No token provided'
-        });
-    }
-
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-            return res.status(401).json({
-                success: false,
-                error: 'Invalid token'
-            });
-        }
-
-        const db = createDatabase();
-
-        db.getCallback(
-            'SELECT id, username, email, first_name, last_name, trainer_id FROM users WHERE id = ? AND is_active = 1',
-            [decoded.userId],
-            async (err, user) => {
-                db.close();
-
-                if (err || !user) {
-                    return res.status(401).json({
-                        success: false,
-                        error: 'User not found'
-                    });
-                }
-
-                if (await planAccessExpired(user.id)) {
-                    return res.status(403).json({ success: false, code: 'PLAN_EXPIRED', error: PLAN_EXPIRED_MESSAGE });
-                }
-
-                res.json({
-                    success: true,
-                    data: {
-                        user: {
-                            id: user.id,
-                            username: user.username,
-                            email: user.email,
-                            firstName: user.first_name,
-                            lastName: user.last_name,
-                            trainerId: user.trainer_id || 1
-                        }
-                    }
-                });
-            }
-        );
-    });
-});
+    res.json({ success: true, data: { user: toUser(user) } });
+}));
 
 module.exports = router;
