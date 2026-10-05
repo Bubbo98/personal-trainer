@@ -67,7 +67,9 @@ app.get('/api/health', (req, res) => {
         status: 'OK',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
-        environment: process.env.NODE_ENV
+        environment: process.env.NODE_ENV,
+        // Deployed commit (set by Vercel): tells which code is live after a push
+        version: (process.env.VERCEL_GIT_COMMIT_SHA || 'local').slice(0, 7)
     });
 });
 
