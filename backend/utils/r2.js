@@ -1,4 +1,4 @@
-const { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 // R2 Configuration - Set these in environment variables
@@ -42,32 +42,31 @@ async function getSignedVideoUrl(videoKey, expiresIn = 3600) {
   }
 }
 
-/**
- * Generate signed URLs for multiple videos
- * @param {string[]} videoKeys - Array of video keys
- * @param {number} expiresIn - Expiration time in seconds
- * @returns {Promise<Object>} - Object mapping video keys to signed URLs
- */
-async function getSignedVideoUrls(videoKeys, expiresIn = 3600) {
-  const urlPromises = videoKeys.map(async (key) => {
-    try {
-      const url = await getSignedVideoUrl(key, expiresIn);
-      return { key, url };
-    } catch (error) {
-      console.error(`Failed to generate URL for ${key}:`, error.message);
-      return { key, url: null };
-    }
-  });
+/** Signed URL, or null when signing fails (the video is still listed, just not playable). */
+async function signedUrlOrNull(key, expiresIn = 3600) {
+  if (!key) return null;
+  try {
+    return await getSignedVideoUrl(key, expiresIn);
+  } catch {
+    return null;
+  }
+}
 
-  const results = await Promise.all(urlPromises);
+/** Presigned PUT for a video upload from the admin's browser. */
+async function getVideoUploadUrl(key, contentType, expiresIn = 1800) {
+  const command = new PutObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key, ContentType: contentType });
+  return getSignedUrl(r2Client, command, { expiresIn });
+}
 
-  // Convert array to object for easier lookup
-  const urlMap = {};
-  results.forEach(({ key, url }) => {
-    urlMap[key] = url;
-  });
-
-  return urlMap;
+/** True when an object already exists under this key. */
+async function objectExists(key) {
+  try {
+    await r2Client.send(new HeadObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key }));
+    return true;
+  } catch (err) {
+    if (err && (err.name === 'NotFound' || (err.$metadata && err.$metadata.httpStatusCode === 404))) return false;
+    throw err;
+  }
 }
 
 // ── Thumbnails (stored under "thumbnails/" in the same bucket) ──────────────
@@ -103,7 +102,9 @@ async function deleteObject(key) {
 
 module.exports = {
   getSignedVideoUrl,
-  getSignedVideoUrls,
+  signedUrlOrNull,
+  getVideoUploadUrl,
+  objectExists,
   getThumbnailUploadUrl,
   putObject,
   deleteObject,

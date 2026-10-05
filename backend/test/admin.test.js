@@ -268,6 +268,27 @@ describe('admin workout plan', () => {
         assert.equal((await api('GET', `/api/workout/admin/logs/${TEST_USER.id}`, { token: token() })).status, 200);
     });
 
+    it('replacing a plan keeps the weights already logged in the history', async () => {
+        const user = 253; // Riccardo Ravani: 18 logged weights in the snapshot
+        const url = `/api/workout/admin/plan/${user}`;
+        const before = Number((await db().execute({ sql: 'SELECT count(*) n FROM exercise_logs WHERE user_id = ?', args: [user] })).rows[0].n);
+        assert.ok(before > 0);
+
+        // A freshly extracted plan has no ids: every old exercise is replaced
+        const res = await api('POST', url, { token: token(), body: { days: [{ dayNumber: 1, dayName: 'Giorno 1', exercises: [{ name: 'Nuovo', sets: '3', reps: '10' }] }] } });
+        assert.equal(res.status, 200);
+
+        const logs = (await db().execute({ sql: 'SELECT exercise_id, exercise_name FROM exercise_logs WHERE user_id = ?', args: [user] })).rows;
+        assert.equal(logs.length, before);
+        assert.ok(logs.every((l) => l.exercise_id === null && l.exercise_name));
+
+        const history = await api('GET', `/api/workout/admin/logs/${user}`, { token: token() });
+        assert.equal(history.body.data.logs.length, before);
+        assert.ok(history.body.data.logs.every((l) => l.exercise_name && l.day_name));
+        const client = await api('GET', '/api/workout/logs', { token: tokenFor({ id: user, username: 'Riccardo Ravani' }) });
+        assert.equal(client.body.data.logs.length, before);
+    });
+
     it('GET /api/workout/admin/links proposes and returns exercise ↔ video links', async () => {
         const res = await api('GET', `/api/workout/admin/links/${MICHELA}`, { token: token() });
         assert.equal(res.status, 200);

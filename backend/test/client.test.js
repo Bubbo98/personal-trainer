@@ -46,8 +46,14 @@ describe('client videos', () => {
         const res = await api('GET', `/api/videos/${id}`, { token: token() });
         assert.equal(res.status, 200);
         assert.equal(res.body.data.video.id, id);
-        const logs = await db().execute({ sql: 'SELECT count(*) n FROM access_logs WHERE user_id = ? AND video_id = ?', args: [TEST_USER.id, id] });
-        assert.equal(Number(logs.rows[0].n), 1);
+        // The access log is written without delaying the response
+        let logged = 0;
+        for (let i = 0; i < 20 && logged === 0; i++) {
+            const logs = await db().execute({ sql: 'SELECT count(*) n FROM access_logs WHERE user_id = ? AND video_id = ?', args: [TEST_USER.id, id] });
+            logged = Number(logs.rows[0].n);
+            if (!logged) await new Promise((r) => setTimeout(r, 25));
+        }
+        assert.equal(logged, 1);
     });
 
     it('GET /api/videos/:id refuses a video the user has no access to', async () => {
