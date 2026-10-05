@@ -83,7 +83,9 @@
     "network": "No connection or the server can't be reached. Check your network and try again.",
     "sessionExpired": "Your session has expired. Please sign in again.",
     "planExpired": "Your training plan has expired and access to the client area is suspended. Contact your personal trainer to renew it.",
-    "downloadFailed": "Download failed. Please try again later."
+    "downloadFailed": "Download failed. Please try again later.",
+    "crashTitle": "Something went wrong",
+    "crashMessage": "An unexpected error occurred. Reload the page; if the problem persists, contact your personal trainer."
   },
   "language": {
     "label": "Language",

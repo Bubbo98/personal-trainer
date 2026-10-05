@@ -446,7 +446,7 @@ const UserManagement: React.FC = () => {
               </div>
               <input
                 type="text"
-                placeholder={t('dashboard:searchPlaceholder')}
+                placeholder={t('dashboard:videos.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors"

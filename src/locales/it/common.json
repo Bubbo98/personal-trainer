@@ -83,7 +83,9 @@
     "network": "Connessione assente o server non raggiungibile. Controlla la rete e riprova.",
     "sessionExpired": "La sessione è scaduta. Accedi di nuovo.",
     "planExpired": "La tua scheda è scaduta e l'accesso all'area clienti è sospeso. Contatta il tuo personal trainer per rinnovarla.",
-    "downloadFailed": "Download non riuscito. Riprova più tardi."
+    "downloadFailed": "Download non riuscito. Riprova più tardi.",
+    "crashTitle": "Qualcosa è andato storto",
+    "crashMessage": "Si è verificato un errore imprevisto. Ricarica la pagina; se il problema continua, contatta il tuo personal trainer."
   },
   "language": {
     "label": "Lingua",

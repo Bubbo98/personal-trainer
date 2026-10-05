@@ -5,6 +5,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { Analytics } from '@vercel/analytics/react';
 import Home from './pages/Home';
 import PageLoader from './components/ui/PageLoader';
+import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProvider } from './components/ui/Toast';
 import { ConfirmProvider } from './components/ui/ConfirmDialog';
 import { queryClient } from './lib/queryClient';
@@ -23,7 +24,9 @@ const NotFound = lazy(() => import('./pages/NotFound'));
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
-  useEffect(() => window.scrollTo(0, 0), [pathname]);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
   return null;
 };
 
@@ -34,6 +37,7 @@ const App = () => (
         <ConfirmProvider>
           <BrowserRouter>
             <ScrollToTop />
+            <ErrorBoundary>
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/" element={<Home />} />
@@ -41,8 +45,7 @@ const App = () => (
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/services" element={<Services />} />
                 <Route path="/booking" element={<Booking />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/dashboard/:token" element={<Dashboard />} />
+                <Route path="/dashboard/:token?" element={<Dashboard />} />
                 <Route path="/admin" element={<AdminCMS />} />
                 <Route path="/admin/users/:userId" element={<AdminCMS />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
@@ -54,6 +57,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
+            </ErrorBoundary>
           </BrowserRouter>
           <Analytics />
         </ConfirmProvider>

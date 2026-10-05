@@ -8,8 +8,14 @@ export default defineConfig({
   envPrefix: ['VITE_', 'REACT_APP_'],
   server: {
     port: 3000,
-    // Same-origin /api in development too, like on Vercel
-    proxy: { '/api': 'http://localhost:3001' },
+    // Same-origin /api in development too, like on Vercel: without the Origin
+    // header the backend's CORS list doesn't matter, whatever the dev port
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        configure: (proxy) => proxy.on('proxyReq', (request) => request.removeHeader('origin')),
+      },
+    },
   },
   build: {
     // Vercel's static build serves this folder (vercel.json distDir)
