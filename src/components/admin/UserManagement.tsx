@@ -24,7 +24,7 @@ interface PdfInfo {
 }
 
 const UserManagement: React.FC = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['admin', 'dashboard', 'common']);
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [trainers, setTrainers] = useState<Trainer[]>([]);
@@ -162,9 +162,9 @@ const UserManagement: React.FC = () => {
       setShowCreateUser(false);
 
       // Show success message with login URL
-      alert(`${t('admin.users.userCreatedSuccess')} ${t('admin.users.generateAccessLink')}:\n${response.data.loginUrl}`);
+      alert(`${t('users.userCreatedSuccess')} ${t('users.generateAccessLink')}:\n${response.data.loginUrl}`);
     } catch (error) {
-      alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.users.createUserFailed')}`);
+      alert(`${t('errors.error')}: ${error instanceof Error ? error.message : t('users.createUserFailed')}`);
     }
   };
 
@@ -222,7 +222,7 @@ const UserManagement: React.FC = () => {
       const loginUrl = response.data.loginUrl;
       await copyToClipboard(loginUrl);
     } catch (error) {
-      alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.users.generateLinkFailed')}`);
+      alert(`${t('errors.error')}: ${error instanceof Error ? error.message : t('users.generateLinkFailed')}`);
     }
   };
 
@@ -236,7 +236,7 @@ const UserManagement: React.FC = () => {
       const reviewUrl = `${loginUrl}?tab=reviews`;
       await copyToClipboard(reviewUrl);
     } catch (error) {
-      alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.users.generateLinkFailed')}`);
+      alert(`${t('errors.error')}: ${error instanceof Error ? error.message : t('users.generateLinkFailed')}`);
     }
   };
 
@@ -271,12 +271,12 @@ const UserManagement: React.FC = () => {
       setEditingUser(null);
       alert('Utente aggiornato con successo');
     } catch (error) {
-      alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : 'Aggiornamento utente fallito'}`);
+      alert(`${t('errors.error')}: ${error instanceof Error ? error.message : 'Aggiornamento utente fallito'}`);
     }
   };
 
   const handleDeleteUser = async (userId: number, userName: string) => {
-    if (!window.confirm(`${t('admin.users.confirmDelete')} ${userName}?`)) {
+    if (!window.confirm(`${t('users.confirmDelete')} ${userName}?`)) {
       return;
     }
 
@@ -286,9 +286,9 @@ const UserManagement: React.FC = () => {
       });
 
       loadUsers(); // Refresh user data
-      alert(t('admin.users.userDeletedSuccess'));
+      alert(t('users.userDeletedSuccess'));
     } catch (error) {
-      alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.users.deleteUserFailed')}`);
+      alert(`${t('errors.error')}: ${error instanceof Error ? error.message : t('users.deleteUserFailed')}`);
     }
   };
 
@@ -347,7 +347,7 @@ const UserManagement: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">{t('admin.users.title')}</h2>
+        <h2 className="text-2xl font-bold text-gray-900">{t('users.title')}</h2>
         <button
           onClick={() => {
             setCreateUserForm(prev => ({ ...prev, trainerId: activeTrainerId }));
@@ -356,7 +356,7 @@ const UserManagement: React.FC = () => {
           className="bg-gray-900 text-white px-4 py-2.5 rounded-xl hover:bg-gray-800 transition-colors flex items-center space-x-2"
         >
           {React.createElement(FiPlus as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
-          <span>{t('admin.users.newUser')}</span>
+          <span>{t('users.newUser')}</span>
         </button>
       </div>
 
@@ -446,7 +446,7 @@ const UserManagement: React.FC = () => {
               </div>
               <input
                 type="text"
-                placeholder={t('dashboard.searchPlaceholder')}
+                placeholder={t('dashboard:searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors"
@@ -464,7 +464,7 @@ const UserManagement: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900">{t('admin.users.newUser')}</h3>
+              <h3 className="text-xl font-bold text-gray-900">{t('users.newUser')}</h3>
               <button
                 onClick={() => setShowCreateUser(false)}
                 className="text-gray-500 hover:text-gray-700"
@@ -476,7 +476,7 @@ const UserManagement: React.FC = () => {
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('admin.users.firstName')}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('users.firstName')}</label>
                   <input
                     type="text"
                     required
@@ -486,7 +486,7 @@ const UserManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('admin.users.lastName')}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('users.lastName')}</label>
                   <input
                     type="text"
                     required
@@ -498,7 +498,7 @@ const UserManagement: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('admin.users.username')}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('users.username')}</label>
                 <input
                   type="text"
                   required
@@ -553,13 +553,13 @@ const UserManagement: React.FC = () => {
                   onClick={() => setShowCreateUser(false)}
                   className="flex-1 bg-gray-100 text-gray-700 py-2.5 px-4 rounded-xl hover:bg-gray-200 transition-colors"
                 >
-                  {t('common.cancel')}
+                  {t('common:common.cancel')}
                 </button>
                 <button
                   type="submit"
                   className="flex-1 bg-gray-900 text-white py-2.5 px-4 rounded-xl hover:bg-gray-800 transition-colors"
                 >
-                  {t('admin.users.newUser')}
+                  {t('users.newUser')}
                 </button>
               </div>
             </form>
@@ -682,7 +682,7 @@ const UserManagement: React.FC = () => {
       {copiedLink && (
         <div className="bg-green-50 border border-green-300 text-green-700 px-4 py-3 rounded-xl flex items-center gap-2">
           {React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-          <span>{t('admin.users.accessLinkGenerated')}</span>
+          <span>{t('users.accessLinkGenerated')}</span>
         </div>
       )}
 
@@ -693,16 +693,16 @@ const UserManagement: React.FC = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('admin.users.tabTitle')}
+                  {t('users.tabTitle')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('admin.users.videoCount')}
+                  {t('users.videoCount')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('admin.users.lastLogin')}
+                  {t('users.lastLogin')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('admin.users.actions')}
+                  {t('users.actions')}
                 </th>
               </tr>
             </thead>
@@ -722,13 +722,13 @@ const UserManagement: React.FC = () => {
                           {user.username} • {user.email}
                         </div>
                         <div className="text-xs text-gray-400">
-                          {t('admin.videos.createdAt')}: {formatDate(user.createdAt)}
+                          {t('videos.createdAt')}: {formatDate(user.createdAt)}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm font-medium text-gray-900">
-                        {user.videoCount} {t('admin.videos.tabTitle').toLowerCase()}
+                        {user.videoCount} {t('videos.tabTitle').toLowerCase()}
                       </div>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         {userPdfs[user.id] ? (
@@ -756,7 +756,7 @@ const UserManagement: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
-                      {user.lastLogin ? formatDate(user.lastLogin) : t('admin.users.never')}
+                      {user.lastLogin ? formatDate(user.lastLogin) : t('users.never')}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
@@ -784,7 +784,7 @@ const UserManagement: React.FC = () => {
                         <button
                           onClick={() => handleDeleteUser(user.id, `${user.firstName} ${user.lastName}`)}
                           className="text-red-600 hover:text-red-800 p-1"
-                          title={t('admin.users.deleteUser')}
+                          title={t('users.deleteUser')}
                         >
                           {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
                         </button>
@@ -854,7 +854,7 @@ const UserManagement: React.FC = () => {
                   <button
                     onClick={() => handleDeleteUser(user.id, `${user.firstName} ${user.lastName}`)}
                     className="text-red-600 hover:text-red-800 p-2 bg-red-50 rounded-lg"
-                    title={t('admin.users.deleteUser')}
+                    title={t('users.deleteUser')}
                   >
                     {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
                   </button>
@@ -865,7 +865,7 @@ const UserManagement: React.FC = () => {
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <div className="flex items-center gap-1.5 text-sm">
                   <span className="font-medium text-gray-900">{user.videoCount}</span>
-                  <span className="text-gray-500">{t('admin.videos.tabTitle').toLowerCase()}</span>
+                  <span className="text-gray-500">{t('videos.tabTitle').toLowerCase()}</span>
                 </div>
 
                 {userPdfs[user.id] ? (
@@ -895,7 +895,7 @@ const UserManagement: React.FC = () => {
               {/* Last Login & Created */}
               <div className="flex flex-col gap-1 text-xs text-gray-500 pt-1">
                 <div>
-                  <span className="font-medium">Ultimo accesso:</span> {user.lastLogin ? formatDate(user.lastLogin) : t('admin.users.never')}
+                  <span className="font-medium">Ultimo accesso:</span> {user.lastLogin ? formatDate(user.lastLogin) : t('users.never')}
                 </div>
                 <div>
                   <span className="font-medium">Creato il:</span> {formatDate(user.createdAt)}
@@ -907,7 +907,7 @@ const UserManagement: React.FC = () => {
                 onClick={() => handleUserClick(user.id)}
                 className="w-full mt-2 bg-gray-900 text-white py-2.5 px-4 rounded-lg hover:bg-gray-800 text-sm font-medium"
               >
-                {t('admin.users.manage')}
+                {t('users.manage')}
               </button>
             </div>
           </div>

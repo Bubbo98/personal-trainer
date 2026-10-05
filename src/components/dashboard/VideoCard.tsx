@@ -98,7 +98,7 @@ const TechniquePickerModal: React.FC<{
 };
 
 const VideoCard: React.FC<VideoCardProps> = ({ video, onPlay, variant = 'card' }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('dashboard');
   const [activeTechnique, setActiveTechnique] = useState<TechniqueVideo | null>(null);
   const [showPicker, setShowPicker] = useState(false);
 
@@ -140,7 +140,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onPlay, variant = 'card' }
           <button
             onClick={() => onPlay(video)}
             className="relative flex-shrink-0 w-24 aspect-video rounded-md bg-gray-100 overflow-hidden"
-            aria-label={`${t('dashboard.playVideo')} ${video.title}`}
+            aria-label={`${t('playVideo')} ${video.title}`}
           >
             {thumbnailSrc && (
               <img
@@ -214,7 +214,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onPlay, variant = 'card' }
             <button
               onClick={() => onPlay(video)}
               className="flex-1 flex items-center justify-center gap-2 bg-gray-900 text-white py-2.5 border border-gray-900 rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
-              aria-label={`${t('dashboard.playVideo')} ${video.title}`}
+              aria-label={`${t('playVideo')} ${video.title}`}
             >
               {React.createElement(FiPlay as React.ComponentType<{ className?: string }>, { className: "w-4 h-4 ml-0.5" })}
               Guarda video

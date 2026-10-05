@@ -113,7 +113,7 @@ const BookingButton: React.FC<{
 };
 
 const ServiceContent: React.FC<ServiceContentProps> = ({ service, isMobile = false }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['public', 'common']);
   const textSize = isMobile ? "text-base sm:text-lg" : "text-base sm:text-lg lg:text-xl";
   const imageHeight = "h-80 sm:h-[450px]";
   const containerHeight = isMobile ? "" : "h-80 sm:h-[758px]";
@@ -158,7 +158,7 @@ const ServiceContent: React.FC<ServiceContentProps> = ({ service, isMobile = fal
 };
 
 const Services: React.FC<ServicesPageProps> = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['public', 'common']);
   const [selectedService, setSelectedService] = useState<string | null>(null);
 
   // Services configuration
@@ -222,7 +222,7 @@ const Services: React.FC<ServicesPageProps> = () => {
   return (
     <div className={pageClassName}>
       <Helmet>
-        <title>{t('pages.services.title')}</title>
+        <title>{t('common:pages.services.title')}</title>
         <link rel="canonical" href="https://www.esercizifacili.com/services" />
         <meta property="og:url" content="https://www.esercizifacili.com/services" />
         <meta name="description" content="Scopri i servizi di Personal Training a Milano: allenamenti 1-to-1, calisthenics, bodybuilding, corsi di gruppo e coaching online. Prenota ora!" />

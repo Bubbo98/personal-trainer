@@ -13,7 +13,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
   selectedCategory,
   onSelectCategory
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('dashboard');
 
   return (
     <div className="flex flex-wrap gap-2 mb-8">
@@ -25,7 +25,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
         }`}
       >
-        {t('dashboard.allCategories')} ({categories.reduce((sum, cat) => sum + cat.videoCount, 0)})
+        {t('allCategories')} ({categories.reduce((sum, cat) => sum + cat.videoCount, 0)})
       </button>
 
       {categories.map((category) => (

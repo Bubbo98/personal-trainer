@@ -60,7 +60,7 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ calLink, id = CALENDAR_
 );
 
 const DirectContact: React.FC<DirectContactProps> = ({ phoneNumber, displayNumber }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['public', 'common']);
 
   return (
     <div className="mt-16 text-center">
@@ -79,7 +79,7 @@ const DirectContact: React.FC<DirectContactProps> = ({ phoneNumber, displayNumbe
 };
 
 const Booking: React.FC<BookingPageProps> = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['public', 'common']);
 
   // Component styles
   const pageClassName = 'min-h-screen bg-gray-50';
@@ -100,7 +100,7 @@ const Booking: React.FC<BookingPageProps> = () => {
   return (
     <div className={pageClassName}>
       <Helmet>
-        <title>{t('pages.booking.title')}</title>
+        <title>{t('common:pages.booking.title')}</title>
         <link rel="canonical" href="https://www.esercizifacili.com/booking" />
         <meta property="og:url" content="https://www.esercizifacili.com/booking" />
         <meta name="description" content="Prenota una consulenza gratuita con Joshua, Personal Trainer a Milano. Scegli data e orario direttamente dal calendario online." />

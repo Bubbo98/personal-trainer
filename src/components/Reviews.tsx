@@ -92,7 +92,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ review }) => {
 };
 
 const ReviewsCarousel: React.FC<ReviewsCarouselProps> = ({ reviews }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('public');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -181,7 +181,7 @@ interface ReviewsProps {
 }
 
 const Reviews: React.FC<ReviewsProps> = ({ type = 'featured' }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('public');
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

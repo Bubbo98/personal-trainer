@@ -5,7 +5,7 @@ import { type Review, type ReviewFormData } from '../../types/dashboard';
 import { STORAGE_KEY, formatDate, apiCall } from '../../utils/dashboardUtils';
 
 const ReviewTab: React.FC = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('dashboard');
   const [review, setReview] = useState<Review | null>(null);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewLoading, setReviewLoading] = useState(false);
@@ -162,7 +162,7 @@ const ReviewTab: React.FC = () => {
           <div className="text-xs text-gray-400">
             Pubblicata il {formatDate(review.createdAt)}
             {review.updatedAt !== review.createdAt && (
-              <span> • {t('dashboard.modifiedOn')} {formatDate(review.updatedAt)}</span>
+              <span> • {t('modifiedOn')} {formatDate(review.updatedAt)}</span>
             )}
           </div>
         </div>
@@ -232,7 +232,7 @@ const ReviewTab: React.FC = () => {
               className="px-4 py-2.5 text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
               disabled={reviewLoading}
             >
-              {t('dashboard.cancel')}
+              {t('cancel')}
             </button>
             <button
               type="submit"

@@ -10,7 +10,7 @@ import Footer from '../components/Footer';
 interface HomePageProps {}
 
 const Home: React.FC<HomePageProps> = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('common');
   const pageClassName = 'h-full w-full';
 
   return (

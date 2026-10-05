@@ -1,3 +1,4 @@
+import '../locales/dashboard';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -103,7 +104,7 @@ function SubTabs<T extends string>({ items, active, onChange }: {
 const Dashboard: React.FC<DashboardProps> = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t } = useTranslation(['dashboard', 'common']);
 
   // State
   const [authState, setAuthState] = useState<AuthState>({
@@ -464,7 +465,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-                <p className="text-gray-600">{t('dashboard.loading')}</p>
+                <p className="text-gray-600">{t('loading')}</p>
               </div>
             </div>
           </div>
@@ -500,7 +501,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
   return (
     <div className={pageClassName}>
       <Helmet>
-        <title>{t('pages.dashboard.title')}</title>
+        <title>{t('common:pages.dashboard.title')}</title>
       </Helmet>
       <Header />
 
@@ -510,7 +511,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">
-                {t('dashboard.welcome')}{authState.user?.firstName ? `, ${authState.user.firstName}` : ''}!
+                {t('welcome')}{authState.user?.firstName ? `, ${authState.user.firstName}` : ''}!
               </h1>
               <p className="text-gray-600">
                 Ecco i tuoi video di allenamento personalizzati
@@ -523,7 +524,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               aria-label="Logout"
             >
               {React.createElement(FiLogOut as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-              <span className="hidden sm:inline">{t('dashboard.logout')}</span>
+              <span className="hidden sm:inline">{t('logout')}</span>
             </button>
           </div>
 
@@ -632,10 +633,10 @@ const Dashboard: React.FC<DashboardProps> = () => {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-xl font-bold text-white mb-2">
-                    {t('dashboard.referral.title')}
+                    {t('referral.title')}
                   </h3>
                   <p className="text-blue-50 text-base">
-                    {t('dashboard.referral.message')}
+                    {t('referral.message')}
                   </p>
                 </div>
               </div>
@@ -753,7 +754,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                 onClick={() => loadVideos(localStorage.getItem(STORAGE_KEY) || '')}
                 className="bg-gray-900 text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-colors"
               >
-                {t('dashboard.retry')}
+                {t('retry')}
               </button>
             </div>
           ) : filteredVideos.length === 0 ? (
@@ -761,10 +762,10 @@ const Dashboard: React.FC<DashboardProps> = () => {
               {React.createElement(FiGrid as React.ComponentType<{ className?: string }>, { className: "w-16 h-16 text-gray-400 mx-auto mb-4" })}
               <h3 className="text-xl font-semibold text-gray-600 mb-2">
                 {videoState.searchQuery.trim()
-                  ? t('dashboard.noVideosFound')
+                  ? t('noVideosFound')
                   : videoState.selectedCategory
-                    ? `${t('dashboard.noVideosInCategory')} "${videoState.selectedCategory}"`
-                    : t('dashboard.noVideosAvailable')
+                    ? `${t('noVideosInCategory')} "${videoState.selectedCategory}"`
+                    : t('noVideosAvailable')
                 }
               </h3>
               <p className="text-gray-500">
@@ -790,13 +791,13 @@ const Dashboard: React.FC<DashboardProps> = () => {
               {trainingView === 'giorni' && trainingDays.length > 0 && !videoState.searchQuery.trim() && !videoState.selectedCategory ? (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-gray-900">{t('dashboard.trainingDays.title')}</h3>
+                    <h3 className="text-xl font-bold text-gray-900">{t('trainingDays.title')}</h3>
                     {videoState.videos.length > 0 && (
                       <button
                         onClick={() => setTrainingView('video')}
                         className="text-sm text-gray-600 hover:text-gray-900"
                       >
-                        {t('dashboard.trainingDays.viewAllVideos')}
+                        {t('trainingDays.viewAllVideos')}
                       </button>
                     )}
                   </div>
@@ -805,10 +806,10 @@ const Dashboard: React.FC<DashboardProps> = () => {
                     <div key={day.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                       <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-6 py-4">
                         <h4 className="text-xl font-bold text-white">
-                          {day.dayName || t('dashboard.trainingDays.dayTitle', { number: day.dayNumber })}
+                          {day.dayName || t('trainingDays.dayTitle', { number: day.dayNumber })}
                         </h4>
                         <p className="text-sm text-gray-300 mt-1">
-                          {t('dashboard.trainingDays.videoCount', { count: day.videos.length })}
+                          {t('trainingDays.videoCount', { count: day.videos.length })}
                         </p>
                       </div>
 
@@ -880,7 +881,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                         </div>
                       ) : (
                         <div className="p-8 text-center text-gray-500">
-                          {t('dashboard.trainingDays.noVideos')}
+                          {t('trainingDays.noVideos')}
                         </div>
                       )}
                     </div>
@@ -928,7 +929,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="text-center">
                   <div className="text-3xl font-bold text-gray-900">{videoState.videos.length}</div>
-                  <div className="text-gray-600">{t('dashboard.totalVideos')}</div>
+                  <div className="text-gray-600">{t('totalVideos')}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-gray-900">{videoState.categories.length}</div>

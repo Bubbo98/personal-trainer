@@ -10,7 +10,7 @@ interface VideoPlayerProps {
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ video, onClose }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('dashboard');
   // Use signed URL from R2 if available, otherwise fallback to old path
   const videoSrc = video.signedUrl || `/videos/${video.filePath}`;
 
@@ -30,7 +30,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video, onClose }) => {
         <button
           onClick={onClose}
           className="absolute -top-12 right-0 text-white text-xl hover:text-gray-300 z-10"
-          aria-label={t('dashboard.closeVideo')}
+          aria-label={t('closeVideo')}
         >
           ✕
         </button>

@@ -1,0 +1,94 @@
+{
+  "nav": {
+    "about": "Chi sono",
+    "services": "Servizi",
+    "contact": "Contatti"
+  },
+  "pages": {
+    "home": {
+      "title": "Personal Trainer Joshua"
+    },
+    "about": {
+      "title": "Chi Sono"
+    },
+    "contact": {
+      "title": "Contatti"
+    },
+    "services": {
+      "title": "Servizi"
+    },
+    "booking": {
+      "title": "Prenota la Tua Consulenza"
+    },
+    "dashboard": {
+      "title": "Dashboard"
+    },
+    "admin": {
+      "title": "Admin Panel"
+    },
+    "privacy": {
+      "title": "Privacy Policy"
+    },
+    "terms": {
+      "title": "Termini e Condizioni di Servizio"
+    },
+    "cookies": {
+      "title": "Cookie Policy"
+    }
+  },
+  "footer": {
+    "personalTrainer": "Personal Trainer",
+    "schedule": "Orari",
+    "contacts": "Contatti",
+    "fiscalData": "Dati Fiscali",
+    "mondayFriday": "Lunedì - Venerdì",
+    "workouts": "🏋️ Allenamenti: 9:00 - 17:00",
+    "consultations": "💬 Consulenze: 17:00 - 19:00",
+    "allRightsReserved": "Tutti i diritti riservati",
+    "copyright": "© {{year}} Joshua Maurizio e Denise Bergamo - Personal Trainer",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Termini di Servizio",
+    "cookiePolicy": "Cookie Policy",
+    "qualifiedTrainer": "🏃‍♂️ Personal Trainer qualificato e certificato - Milano",
+    "disclaimer": "I programmi di allenamento sono personalizzati e sviluppati in base alle esigenze individuali. Si consiglia sempre di consultare un medico prima di iniziare qualsiasi programma di fitness.",
+    "functionalTraining": "Allenamento Funzionale Milano"
+  },
+  "common": {
+    "cancel": "Annulla",
+    "save": "Salva",
+    "delete": "Elimina",
+    "edit": "Modifica",
+    "loading": "Caricamento...",
+    "submit": "Invia",
+    "close": "Chiudi",
+    "confirm": "Conferma",
+    "retry": "Riprova",
+    "back": "Indietro",
+    "search": "Cerca",
+    "clearSearch": "Cancella ricerca",
+    "all": "Tutti",
+    "download": "Scarica",
+    "optional": "opzionale",
+    "saving": "Salvataggio…",
+    "saved": "Salvato"
+  },
+  "notFound": {
+    "title": "Pagina non trovata",
+    "message": "La pagina che cerchi non esiste o è stata spostata.",
+    "backHome": "Torna alla Home"
+  },
+  "errors": {
+    "generic": "Qualcosa è andato storto. Riprova.",
+    "loadFailed": "Impossibile caricare i dati.",
+    "network": "Connessione assente o server non raggiungibile. Controlla la rete e riprova.",
+    "sessionExpired": "La sessione è scaduta. Accedi di nuovo.",
+    "planExpired": "La tua scheda è scaduta e l'accesso all'area clienti è sospeso. Contatta il tuo personal trainer per rinnovarla.",
+    "downloadFailed": "Download non riuscito. Riprova più tardi."
+  },
+  "language": {
+    "label": "Lingua",
+    "it": "Italiano",
+    "en": "English",
+    "switchTo": "Passa all'inglese"
+  }
+}

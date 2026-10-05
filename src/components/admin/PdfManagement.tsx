@@ -25,7 +25,7 @@ interface Props {
 }
 
 const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['admin', 'common']);
   const [pdfInfo, setPdfInfo] = useState<PdfInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -70,11 +70,11 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.type !== 'application/pdf') {
-        alert(t('admin.pdf.onlyPdfAllowed') || 'Solo file PDF sono consentiti');
+        alert(t('pdf.onlyPdfAllowed') || 'Solo file PDF sono consentiti');
         return;
       }
       if (file.size > 10 * 1024 * 1024) {
-        alert(t('admin.pdf.fileTooLarge') || 'Il file è troppo grande (max 10MB)');
+        alert(t('pdf.fileTooLarge') || 'Il file è troppo grande (max 10MB)');
         return;
       }
       setSelectedFile(file);
@@ -106,8 +106,8 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
       const data = await response.json();
       if (data.success) {
         alert(pdfInfo
-          ? (t('admin.pdf.updateSuccess') || 'Scheda aggiornata con successo')
-          : (t('admin.pdf.uploadSuccess') || 'Scheda caricata con successo')
+          ? (t('pdf.updateSuccess') || 'Scheda aggiornata con successo')
+          : (t('pdf.uploadSuccess') || 'Scheda caricata con successo')
         );
         setSelectedFile(null);
         loadPdfInfo();
@@ -115,7 +115,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
         throw new Error(data.error || 'Upload failed');
       }
     } catch (error) {
-      alert(`${t('admin.errors.error') || 'Errore'}: ${error instanceof Error ? error.message : 'Upload fallito'}`);
+      alert(`${t('errors.error') || 'Errore'}: ${error instanceof Error ? error.message : 'Upload fallito'}`);
     } finally {
       setUploading(false);
     }
@@ -149,12 +149,12 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      alert(`${t('admin.errors.error') || 'Errore'}: ${error instanceof Error ? error.message : 'Download fallito'}`);
+      alert(`${t('errors.error') || 'Errore'}: ${error instanceof Error ? error.message : 'Download fallito'}`);
     }
   };
 
   const handleDelete = async () => {
-    if (!window.confirm(t('admin.pdf.confirmDelete') || `Sei sicuro di voler eliminare la scheda di ${userName}?`)) {
+    if (!window.confirm(t('pdf.confirmDelete') || `Sei sicuro di voler eliminare la scheda di ${userName}?`)) {
       return;
     }
 
@@ -169,14 +169,14 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
 
       const data = await response.json();
       if (data.success) {
-        alert(t('admin.pdf.deleteSuccess') || 'Scheda eliminata con successo');
+        alert(t('pdf.deleteSuccess') || 'Scheda eliminata con successo');
         setPdfInfo(null);
         loadPdfInfo();
       } else {
         throw new Error(data.error || 'Delete failed');
       }
     } catch (error) {
-      alert(`${t('admin.errors.error') || 'Errore'}: ${error instanceof Error ? error.message : 'Eliminazione fallita'}`);
+      alert(`${t('errors.error') || 'Errore'}: ${error instanceof Error ? error.message : 'Eliminazione fallita'}`);
     }
   };
 
@@ -213,7 +213,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
         throw new Error(data.error || 'Extend failed');
       }
     } catch (error) {
-      alert(`${t('admin.errors.error') || 'Errore'}: ${error instanceof Error ? error.message : 'Modifica fallita'}`);
+      alert(`${t('errors.error') || 'Errore'}: ${error instanceof Error ? error.message : 'Modifica fallita'}`);
     } finally {
       setExtending(false);
     }
@@ -278,7 +278,7 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
   if (loading) {
     return (
       <div className="p-4 bg-gray-50 rounded-xl">
-        <p className="text-gray-600">{t('admin.loading') || 'Caricamento...'}</p>
+        <p className="text-gray-600">{t('common:common.loading')}</p>
       </div>
     );
   }
@@ -294,17 +294,17 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
                 <div>
                   <h4 className="font-semibold text-gray-900">{pdfInfo.originalName}</h4>
                   <p className="text-sm text-gray-500 mt-1">
-                    {t('admin.pdf.fileSize') || 'Dimensione'}: {formatFileSize(pdfInfo.fileSize)}
+                    {t('pdf.fileSize') || 'Dimensione'}: {formatFileSize(pdfInfo.fileSize)}
                   </p>
                   <p className="text-sm text-gray-500">
-                    {t('admin.pdf.uploadedBy') || 'Caricato da'}: {pdfInfo.uploadedBy}
+                    {t('pdf.uploadedBy') || 'Caricato da'}: {pdfInfo.uploadedBy}
                   </p>
                   <p className="text-sm text-gray-500">
-                    {t('admin.pdf.uploadedAt') || 'Data caricamento'}: {formatDate(pdfInfo.uploadedAt)}
+                    {t('pdf.uploadedAt') || 'Data caricamento'}: {formatDate(pdfInfo.uploadedAt)}
                   </p>
                   {pdfInfo.updatedAt !== pdfInfo.uploadedAt && (
                     <p className="text-sm text-gray-500">
-                      {t('admin.pdf.updatedAt') || 'Ultimo aggiornamento'}: {formatDate(pdfInfo.updatedAt)}
+                      {t('pdf.updatedAt') || 'Ultimo aggiornamento'}: {formatDate(pdfInfo.updatedAt)}
                     </p>
                   )}
                   {pdfInfo.expirationDate && (
@@ -358,14 +358,14 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
                 <button
                   onClick={handleDownload}
                   className="text-blue-600 hover:text-blue-700 p-2"
-                  title={t('admin.pdf.download') || 'Scarica scheda'}
+                  title={t('pdf.download')}
                 >
                   {React.createElement(FiDownload as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
                 </button>
                 <button
                   onClick={handleDelete}
                   className="text-red-600 hover:text-red-700 p-2"
-                  title={t('admin.pdf.delete') || 'Elimina scheda'}
+                  title={t('pdf.delete') || 'Elimina scheda'}
                 >
                   {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
                 </button>
@@ -461,21 +461,21 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
       ) : (
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
           {React.createElement(FiFile as React.ComponentType<{ className?: string }>, { className: "w-12 h-12 text-gray-400 mx-auto mb-2" })}
-          <p className="text-gray-600">{t('admin.pdf.noPdf') || 'Nessuna scheda caricata per questo utente'}</p>
+          <p className="text-gray-600">{t('pdf.noPdf') || 'Nessuna scheda caricata per questo utente'}</p>
         </div>
       )}
 
       <div className="border border-gray-200 rounded-xl p-4 bg-white">
         <h4 className="font-semibold text-gray-900 mb-3">
           {pdfInfo
-            ? (t('admin.pdf.replacePdf') || 'Sostituisci scheda')
-            : (t('admin.pdf.uploadPdf') || 'Carica scheda')}
+            ? (t('pdf.replacePdf') || 'Sostituisci scheda')
+            : (t('pdf.uploadPdf') || 'Carica scheda')}
         </h4>
 
         <div className="space-y-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5.5">
-              {t('admin.pdf.selectFile') || 'Seleziona file PDF (max 10MB)'}
+              {t('pdf.selectFile') || 'Seleziona file PDF (max 10MB)'}
             </label>
             <input
               type="file"
@@ -565,10 +565,10 @@ const PdfManagement: React.FC<Props> = ({ userId, userName, onPdfChange }) => {
             {React.createElement(FiUpload as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
             <span>
               {uploading
-                ? (t('admin.pdf.uploading') || 'Caricamento...')
+                ? (t('pdf.uploading') || 'Caricamento...')
                 : pdfInfo
-                  ? (t('admin.pdf.replace') || 'Sostituisci')
-                  : (t('admin.pdf.upload') || 'Carica')}
+                  ? (t('pdf.replace') || 'Sostituisci')
+                  : (t('pdf.upload') || 'Carica')}
             </span>
           </button>
         </div>

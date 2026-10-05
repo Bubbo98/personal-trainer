@@ -13,7 +13,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   onSearch,
   onClear
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('dashboard');
 
   return (
     <div className="relative mb-6">
@@ -25,7 +25,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           type="text"
           value={searchQuery}
           onChange={(e) => onSearch(e.target.value)}
-          placeholder={t('dashboard.searchPlaceholder')}
+          placeholder={t('searchPlaceholder')}
           className="block w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent text-gray-900 placeholder-gray-400"
         />
         {searchQuery && (
@@ -39,7 +39,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
       </div>
       {searchQuery && (
         <div className="mt-2 text-sm text-gray-600">
-          {t('dashboard.search')}: "{searchQuery}"
+          {t('search')}: "{searchQuery}"
         </div>
       )}
     </div>

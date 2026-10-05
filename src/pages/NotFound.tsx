@@ -5,7 +5,7 @@ import Footer from '../components/Footer';
 import { usePageMeta } from '../lib/usePageMeta';
 
 const NotFound = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('common');
   usePageMeta({ title: t('notFound.title'), noindex: true });
 
   return (

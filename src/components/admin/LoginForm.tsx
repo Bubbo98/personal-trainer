@@ -8,7 +8,7 @@ interface LoginFormProps {
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('admin');
   const [credentials, setCredentials] = useState({ username: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +27,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
       localStorage.setItem(STORAGE_KEY, response.data.token);
       onLogin();
     } catch (error) {
-      setError(error instanceof Error ? error.message : t('admin.login.loginFailed'));
+      setError(error instanceof Error ? error.message : t('login.loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -72,7 +72,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                {t('admin.login.username')}
+                {t('login.username')}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
@@ -92,7 +92,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                {t('admin.login.password')}
+                {t('login.password')}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
@@ -118,10 +118,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
               {loading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                  {t('admin.login.loginProgress')}
+                  {t('login.loginProgress')}
                 </>
               ) : (
-                t('admin.login.loginButton')
+                t('login.loginButton')
               )}
             </button>
           </form>

@@ -1,0 +1,94 @@
+{
+  "nav": {
+    "about": "About",
+    "services": "Services",
+    "contact": "Contact"
+  },
+  "pages": {
+    "home": {
+      "title": "Personal Trainer Joshua"
+    },
+    "about": {
+      "title": "About"
+    },
+    "contact": {
+      "title": "Contact"
+    },
+    "services": {
+      "title": "Services"
+    },
+    "booking": {
+      "title": "Book Your Consultation"
+    },
+    "dashboard": {
+      "title": "Dashboard"
+    },
+    "admin": {
+      "title": "Admin Panel"
+    },
+    "privacy": {
+      "title": "Privacy Policy"
+    },
+    "terms": {
+      "title": "Terms of Service"
+    },
+    "cookies": {
+      "title": "Cookie Policy"
+    }
+  },
+  "footer": {
+    "personalTrainer": "Personal Trainer",
+    "schedule": "Schedule",
+    "contacts": "Contacts",
+    "fiscalData": "Fiscal Data",
+    "mondayFriday": "Monday - Friday",
+    "workouts": "🏋️ Workouts: 9:00 AM - 5:00 PM",
+    "consultations": "💬 Consultations: 5:00 PM - 7:00 PM",
+    "allRightsReserved": "All rights reserved",
+    "copyright": "© {{year}} Joshua Maurizio e Denise Bergamo - Personal Trainer",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "cookiePolicy": "Cookie Policy",
+    "qualifiedTrainer": "🏃‍♂️ Qualified and certified Personal Trainer - Milan",
+    "disclaimer": "Training programs are personalized and developed based on individual needs. It is always recommended to consult a physician before starting any fitness program.",
+    "functionalTraining": "Functional Training Milan"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "submit": "Submit",
+    "close": "Close",
+    "confirm": "Confirm",
+    "retry": "Try again",
+    "back": "Back",
+    "search": "Search",
+    "clearSearch": "Clear search",
+    "all": "All",
+    "download": "Download",
+    "optional": "optional",
+    "saving": "Saving…",
+    "saved": "Saved"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "message": "The page you are looking for does not exist or has been moved.",
+    "backHome": "Back to Home"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "loadFailed": "Could not load the data.",
+    "network": "No connection or the server can't be reached. Check your network and try again.",
+    "sessionExpired": "Your session has expired. Please sign in again.",
+    "planExpired": "Your training plan has expired and access to the client area is suspended. Contact your personal trainer to renew it.",
+    "downloadFailed": "Download failed. Please try again later."
+  },
+  "language": {
+    "label": "Language",
+    "it": "Italiano",
+    "en": "English",
+    "switchTo": "Switch to Italian"
+  }
+}

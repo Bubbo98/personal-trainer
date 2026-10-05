@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { FiMapPin, FiPhone, FiMail, FiClock, FiUser, FiFileText } from 'react-icons/fi';
 
 const Footer: React.FC = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('common');
   return (
     <footer className="bg-gray-900 text-white">
       <div className=" px-6 lg:px-10 py-12 flex flex-col md:flex-row items-center gap-8">

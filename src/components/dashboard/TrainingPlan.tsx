@@ -20,7 +20,7 @@ const FileIcon = ({ className }: { className?: string }) => React.createElement(
 const AlertIcon = () => React.createElement(FiAlertCircle as React.ComponentType<{ className?: string }>, { className: "w-12 h-12 text-red-500 mx-auto mb-3" });
 
 const TrainingPlan: React.FC = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('dashboard');
   const [pdfInfo, setPdfInfo] = useState<PdfInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
@@ -98,7 +98,7 @@ const TrainingPlan: React.FC = () => {
       document.body.removeChild(a);
     } catch (error) {
       console.error('Download error:', error);
-      alert(t('dashboard.pdf.downloadFailed') || 'Download fallito. Riprova più tardi.');
+      alert(t('pdf.downloadFailed') || 'Download fallito. Riprova più tardi.');
     } finally {
       setDownloading(false);
     }
@@ -171,10 +171,10 @@ const TrainingPlan: React.FC = () => {
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
           <FileIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            {t('dashboard.pdf.noPlanYet') || 'Nessuna scheda disponibile'}
+            {t('pdf.noPlanYet') || 'Nessuna scheda disponibile'}
           </h3>
           <p className="text-gray-600">
-            {t('dashboard.pdf.noPlanMessage') || 'Il tuo personal trainer non ha ancora caricato una scheda di allenamento per te. Contattalo per maggiori informazioni.'}
+            {t('pdf.noPlanMessage') || 'Il tuo personal trainer non ha ancora caricato una scheda di allenamento per te. Contattalo per maggiori informazioni.'}
           </p>
         </div>
       </div>
@@ -188,7 +188,7 @@ const TrainingPlan: React.FC = () => {
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
             <h2 className="text-2xl font-bold text-white flex items-center">
               <FileIcon className="w-7 h-7 mr-3" />
-              {t('dashboard.pdf.myTrainingPlan') || 'La Mia Scheda di Allenamento'}
+              {t('pdf.myTrainingPlan') || 'La Mia Scheda di Allenamento'}
             </h2>
           </div>
           <div className="p-8 text-center">
@@ -222,7 +222,7 @@ const TrainingPlan: React.FC = () => {
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
           <h2 className="text-2xl font-bold text-white flex items-center">
             <FileIcon className="w-7 h-7 mr-3" />
-            {t('dashboard.pdf.myTrainingPlan') || 'La Mia Scheda di Allenamento'}
+            {t('pdf.myTrainingPlan') || 'La Mia Scheda di Allenamento'}
           </h2>
         </div>
 
@@ -239,16 +239,16 @@ const TrainingPlan: React.FC = () => {
               </h3>
               <div className="space-y-1 text-sm text-gray-600">
                 <p>
-                  <span className="font-medium">{t('dashboard.pdf.fileSize') || 'Dimensione'}:</span>{' '}
+                  <span className="font-medium">{t('pdf.fileSize') || 'Dimensione'}:</span>{' '}
                   {formatFileSize(pdfInfo.fileSize!)}
                 </p>
                 <p>
-                  <span className="font-medium">{t('dashboard.pdf.uploadedAt') || 'Caricato il'}:</span>{' '}
+                  <span className="font-medium">{t('pdf.uploadedAt') || 'Caricato il'}:</span>{' '}
                   {formatDate(pdfInfo.uploadedAt!)}
                 </p>
                 {pdfInfo.updatedAt !== pdfInfo.uploadedAt && (
                   <p>
-                    <span className="font-medium">{t('dashboard.pdf.updatedAt') || 'Aggiornato il'}:</span>{' '}
+                    <span className="font-medium">{t('pdf.updatedAt') || 'Aggiornato il'}:</span>{' '}
                     {formatDate(pdfInfo.updatedAt!)}
                   </p>
                 )}
@@ -294,15 +294,15 @@ const TrainingPlan: React.FC = () => {
             <DownloadIcon />
             <span>
               {downloading
-                ? (t('dashboard.pdf.downloading') || 'Download in corso...')
-                : (t('dashboard.pdf.download') || 'Scarica Scheda')}
+                ? (t('pdf.downloading') || 'Download in corso...')
+                : (t('pdf.download') || 'Scarica Scheda')}
             </span>
           </button>
 
           <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-800">
-              <strong>{t('dashboard.pdf.tip') || 'Consiglio'}:</strong>{' '}
-              {t('dashboard.pdf.tipMessage') || 'Salva la scheda sul tuo dispositivo per consultarla anche offline durante gli allenamenti.'}
+              <strong>{t('pdf.tip') || 'Consiglio'}:</strong>{' '}
+              {t('pdf.tipMessage') || 'Salva la scheda sul tuo dispositivo per consultarla anche offline durante gli allenamenti.'}
             </p>
           </div>
         </div>

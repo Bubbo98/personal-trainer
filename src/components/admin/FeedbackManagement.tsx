@@ -64,7 +64,7 @@ const ITEMS_PER_PAGE = 20;
 const USERS_PER_PAGE = 15;
 
 const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFeedbacksSeen }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('admin');
 
   // Timeline state
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
@@ -195,11 +195,11 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
   };
 
   const handleDeleteFeedback = async (feedbackId: number, userId?: number) => {
-    if (!window.confirm(t('admin.feedback.confirmDelete'))) return;
+    if (!window.confirm(t('feedback.confirmDelete'))) return;
     try {
       await apiCall(`/feedback/${feedbackId}`, { method: 'DELETE' });
       setSelectedFeedback(null);
-      alert(t('admin.feedback.deleteSuccess'));
+      alert(t('feedback.deleteSuccess'));
       if (viewMode === 'timeline') {
         loadFeedbacks(currentPage, searchTerm, filterDiscomfort);
       } else {
@@ -208,7 +208,7 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
         loadUserSummaries(userCurrentPage, searchTerm, filterDiscomfort);
       }
     } catch (error) {
-      alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.feedback.deleteFailed')}`);
+      alert(`${t('errors.error')}: ${error instanceof Error ? error.message : t('feedback.deleteFailed')}`);
     }
   };
 
@@ -294,7 +294,7 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">{t('admin.feedback.title')}</h2>
+        <h2 className="text-2xl font-bold text-gray-900">{t('feedback.title')}</h2>
         <div className="flex items-center space-x-2">
           {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-6 h-6 text-gray-600" })}
           <span className="text-gray-600 font-medium">{serverStats.total} check totali</span>
@@ -347,7 +347,7 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
           </div>
           <input
             type="text"
-            placeholder={t('admin.feedback.searchUser')}
+            placeholder={t('feedback.searchUser')}
             value={searchTerm}
             onChange={(e) => handleSearchChange(e.target.value)}
             className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors"
@@ -371,7 +371,7 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
       {viewMode === 'timeline' && (
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           {feedbacks.length === 0 && !loading ? (
-            <div className="text-center py-12 text-gray-500"><p>{t('admin.feedback.noFeedbackAvailable')}</p></div>
+            <div className="text-center py-12 text-gray-500"><p>{t('feedback.noFeedbackAvailable')}</p></div>
           ) : (
             <>
               {loading && <div className="flex justify-center py-3"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-900"></div></div>}
@@ -479,7 +479,7 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <div className="flex items-center justify-center space-x-1">
                             {feedback.trainer_seen_at && <span title="Già visto" className="text-green-500 text-xs font-medium">✓</span>}
-                            <button onClick={(e) => { e.stopPropagation(); handleDeleteFeedback(feedback.id); }} className="text-red-600 hover:text-red-800 p-2" title={t('admin.feedback.deleteFeedback')}>
+                            <button onClick={(e) => { e.stopPropagation(); handleDeleteFeedback(feedback.id); }} className="text-red-600 hover:text-red-800 p-2" title={t('feedback.deleteFeedback')}>
                               {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
                             </button>
                           </div>
@@ -502,7 +502,7 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
           {userLoading ? (
             <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>
           ) : userSummaries.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-lg text-center py-12 text-gray-500"><p>{t('admin.feedback.noFeedbackAvailable')}</p></div>
+            <div className="bg-white rounded-xl shadow-lg text-center py-12 text-gray-500"><p>{t('feedback.noFeedbackAvailable')}</p></div>
           ) : (
             <>
               {userSummaries.map((userSum) => (
@@ -599,7 +599,7 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                                     {feedback.current_weight && <div><span className="text-gray-500">Peso: </span><span className="font-semibold text-gray-900">{feedback.current_weight} kg</span></div>}
                                   </div>
                                 </div>
-                                <button onClick={(e) => { e.stopPropagation(); handleDeleteFeedback(feedback.id, feedback.user_id); }} className="text-red-600 hover:text-red-800 p-2 ml-4" title={t('admin.feedback.deleteFeedback')}>
+                                <button onClick={(e) => { e.stopPropagation(); handleDeleteFeedback(feedback.id, feedback.user_id); }} className="text-red-600 hover:text-red-800 p-2 ml-4" title={t('feedback.deleteFeedback')}>
                                   {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
                                 </button>
                               </div>
@@ -646,12 +646,12 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
               <div className="space-y-6">
                 {/* User Info */}
                 <div className="bg-gray-50 p-4 rounded-xl">
-                  <h4 className="font-semibold text-gray-900 mb-2">{t('admin.feedback.userInfo')}</h4>
+                  <h4 className="font-semibold text-gray-900 mb-2">{t('feedback.userInfo')}</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                    <div><span className="text-gray-600">{t('admin.feedback.name')}: </span><span className="font-medium">{selectedFeedback.first_name} {selectedFeedback.last_name}</span></div>
-                    <div><span className="text-gray-600">{t('admin.feedback.email')}: </span><span className="font-medium">{selectedFeedback.email}</span></div>
-                    <div><span className="text-gray-600">{t('admin.feedback.username')}: </span><span className="font-medium">{selectedFeedback.username}</span></div>
-                    <div><span className="text-gray-600">{t('admin.feedback.feedbackDate')}: </span><span className="font-medium">{formatDate(selectedFeedback.feedback_date)}</span></div>
+                    <div><span className="text-gray-600">{t('feedback.name')}: </span><span className="font-medium">{selectedFeedback.first_name} {selectedFeedback.last_name}</span></div>
+                    <div><span className="text-gray-600">{t('feedback.email')}: </span><span className="font-medium">{selectedFeedback.email}</span></div>
+                    <div><span className="text-gray-600">{t('feedback.username')}: </span><span className="font-medium">{selectedFeedback.username}</span></div>
+                    <div><span className="text-gray-600">{t('feedback.feedbackDate')}: </span><span className="font-medium">{formatDate(selectedFeedback.feedback_date)}</span></div>
                   </div>
                 </div>
 
@@ -722,8 +722,8 @@ const FeedbackManagement: React.FC<FeedbackManagementProps> = ({ trainerId, onFe
                 )}
 
                 <div className="text-xs text-gray-500 border-t pt-4">
-                  <div>{t('admin.feedback.submittedOn')}: {formatDate(selectedFeedback.created_at)}</div>
-                  {selectedFeedback.pdf_change_date && <div>{t('admin.feedback.planChangedOn')}: {formatDate(selectedFeedback.pdf_change_date)}</div>}
+                  <div>{t('feedback.submittedOn')}: {formatDate(selectedFeedback.created_at)}</div>
+                  {selectedFeedback.pdf_change_date && <div>{t('feedback.planChangedOn')}: {formatDate(selectedFeedback.pdf_change_date)}</div>}
                 </div>
               </div>
             </div>

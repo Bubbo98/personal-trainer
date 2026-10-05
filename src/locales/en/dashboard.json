@@ -1,0 +1,174 @@
+{
+  "welcome": "Welcome",
+  "logout": "Logout",
+  "loading": "Loading dashboard...",
+  "loadingVideos": "Loading videos...",
+  "retry": "Try again",
+  "searchPlaceholder": "Search videos by title or description...",
+  "allCategories": "All",
+  "totalVideos": "Total videos",
+  "playVideo": "Play",
+  "noVideosFound": "No videos found",
+  "noVideosInCategory": "No videos in category",
+  "noVideosAvailable": "No videos available",
+  "modifiedOn": "Modified on",
+  "cancel": "Cancel",
+  "search": "Search",
+  "closeVideo": "Close video",
+  "tabs": {
+    "videos": "Videos",
+    "trainingPlan": "Training Plan",
+    "feedback": "Check"
+  },
+  "feedback": {
+    "title": "Weekly Check",
+    "subtitle": "Complete this brief check to help me monitor your progress",
+    "formTitle": "Weekly Check",
+    "formSubtitle": "Complete this brief check to help me monitor your progress.",
+    "loading": "Loading check...",
+    "submitting": "Submitting...",
+    "submit": "Submit Check",
+    "error": "Error submitting check",
+    "previousFeedbacks": "Your previous checks",
+    "noFeedbacks": "No check submitted",
+    "noFeedbacksMessage": "Your checks will appear here when you submit one.",
+    "status": {
+      "canSubmit": "It's time to complete your check!",
+      "canSubmitMessage": "It's been a week since your last training plan update. Your check will help me monitor your progress.",
+      "noPlan": "No training plan available",
+      "noPlanMessage": "The weekly check will be available one week after you receive your training plan.",
+      "tooSoon": "It's still too early",
+      "tooSoonMessage": "The weekly check will be available one week after your last training plan update.",
+      "tooSoonSinceLast": "It's still too early",
+      "tooSoonSinceLastMessage": "You can submit a new check two weeks after your last one. Thank you for your participation!",
+      "alreadySubmitted": "Check already submitted",
+      "alreadySubmittedMessage": "You've already submitted your check for the current training plan. You can submit another one after the next plan update."
+    },
+    "form": {
+      "thankYou": "Thank you for your check!",
+      "submittedSuccess": "Your check has been submitted successfully. Your answers will help me monitor your progress.",
+      "sending": "Sending...",
+      "closingMessage": "Thank you for your time! Your check is essential to help me support you better."
+    },
+    "checkin": {
+      "energyLevel": "How would you rate your overall energy this week?",
+      "energyLabel": "Energy",
+      "energyOptions": {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
+      "workoutsCompleted": "Did you complete all scheduled workouts?",
+      "workoutsLabel": "Workouts",
+      "workoutsOptions": {
+        "all": "Yes, all of them",
+        "almost_all": "Almost all",
+        "few_or_none": "Few or none"
+      },
+      "mealPlanFollowed": "Did you follow the meal plan?",
+      "mealPlanLabel": "Nutrition",
+      "mealPlanOptions": {
+        "completely": "Yes, completely",
+        "mostly": "Mostly",
+        "sometimes": "Only sometimes",
+        "no": "No"
+      },
+      "sleepQuality": "How would you rate your sleep quality?",
+      "sleepLabel": "Sleep",
+      "sleepOptions": {
+        "excellent": "Excellent",
+        "good": "Good",
+        "fair": "Fair",
+        "poor": "Poor"
+      },
+      "physicalDiscomfort": "Did you experience any joint pain or physical discomfort during workouts?",
+      "discomfortLabel": "Pain/Discomfort",
+      "discomfortNo": "No, I feel good",
+      "discomfortYes": "Yes, I have pain",
+      "muscularTitle": "Muscular",
+      "articularTitle": "Articular",
+      "discomfortZonesLabel": "Select the areas:",
+      "discomfortNotesPlaceholder": "Additional notes (e.g. side, intensity...)...",
+      "discomfortOptions": {
+        "none": "No, I feel good",
+        "minor": "Some minor discomfort",
+        "significant": "Yes, significant pain"
+      },
+      "discomfortDetailsLabel": "Describe the pain or discomfort:",
+      "discomfortDetailsPlaceholder": "Indicate where you feel pain and what type of discomfort...",
+      "muscularZones": {
+        "Collo": "Neck",
+        "Spalla": "Shoulder",
+        "Petto": "Chest",
+        "Schiena alta": "Upper back",
+        "Lombare": "Lower back",
+        "Addome": "Abdomen",
+        "Bicipite": "Bicep",
+        "Tricipite": "Tricep",
+        "Avambraccio": "Forearm",
+        "Gluteo": "Glute",
+        "Quadricipite": "Quadricep",
+        "Femorali": "Hamstrings",
+        "Polpaccio": "Calf",
+        "Tibiale": "Tibialis"
+      },
+      "articularZones": {
+        "Cervicale": "Cervical",
+        "Spalla": "Shoulder",
+        "Gomito": "Elbow",
+        "Polso": "Wrist",
+        "Colonna": "Spine",
+        "Anca": "Hip",
+        "Ginocchio": "Knee",
+        "Caviglia": "Ankle",
+        "Piede": "Foot"
+      },
+      "motivationLevel": "How would you rate your overall motivation?",
+      "motivationLabel": "Motivation",
+      "motivationOptions": {
+        "very_high": "Very high",
+        "good": "Good",
+        "medium": "Medium",
+        "low": "Low"
+      },
+      "weeklyHighlights": "What went particularly well this week?",
+      "weeklyHighlightsLabel": "What went well",
+      "weeklyHighlightsPlaceholder": "Share what went well this week...",
+      "currentWeight": "What is your current weight (in kg)?",
+      "weightPlaceholder": "e.g. 72.5",
+      "weightOptional": "Optional",
+      "submit": "Submit Check",
+      "validationError": "Please answer all questions before submitting the check."
+    },
+    "details": {
+      "submittedOn": "Submitted on",
+      "feedbackOf": "Check of"
+    }
+  },
+  "referral": {
+    "title": "Bring a friend!",
+    "message": "If they join my team, you'll get a €10 discount on your next purchase."
+  },
+  "pdf": {
+    "myTrainingPlan": "My Training Plan",
+    "noPlanYet": "No plan available",
+    "noPlanMessage": "Your personal trainer hasn't uploaded a training plan for you yet. Contact them for more information.",
+    "fileSize": "File size",
+    "uploadedAt": "Uploaded on",
+    "updatedAt": "Updated on",
+    "download": "Download Plan",
+    "downloading": "Downloading...",
+    "downloadFailed": "Download failed. Please try again later.",
+    "tip": "Tip",
+    "tipMessage": "Save the plan on your device to access it offline during workouts."
+  },
+  "trainingDays": {
+    "title": "Your training days",
+    "dayTitle": "Day {{number}}",
+    "videoCount": "{{count}} videos",
+    "noVideos": "No videos for today",
+    "noDays": "No training days",
+    "noDaysMessage": "Your personal trainer hasn't organized videos into training days yet.",
+    "viewAllVideos": "View all videos"
+  }
+}

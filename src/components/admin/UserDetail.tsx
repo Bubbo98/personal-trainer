@@ -34,7 +34,7 @@ type TabType = 'videos' | 'trainingDays' | 'pdf' | 'workoutPlan' | 'bodyComposit
 const UserDetail: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t } = useTranslation('admin');
 
   const [activeTab, setActiveTab] = useState<TabType>('trainingDays');
   const [trainingDaysVersion, setTrainingDaysVersion] = useState(0);
@@ -108,9 +108,9 @@ const UserDetail: React.FC = () => {
       });
 
       loadUserVideos();
-      alert(t('admin.users.videoAssignedSuccess'));
+      alert(t('users.videoAssignedSuccess'));
     } catch (error) {
-      alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.users.assignVideoFailed')}`);
+      alert(`${t('errors.error')}: ${error instanceof Error ? error.message : t('users.assignVideoFailed')}`);
     }
   };
 
@@ -123,9 +123,9 @@ const UserDetail: React.FC = () => {
       });
 
       loadUserVideos();
-      alert(t('admin.users.videoRevokedSuccess'));
+      alert(t('users.videoRevokedSuccess'));
     } catch (error) {
-      alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.users.revokeVideoFailed')}`);
+      alert(`${t('errors.error')}: ${error instanceof Error ? error.message : t('users.revokeVideoFailed')}`);
     }
   };
 

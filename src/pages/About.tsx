@@ -85,7 +85,7 @@ const TimelineSVGPath: React.FC = () => (
 );
 
 const About: React.FC<AboutPageProps> = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['public', 'common']);
   const timelineRef = useRef<HTMLDivElement>(null);
   // const [timelineState, setTimelineState] = useState<TimelineState>({ paths: [], viewBox: "0 0 100 100" }); // Unused for now
   const connectionPointsRef = useRef<(HTMLDivElement | null)[]>([]);
@@ -208,7 +208,7 @@ const About: React.FC<AboutPageProps> = () => {
   return (
     <div className={pageClassName} style={{ scrollBehavior: 'smooth' }}>
       <Helmet>
-        <title>{t('pages.about.title')}</title>
+        <title>{t('common:pages.about.title')}</title>
         <link rel="canonical" href="https://www.esercizifacili.com/about" />
         <meta property="og:url" content="https://www.esercizifacili.com/about" />
         <meta name="description" content="Scopri chi sono Joshua Maurizio e Denise Bergamo, Personal Trainer certificati AIPT e Burningate a Milano. Esperienza in calisthenics, bodybuilding e allenamento funzionale." />

@@ -58,9 +58,9 @@ const ContactImage: React.FC<ContactImageProps> = ({ src, alt, className = "" })
 );
 
 const ContactItem: React.FC<ContactItemProps> = ({ contact, onClick }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['common', 'public']);
   const IconComponent = contact.icon as React.ComponentType<{ className?: string }>;
-  const displayText = contact.isTranslated ? t(contact.text) : contact.text;
+  const displayText = contact.isTranslated ? String(t(contact.text as never)) : contact.text;
 
   const content = (
     <>
@@ -133,7 +133,7 @@ const GymLocationSection: React.FC = () => {
 };
 
 const Contact: React.FC<ContactPageProps> = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['common', 'public']);
   const navigate = useNavigate();
 
   const handleBookingNavigation = useCallback(() => {
@@ -258,7 +258,7 @@ const Contact: React.FC<ContactPageProps> = () => {
               className={buttonClassName}
               aria-label="Book consultation - Navigate to booking page"
             >
-              {t('contact.bookConsultation')}
+              {t('public:contact.bookConsultation')}
             </button>
           </div>
         </div>

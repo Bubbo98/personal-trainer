@@ -1,3 +1,5 @@
+import '../locales/admin';
+import '../locales/dashboard';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
@@ -21,7 +23,7 @@ import { type AdminState } from '../types/admin';
 
 
 const AdminCMS: React.FC = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['admin', 'common']);
   const location = useLocation();
   const [adminState, setAdminState] = useState<AdminState>({
     isAuthenticated: false,
@@ -67,7 +69,7 @@ const AdminCMS: React.FC = () => {
         setAdminState({
           isAuthenticated: false,
           loading: false,
-          error: t('admin.sessionExpired')
+          error: t('sessionExpired')
         });
       }
     };
@@ -113,7 +115,7 @@ const AdminCMS: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Helmet>
-        <title>{t('pages.admin.title')}</title>
+        <title>{t('common:pages.admin.title')}</title>
       </Helmet>
       <Header />
 
@@ -124,7 +126,7 @@ const AdminCMS: React.FC = () => {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin CMS</h1>
-              <p className="text-gray-600">{t('admin.siteManagement')}</p>
+              <p className="text-gray-600">{t('siteManagement')}</p>
             </div>
 
             <button
@@ -132,7 +134,7 @@ const AdminCMS: React.FC = () => {
               className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 transition-colors"
             >
               {React.createElement(FiLogOut as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-              <span>{t('admin.logout')}</span>
+              <span>{t('logout')}</span>
             </button>
           </div>
 
@@ -148,7 +150,7 @@ const AdminCMS: React.FC = () => {
                 }`}
               >
                 {React.createElement(FiUsers as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-                <span className="hidden sm:inline">{t('admin.users.tabTitle')}</span>
+                <span className="hidden sm:inline">{t('users.tabTitle')}</span>
               </button>
 
               <button
@@ -160,7 +162,7 @@ const AdminCMS: React.FC = () => {
                 }`}
               >
                 {React.createElement(FiVideo as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-                <span className="hidden sm:inline">{t('admin.videos.tabTitle')}</span>
+                <span className="hidden sm:inline">{t('videos.tabTitle')}</span>
               </button>
 
               <button
@@ -172,7 +174,7 @@ const AdminCMS: React.FC = () => {
                 }`}
               >
                 {React.createElement(FiStar as React.ComponentType<{ className?: string }>, { className: "w-5 h-5" })}
-                <span className="hidden sm:inline">{t('admin.reviews.tabTitle')}</span>
+                <span className="hidden sm:inline">{t('reviews.tabTitle')}</span>
               </button>
 
               <button

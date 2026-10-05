@@ -63,7 +63,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
   initialData,
   isLoading = false,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('dashboard');
   const [formData, setFormData] = useState<FeedbackFormData>({
     firstName: initialData?.firstName || "",
     lastName: initialData?.lastName || "",
@@ -99,7 +99,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
       !formData.motivationLevel ||
       !formData.currentWeight
     ) {
-      setValidationError(t("dashboard.feedback.checkin.validationError"));
+      setValidationError(t("feedback.checkin.validationError"));
       return;
     }
 
@@ -131,10 +131,10 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
           )}
         </div>
         <h3 className="text-2xl font-bold text-gray-900 mb-2">
-          {t("dashboard.feedback.form.thankYou")}
+          {t("feedback.form.thankYou")}
         </h3>
         <p className="text-gray-600 mb-4">
-          {t("dashboard.feedback.form.submittedSuccess")}
+          {t("feedback.form.submittedSuccess")}
         </p>
       </div>
     );
@@ -145,22 +145,22 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
       {/* Form header */}
       <div className="px-5 py-5 border-b border-gray-100">
         <h2 className="text-xl font-bold text-gray-900">
-          {t("dashboard.feedback.formTitle")}
+          {t("feedback.formTitle")}
         </h2>
-        <p className="text-sm text-gray-500 mt-1">{t("dashboard.feedback.formSubtitle")}</p>
+        <p className="text-sm text-gray-500 mt-1">{t("feedback.formSubtitle")}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="divide-y divide-gray-100">
         {/* Q1 — Energia */}
         <div className="px-5 py-5 space-y-3">
           <p className="text-sm font-semibold text-gray-900">
-            1. {t("dashboard.feedback.checkin.energyLevel")}
+            1. {t("feedback.checkin.energyLevel")}
           </p>
           <div className="space-y-2">
             {[
-              { value: "high", label: t("dashboard.feedback.checkin.energyOptions.high") },
-              { value: "medium", label: t("dashboard.feedback.checkin.energyOptions.medium") },
-              { value: "low", label: t("dashboard.feedback.checkin.energyOptions.low") },
+              { value: "high", label: t("feedback.checkin.energyOptions.high") },
+              { value: "medium", label: t("feedback.checkin.energyOptions.medium") },
+              { value: "low", label: t("feedback.checkin.energyOptions.low") },
             ].map((o) => (
               <OptionButton
                 key={o.value}
@@ -176,13 +176,13 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
         {/* Q2 — Allenamenti */}
         <div className="px-5 py-5 space-y-3">
           <p className="text-sm font-semibold text-gray-900">
-            2. {t("dashboard.feedback.checkin.workoutsCompleted")}
+            2. {t("feedback.checkin.workoutsCompleted")}
           </p>
           <div className="space-y-2">
             {[
-              { value: "all", label: t("dashboard.feedback.checkin.workoutsOptions.all") },
-              { value: "almost_all", label: t("dashboard.feedback.checkin.workoutsOptions.almost_all") },
-              { value: "few_or_none", label: t("dashboard.feedback.checkin.workoutsOptions.few_or_none") },
+              { value: "all", label: t("feedback.checkin.workoutsOptions.all") },
+              { value: "almost_all", label: t("feedback.checkin.workoutsOptions.almost_all") },
+              { value: "few_or_none", label: t("feedback.checkin.workoutsOptions.few_or_none") },
             ].map((o) => (
               <OptionButton
                 key={o.value}
@@ -198,14 +198,14 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
         {/* Q3 — Piano alimentare */}
         <div className="px-5 py-5 space-y-3">
           <p className="text-sm font-semibold text-gray-900">
-            3. {t("dashboard.feedback.checkin.mealPlanFollowed")}
+            3. {t("feedback.checkin.mealPlanFollowed")}
           </p>
           <div className="space-y-2">
             {[
-              { value: "completely", label: t("dashboard.feedback.checkin.mealPlanOptions.completely") },
-              { value: "mostly", label: t("dashboard.feedback.checkin.mealPlanOptions.mostly") },
-              { value: "sometimes", label: t("dashboard.feedback.checkin.mealPlanOptions.sometimes") },
-              { value: "no", label: t("dashboard.feedback.checkin.mealPlanOptions.no") },
+              { value: "completely", label: t("feedback.checkin.mealPlanOptions.completely") },
+              { value: "mostly", label: t("feedback.checkin.mealPlanOptions.mostly") },
+              { value: "sometimes", label: t("feedback.checkin.mealPlanOptions.sometimes") },
+              { value: "no", label: t("feedback.checkin.mealPlanOptions.no") },
             ].map((o) => (
               <OptionButton
                 key={o.value}
@@ -221,14 +221,14 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
         {/* Q4 — Sonno */}
         <div className="px-5 py-5 space-y-3">
           <p className="text-sm font-semibold text-gray-900">
-            4. {t("dashboard.feedback.checkin.sleepQuality")}
+            4. {t("feedback.checkin.sleepQuality")}
           </p>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { value: "excellent", label: t("dashboard.feedback.checkin.sleepOptions.excellent") },
-              { value: "good", label: t("dashboard.feedback.checkin.sleepOptions.good") },
-              { value: "fair", label: t("dashboard.feedback.checkin.sleepOptions.fair") },
-              { value: "poor", label: t("dashboard.feedback.checkin.sleepOptions.poor") },
+              { value: "excellent", label: t("feedback.checkin.sleepOptions.excellent") },
+              { value: "good", label: t("feedback.checkin.sleepOptions.good") },
+              { value: "fair", label: t("feedback.checkin.sleepOptions.fair") },
+              { value: "poor", label: t("feedback.checkin.sleepOptions.poor") },
             ].map((o) => (
               <button
                 key={o.value}
@@ -249,7 +249,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
         {/* Q5 — Dolori */}
         <div className="px-5 py-5 space-y-3">
           <p className="text-sm font-semibold text-gray-900">
-            5. {t("dashboard.feedback.checkin.physicalDiscomfort")}
+            5. {t("feedback.checkin.physicalDiscomfort")}
           </p>
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -264,7 +264,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
                   : "border-gray-200 bg-white text-gray-700 active:bg-gray-50"
               }`}
             >
-              {t("dashboard.feedback.checkin.discomfortNo")}
+              {t("feedback.checkin.discomfortNo")}
             </button>
             <button
               type="button"
@@ -275,7 +275,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
                   : "border-gray-200 bg-white text-gray-700 active:bg-gray-50"
               }`}
             >
-              {t("dashboard.feedback.checkin.discomfortYes")}
+              {t("feedback.checkin.discomfortYes")}
             </button>
           </div>
 
@@ -285,7 +285,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
               <div className="border border-gray-200 rounded-xl p-4 space-y-3">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">💪</span>
-                  <span className="text-sm font-semibold text-gray-800">{t("dashboard.feedback.checkin.muscularTitle")}</span>
+                  <span className="text-sm font-semibold text-gray-800">{t("feedback.checkin.muscularTitle")}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {MUSCULAR_ZONES.map((zone) => {
@@ -316,7 +316,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
                   onChange={(e) => setFormData(prev => ({ ...prev, muscularNotes: e.target.value }))}
                   rows={2}
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors"
-                  placeholder={t("dashboard.feedback.checkin.discomfortNotesPlaceholder")}
+                  placeholder={t("feedback.checkin.discomfortNotesPlaceholder")}
                 />
               </div>
 
@@ -324,7 +324,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
               <div className="border border-gray-200 rounded-xl p-4 space-y-3">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">🦴</span>
-                  <span className="text-sm font-semibold text-gray-800">{t("dashboard.feedback.checkin.articularTitle")}</span>
+                  <span className="text-sm font-semibold text-gray-800">{t("feedback.checkin.articularTitle")}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {ARTICULAR_ZONES.map((zone) => {
@@ -355,7 +355,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
                   onChange={(e) => setFormData(prev => ({ ...prev, articularNotes: e.target.value }))}
                   rows={2}
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors"
-                  placeholder={t("dashboard.feedback.checkin.discomfortNotesPlaceholder")}
+                  placeholder={t("feedback.checkin.discomfortNotesPlaceholder")}
                 />
               </div>
             </div>
@@ -365,14 +365,14 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
         {/* Q6 — Motivazione */}
         <div className="px-5 py-5 space-y-3">
           <p className="text-sm font-semibold text-gray-900">
-            6. {t("dashboard.feedback.checkin.motivationLevel")}
+            6. {t("feedback.checkin.motivationLevel")}
           </p>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { value: "very_high", label: t("dashboard.feedback.checkin.motivationOptions.very_high") },
-              { value: "good", label: t("dashboard.feedback.checkin.motivationOptions.good") },
-              { value: "medium", label: t("dashboard.feedback.checkin.motivationOptions.medium") },
-              { value: "low", label: t("dashboard.feedback.checkin.motivationOptions.low") },
+              { value: "very_high", label: t("feedback.checkin.motivationOptions.very_high") },
+              { value: "good", label: t("feedback.checkin.motivationOptions.good") },
+              { value: "medium", label: t("feedback.checkin.motivationOptions.medium") },
+              { value: "low", label: t("feedback.checkin.motivationOptions.low") },
             ].map((o) => (
               <button
                 key={o.value}
@@ -393,9 +393,9 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
         {/* Q7 — Note settimanali */}
         <div className="px-5 py-5 space-y-3">
           <p className="text-sm font-semibold text-gray-900">
-            7. {t("dashboard.feedback.checkin.weeklyHighlights")}{" "}
+            7. {t("feedback.checkin.weeklyHighlights")}{" "}
             <span className="text-xs font-normal text-gray-400">
-              {t("dashboard.feedback.checkin.weightOptional")}
+              {t("feedback.checkin.weightOptional")}
             </span>
           </p>
           <textarea
@@ -403,14 +403,14 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
             onChange={(e) => handleChange("weeklyHighlights", e.target.value)}
             rows={4}
             className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent text-sm"
-            placeholder={t("dashboard.feedback.checkin.weeklyHighlightsPlaceholder")}
+            placeholder={t("feedback.checkin.weeklyHighlightsPlaceholder")}
           />
         </div>
 
         {/* Q8 — Peso */}
         <div className="px-5 py-5 space-y-3">
           <p className="text-sm font-semibold text-gray-900">
-            8. {t("dashboard.feedback.checkin.currentWeight")}
+            8. {t("feedback.checkin.currentWeight")}
           </p>
           <div className="flex items-center gap-3">
             <input
@@ -444,7 +444,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
             {isLoading ? (
               <>
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                <span>{t("dashboard.feedback.form.sending")}</span>
+                <span>{t("feedback.form.sending")}</span>
               </>
             ) : (
               <>
@@ -452,12 +452,12 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
                   FiSend as React.ComponentType<{ className?: string }>,
                   { className: "w-5 h-5" },
                 )}
-                <span>{t("dashboard.feedback.checkin.submit")}</span>
+                <span>{t("feedback.checkin.submit")}</span>
               </>
             )}
           </button>
           <p className="text-xs text-gray-400 text-center mt-3">
-            {t("dashboard.feedback.form.closingMessage")}
+            {t("feedback.form.closingMessage")}
           </p>
         </div>
       </form>

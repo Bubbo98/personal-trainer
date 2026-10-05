@@ -11,7 +11,7 @@ const LOGO_PATHS = ['/Logo/logo1.jpg', '/Logo/logo2.jpg'] as const;
 // Types
 interface NavigationItem {
   key: string;
-  translationKey: string;
+  translationKey: 'nav.about' | 'nav.services' | 'nav.contact';
   icon: IconType;
   route: string;
   ariaLabel: string;
@@ -56,7 +56,7 @@ const NavigationButton: React.FC<{
 };
 
 const Header: React.FC = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('common');
   const navigate = useNavigate();
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);

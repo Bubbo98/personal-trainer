@@ -10,7 +10,7 @@ import { apiCall, formatDate } from '../../utils/adminUtils';
 import { type Review } from '../../types/admin';
 
 const ReviewManagement: React.FC = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['admin', 'public', 'common']);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -38,7 +38,7 @@ const ReviewManagement: React.FC = () => {
       });
       loadReviews();
     } catch (error) {
-      alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.reviews.operationFailed')}`);
+      alert(`${t('errors.error')}: ${error instanceof Error ? error.message : t('reviews.operationFailed')}`);
     }
   };
 
@@ -50,19 +50,19 @@ const ReviewManagement: React.FC = () => {
       });
       loadReviews();
     } catch (error) {
-      alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.reviews.operationFailed')}`);
+      alert(`${t('errors.error')}: ${error instanceof Error ? error.message : t('reviews.operationFailed')}`);
     }
   };
 
   const handleDeleteReview = async (reviewId: number, authorName: string) => {
-    if (window.confirm(t('admin.reviews.deleteConfirm', { authorName }))) {
+    if (window.confirm(t('reviews.deleteConfirm', { authorName }))) {
       try {
         await apiCall(`/admin/reviews/${reviewId}`, {
           method: 'DELETE'
         });
         loadReviews();
       } catch (error) {
-        alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.reviews.deleteFailed')}`);
+        alert(`${t('errors.error')}: ${error instanceof Error ? error.message : t('reviews.deleteFailed')}`);
       }
     }
   };
@@ -90,16 +90,16 @@ const ReviewManagement: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">{t('admin.reviews.title')}</h2>
+        <h2 className="text-2xl font-bold text-gray-900">{t('reviews.title')}</h2>
         <div className="text-sm text-gray-600">
-          {reviews.length} {t('admin.reviews.totalReviews')}
+          {reviews.length} {t('reviews.totalReviews')}
         </div>
       </div>
 
       {/* Reviews List */}
       {reviews.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-xl">
-          <p className="text-gray-600">{t('reviews.noReviews')}</p>
+          <p className="text-gray-600">{t('public:reviews.noReviews')}</p>
         </div>
       ) : (
         <div className="grid gap-6">
@@ -124,12 +124,12 @@ const ReviewManagement: React.FC = () => {
                   <p className="text-gray-700 mb-3 leading-relaxed">{review.comment}</p>
 
                   <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-gray-500">
-                    <span>{t('admin.videos.createdAt')}: {formatDate(review.createdAt)}</span>
+                    <span>{t('videos.createdAt')}: {formatDate(review.createdAt)}</span>
                     {review.updatedAt !== review.createdAt && (
-                      <span className="hidden sm:inline">{t('admin.reviews.modified')}: {formatDate(review.updatedAt)}</span>
+                      <span className="hidden sm:inline">{t('reviews.modified')}: {formatDate(review.updatedAt)}</span>
                     )}
                     {review.approvedAt && (
-                      <span className="hidden sm:inline">{t('admin.reviews.approved')}: {formatDate(review.approvedAt)}</span>
+                      <span className="hidden sm:inline">{t('reviews.approved')}: {formatDate(review.approvedAt)}</span>
                     )}
                   </div>
                 </div>
@@ -137,11 +137,11 @@ const ReviewManagement: React.FC = () => {
                 {/* Status badges */}
                 <div className="flex sm:flex-col gap-2 sm:space-y-1 sm:ml-4">
                   <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${review.isApproved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                    {review.isApproved ? t('admin.reviews.approved') : t('admin.reviews.pending')}
+                    {review.isApproved ? t('reviews.approved') : t('reviews.pending')}
                   </span>
                   {review.isFeatured && (
                     <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800 whitespace-nowrap">
-                      {t('admin.reviews.featured')}
+                      {t('reviews.featured')}
                     </span>
                   )}
                 </div>
@@ -157,7 +157,7 @@ const ReviewManagement: React.FC = () => {
                       className="bg-green-600 text-white px-3 py-2.5 text-sm rounded-xl hover:bg-green-700 transition-colors flex items-center justify-center gap-1 flex-1 sm:flex-initial"
                     >
                       {React.createElement(FiCheck as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
-                      <span>{t('admin.reviews.approve')}</span>
+                      <span>{t('reviews.approve')}</span>
                     </button>
                   ) : (
                     <button
@@ -165,7 +165,7 @@ const ReviewManagement: React.FC = () => {
                       className="bg-yellow-600 text-white px-3 py-2.5 text-sm rounded-xl hover:bg-yellow-700 transition-colors flex items-center justify-center gap-1 flex-1 sm:flex-initial"
                     >
                       {React.createElement(FiX as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
-                      <span>{t('admin.reviews.unapprove')}</span>
+                      <span>{t('reviews.unapprove')}</span>
                     </button>
                   )}
 
@@ -177,7 +177,7 @@ const ReviewManagement: React.FC = () => {
                         className="bg-blue-600 text-white px-3 py-2.5 text-sm rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-1 flex-1 sm:flex-initial"
                       >
                         {React.createElement(FiStar as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
-                        <span>{t('admin.reviews.toggleFeatured')}</span>
+                        <span>{t('reviews.toggleFeatured')}</span>
                       </button>
                     ) : (
                       <button
@@ -185,7 +185,7 @@ const ReviewManagement: React.FC = () => {
                         className="bg-gray-600 text-white px-3 py-2.5 text-sm rounded-xl hover:bg-gray-700 transition-colors flex items-center justify-center gap-1 flex-1 sm:flex-initial"
                       >
                         {React.createElement(FiStar as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
-                        <span>{t('admin.reviews.toggleFeatured')}</span>
+                        <span>{t('reviews.toggleFeatured')}</span>
                       </button>
                     )
                   )}
@@ -197,7 +197,7 @@ const ReviewManagement: React.FC = () => {
                   className="bg-red-600 text-white px-3 py-2.5 text-sm rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-1 w-full sm:w-auto"
                 >
                   {React.createElement(FiTrash2 as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
-                  <span>{t('common.delete')}</span>
+                  <span>{t('common:common.delete')}</span>
                 </button>
               </div>
             </div>
@@ -208,29 +208,29 @@ const ReviewManagement: React.FC = () => {
       {/* Summary stats */}
       {reviews.length > 0 && (
         <div className="bg-white rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.reviews.statistics')}</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('reviews.statistics')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">{reviews.length}</div>
-              <div className="text-sm text-gray-600">{t('admin.reviews.total')}</div>
+              <div className="text-sm text-gray-600">{t('reviews.total')}</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
                 {reviews.filter(r => r.isApproved).length}
               </div>
-              <div className="text-sm text-gray-600">{t('admin.reviews.approvedCount')}</div>
+              <div className="text-sm text-gray-600">{t('reviews.approvedCount')}</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">
                 {reviews.filter(r => r.isFeatured).length}
               </div>
-              <div className="text-sm text-gray-600">{t('admin.reviews.featuredCount')}</div>
+              <div className="text-sm text-gray-600">{t('reviews.featuredCount')}</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">
                 {reviews.length > 0 ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1) : '0'}
               </div>
-              <div className="text-sm text-gray-600">{t('admin.reviews.averageRating')}</div>
+              <div className="text-sm text-gray-600">{t('reviews.averageRating')}</div>
             </div>
           </div>
         </div>

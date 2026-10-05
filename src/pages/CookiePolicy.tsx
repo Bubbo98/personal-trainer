@@ -5,7 +5,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 const CookiePolicy: React.FC = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('common');
 
   return (
     <div className="min-h-screen bg-white">

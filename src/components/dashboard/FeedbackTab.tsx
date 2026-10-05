@@ -40,7 +40,7 @@ interface FeedbackTabProps {
 }
 
 const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('dashboard');
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [feedbackStatus, setFeedbackStatus] = useState<FeedbackStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,7 +75,7 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) =
       setFeedbacks(response.data.feedbacks);
     } catch (err) {
       console.error('Error loading feedbacks:', err);
-      setError(t('dashboard.feedback.error'));
+      setError(t('feedback.error'));
     } finally {
       setLoading(false);
     }
@@ -93,7 +93,7 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) =
 
       const authToken = localStorage.getItem(STORAGE_KEY);
       if (!authToken) {
-        throw new Error(t('dashboard.feedback.error'));
+        throw new Error(t('feedback.error'));
       }
 
       await apiCall('/feedback', {
@@ -112,7 +112,7 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) =
       }
     } catch (err) {
       console.error('Error submitting feedback:', err);
-      setError(t('dashboard.feedback.error'));
+      setError(t('feedback.error'));
       throw err;
     } finally {
       setSubmitting(false);
@@ -207,8 +207,8 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) =
       <div className="flex items-center space-x-3">
         {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-8 h-8 text-gray-900" })}
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">{t('dashboard.feedback.title')}</h2>
-          <p className="text-gray-600">{t('dashboard.feedback.subtitle')}</p>
+          <h2 className="text-2xl font-bold text-gray-900">{t('feedback.title')}</h2>
+          <p className="text-gray-600">{t('feedback.subtitle')}</p>
         </div>
       </div>
 
@@ -235,9 +235,9 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) =
           <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg mb-4 flex items-start space-x-2">
             {React.createElement(FiClock as React.ComponentType<{ className?: string }>, { className: "w-5 h-5 mt-0.5" })}
             <div>
-              <p className="font-medium">{t('dashboard.feedback.status.canSubmit')}</p>
+              <p className="font-medium">{t('feedback.status.canSubmit')}</p>
               <p className="text-sm">
-                {t('dashboard.feedback.status.canSubmitMessage')}
+                {t('feedback.status.canSubmitMessage')}
               </p>
             </div>
           </div>
@@ -282,9 +282,9 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) =
               <div className="flex-1">
                 {feedbackStatus.reason === 'no_pdf' && (
                   <>
-                    <p className="font-semibold text-gray-900 mb-1">{t('dashboard.feedback.status.noPlan')}</p>
+                    <p className="font-semibold text-gray-900 mb-1">{t('feedback.status.noPlan')}</p>
                     <p className="text-sm text-gray-700">
-                      {t('dashboard.feedback.status.noPlanMessage')}
+                      {t('feedback.status.noPlanMessage')}
                     </p>
                   </>
                 )}
@@ -300,13 +300,13 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) =
                   <>
                     <p className="font-semibold text-gray-900 mb-1">
                       {feedbackStatus.reason === 'too_soon'
-                        ? t('dashboard.feedback.status.tooSoon')
-                        : t('dashboard.feedback.status.tooSoonSinceLast')}
+                        ? t('feedback.status.tooSoon')
+                        : t('feedback.status.tooSoonSinceLast')}
                     </p>
                     <p className="text-sm text-gray-700 mb-4">
                       {feedbackStatus.reason === 'too_soon'
-                        ? t('dashboard.feedback.status.tooSoonMessage')
-                        : t('dashboard.feedback.status.tooSoonSinceLastMessage')}
+                        ? t('feedback.status.tooSoonMessage')
+                        : t('feedback.status.tooSoonSinceLastMessage')}
                     </p>
 
                     {/* Progress Bar */}
@@ -345,9 +345,9 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) =
                 )}
                 {feedbackStatus.reason === 'already_submitted' && (
                   <>
-                    <p className="font-semibold text-gray-900 mb-1">{t('dashboard.feedback.status.alreadySubmitted')}</p>
+                    <p className="font-semibold text-gray-900 mb-1">{t('feedback.status.alreadySubmitted')}</p>
                     <p className="text-sm text-gray-700">
-                      {t('dashboard.feedback.status.alreadySubmittedMessage')}
+                      {t('feedback.status.alreadySubmittedMessage')}
                     </p>
                   </>
                 )}
@@ -360,7 +360,7 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) =
       {/* Previous Checks */}
       {feedbacks.length > 0 && (
         <div className="mt-8">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">{t('dashboard.feedback.previousFeedbacks')}</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-4">{t('feedback.previousFeedbacks')}</h3>
           <div className="space-y-4">
             {feedbacks.map((feedback) => (
               <div key={feedback.id} className="bg-white rounded-xl shadow-md overflow-hidden">
@@ -368,15 +368,15 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) =
                 <div className="px-4 py-4 border-b border-gray-100 flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h4 className="font-semibold text-gray-900 truncate">
-                      {t('dashboard.feedback.details.feedbackOf')} {formatDate(feedback.feedback_date)}
+                      {t('feedback.details.feedbackOf')} {formatDate(feedback.feedback_date)}
                     </h4>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {t('dashboard.feedback.details.submittedOn')} {formatDate(feedback.created_at)}
+                      {t('feedback.details.submittedOn')} {formatDate(feedback.created_at)}
                     </p>
                   </div>
                   {feedback.current_weight && (
                     <div className="flex-shrink-0 text-right">
-                      <p className="text-xs text-gray-400">{t('dashboard.feedback.checkin.currentWeight')}</p>
+                      <p className="text-xs text-gray-400">{t('feedback.checkin.currentWeight')}</p>
                       <p className="text-xl font-bold text-gray-900 leading-tight">{feedback.current_weight} kg</p>
                     </div>
                   )}
@@ -385,12 +385,12 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) =
                 {/* Metrics */}
                 <div className="px-4 py-4 grid grid-cols-2 gap-x-4 gap-y-3">
                   {[
-                    { label: t('dashboard.feedback.checkin.energyLabel'), value: getEnergyLabel(feedback.energy_level), color: getStatusColor(feedback.energy_level, 'energy') },
-                    { label: t('dashboard.feedback.checkin.workoutsLabel'), value: getWorkoutsLabel(feedback.workouts_completed), color: getStatusColor(feedback.workouts_completed, 'workouts') },
-                    { label: t('dashboard.feedback.checkin.mealPlanLabel'), value: getMealPlanLabel(feedback.meal_plan_followed), color: getStatusColor(feedback.meal_plan_followed, 'meal') },
-                    { label: t('dashboard.feedback.checkin.sleepLabel'), value: getSleepLabel(feedback.sleep_quality), color: getStatusColor(feedback.sleep_quality, 'sleep') },
-                    { label: t('dashboard.feedback.checkin.discomfortLabel'), value: getDiscomfortLabel(feedback.physical_discomfort), color: getStatusColor(feedback.physical_discomfort, 'discomfort') },
-                    { label: t('dashboard.feedback.checkin.motivationLabel'), value: getMotivationLabel(feedback.motivation_level), color: getStatusColor(feedback.motivation_level, 'motivation') },
+                    { label: t('feedback.checkin.energyLabel'), value: getEnergyLabel(feedback.energy_level), color: getStatusColor(feedback.energy_level, 'energy') },
+                    { label: t('feedback.checkin.workoutsLabel'), value: getWorkoutsLabel(feedback.workouts_completed), color: getStatusColor(feedback.workouts_completed, 'workouts') },
+                    { label: t('feedback.checkin.mealPlanLabel'), value: getMealPlanLabel(feedback.meal_plan_followed), color: getStatusColor(feedback.meal_plan_followed, 'meal') },
+                    { label: t('feedback.checkin.sleepLabel'), value: getSleepLabel(feedback.sleep_quality), color: getStatusColor(feedback.sleep_quality, 'sleep') },
+                    { label: t('feedback.checkin.discomfortLabel'), value: getDiscomfortLabel(feedback.physical_discomfort), color: getStatusColor(feedback.physical_discomfort, 'discomfort') },
+                    { label: t('feedback.checkin.motivationLabel'), value: getMotivationLabel(feedback.motivation_level), color: getStatusColor(feedback.motivation_level, 'motivation') },
                   ].map((metric) => (
                     <div key={metric.label}>
                       <p className="text-xs text-gray-500 mb-1">{metric.label}</p>
@@ -403,7 +403,7 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) =
 
                 {feedback.weekly_highlights && (
                   <div className="px-4 pb-4">
-                    <p className="text-xs text-gray-500 mb-1">{t('dashboard.feedback.checkin.weeklyHighlightsLabel')}</p>
+                    <p className="text-xs text-gray-500 mb-1">{t('feedback.checkin.weeklyHighlightsLabel')}</p>
                     <p className="text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded-lg">{feedback.weekly_highlights}</p>
                   </div>
                 )}
@@ -418,10 +418,10 @@ const FeedbackTab: React.FC<FeedbackTabProps> = ({ user, onCheckInCompleted }) =
         <div className="text-center py-12">
           {React.createElement(FiMessageSquare as React.ComponentType<{ className?: string }>, { className: "w-16 h-16 text-gray-400 mx-auto mb-4" })}
           <h3 className="text-xl font-semibold text-gray-600 mb-2">
-            {t('dashboard.feedback.noFeedbacks')}
+            {t('feedback.noFeedbacks')}
           </h3>
           <p className="text-gray-500">
-            {t('dashboard.feedback.noFeedbacksMessage')}
+            {t('feedback.noFeedbacksMessage')}
           </p>
         </div>
       )}

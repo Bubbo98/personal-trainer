@@ -16,7 +16,7 @@ interface HeroImage {
 
 interface ActionButtonType {
   key: string;
-  translationKey: string;
+  translationKey: 'hero.consultation' | 'hero.discover';
   onClick: () => void;
   className: string;
   variant: 'primary' | 'secondary';
@@ -49,7 +49,7 @@ const ActionButton: React.FC<{
 );
 
 const Hero: React.FC = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('public');
   const navigate = useNavigate();
 
   // Navigation handlers

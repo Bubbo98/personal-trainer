@@ -1,0 +1,174 @@
+{
+  "welcome": "Benvenuto",
+  "logout": "Esci",
+  "loading": "Caricamento dashboard...",
+  "loadingVideos": "Caricamento video...",
+  "retry": "Riprova",
+  "searchPlaceholder": "Cerca video per titolo o descrizione...",
+  "allCategories": "Tutti",
+  "totalVideos": "Video totali",
+  "playVideo": "Riproduci",
+  "noVideosFound": "Nessun video trovato",
+  "noVideosInCategory": "Nessun video nella categoria",
+  "noVideosAvailable": "Nessun video disponibile",
+  "modifiedOn": "Modificata il",
+  "cancel": "Annulla",
+  "search": "Ricerca",
+  "closeVideo": "Chiudi video",
+  "tabs": {
+    "videos": "Video",
+    "trainingPlan": "Scheda",
+    "feedback": "Check"
+  },
+  "feedback": {
+    "title": "Check Settimanale",
+    "subtitle": "Compila questo breve check per aiutarmi a monitorare i tuoi progressi",
+    "formTitle": "Check Settimanale",
+    "formSubtitle": "Compila questo breve check per aiutarmi a monitorare i tuoi progressi.",
+    "loading": "Caricamento check...",
+    "submitting": "Invio in corso...",
+    "submit": "Invia Check",
+    "error": "Errore durante l'invio del check",
+    "previousFeedbacks": "I tuoi check precedenti",
+    "noFeedbacks": "Nessun check inviato",
+    "noFeedbacksMessage": "I tuoi check appariranno qui quando ne invierai uno.",
+    "status": {
+      "canSubmit": "È ora di compilare il check!",
+      "canSubmitMessage": "È passata una settimana dall'ultimo aggiornamento della tua scheda. Il tuo check mi aiuterà a monitorare i tuoi progressi.",
+      "noPlan": "Nessuna scheda disponibile",
+      "noPlanMessage": "Il check settimanale sarà disponibile una settimana dopo che riceverai la tua scheda di allenamento.",
+      "tooSoon": "È ancora troppo presto",
+      "tooSoonMessage": "Il check settimanale sarà disponibile una settimana dopo l'ultimo aggiornamento della tua scheda.",
+      "tooSoonSinceLast": "È ancora troppo presto",
+      "tooSoonSinceLastMessage": "Potrai inviare un nuovo check tra due settimane dall'ultimo inviato. Grazie per la tua partecipazione!",
+      "alreadySubmitted": "Check già inviato",
+      "alreadySubmittedMessage": "Hai già inviato il check per l'attuale scheda di allenamento. Potrai inviarne un altro dopo il prossimo aggiornamento della scheda."
+    },
+    "form": {
+      "thankYou": "Grazie per il tuo check!",
+      "submittedSuccess": "Il tuo check è stato inviato con successo. Le tue risposte mi aiuteranno a monitorare i tuoi progressi.",
+      "sending": "Invio in corso...",
+      "closingMessage": "Grazie per il tuo tempo! Il tuo check è fondamentale per aiutarmi a supportarti al meglio."
+    },
+    "checkin": {
+      "energyLevel": "Come valuti la tua energia generale di questa settimana?",
+      "energyLabel": "Energia",
+      "energyOptions": {
+        "high": "Alta",
+        "medium": "Media",
+        "low": "Bassa"
+      },
+      "workoutsCompleted": "Hai completato tutti gli allenamenti previsti?",
+      "workoutsLabel": "Allenamenti",
+      "workoutsOptions": {
+        "all": "Sì, tutti",
+        "almost_all": "Quasi tutti",
+        "few_or_none": "Pochi o nessuno"
+      },
+      "mealPlanFollowed": "Hai rispettato il piano alimentare?",
+      "mealPlanLabel": "Alimentazione",
+      "mealPlanOptions": {
+        "completely": "Sì, completamente",
+        "mostly": "In gran parte",
+        "sometimes": "Solo a volte",
+        "no": "No"
+      },
+      "sleepQuality": "Come valuti la qualità del tuo sonno?",
+      "sleepLabel": "Sonno",
+      "sleepOptions": {
+        "excellent": "Ottima",
+        "good": "Buona",
+        "fair": "Così così",
+        "poor": "Scarsa"
+      },
+      "physicalDiscomfort": "Hai avvertito dolori articolari o fastidi fisici durante gli allenamenti?",
+      "discomfortLabel": "Dolori/Fastidi",
+      "discomfortNo": "No, mi sento bene",
+      "discomfortYes": "Sì, ho dei dolori",
+      "muscularTitle": "Muscolari",
+      "articularTitle": "Articolari",
+      "discomfortZonesLabel": "Seleziona le zone:",
+      "discomfortNotesPlaceholder": "Note aggiuntive (es. lato, intensità...)...",
+      "discomfortOptions": {
+        "none": "No, mi sento bene",
+        "minor": "Qualche piccolo fastidio",
+        "significant": "Sì, dolore rilevante"
+      },
+      "discomfortDetailsLabel": "Descrivi i dolori o fastidi:",
+      "discomfortDetailsPlaceholder": "Indica dove senti dolore e che tipo di fastidio è...",
+      "muscularZones": {
+        "Collo": "Collo",
+        "Spalla": "Spalla",
+        "Petto": "Petto",
+        "Schiena alta": "Schiena alta",
+        "Lombare": "Lombare",
+        "Addome": "Addome",
+        "Bicipite": "Bicipite",
+        "Tricipite": "Tricipite",
+        "Avambraccio": "Avambraccio",
+        "Gluteo": "Gluteo",
+        "Quadricipite": "Quadricipite",
+        "Femorali": "Femorali",
+        "Polpaccio": "Polpaccio",
+        "Tibiale": "Tibiale"
+      },
+      "articularZones": {
+        "Cervicale": "Cervicale",
+        "Spalla": "Spalla",
+        "Gomito": "Gomito",
+        "Polso": "Polso",
+        "Colonna": "Colonna",
+        "Anca": "Anca",
+        "Ginocchio": "Ginocchio",
+        "Caviglia": "Caviglia",
+        "Piede": "Piede"
+      },
+      "motivationLevel": "Come valuti la tua motivazione generale?",
+      "motivationLabel": "Motivazione",
+      "motivationOptions": {
+        "very_high": "Molto alta",
+        "good": "Buona",
+        "medium": "Media",
+        "low": "Bassa"
+      },
+      "weeklyHighlights": "Cosa è andato particolarmente bene questa settimana?",
+      "weeklyHighlightsLabel": "Cosa è andato bene",
+      "weeklyHighlightsPlaceholder": "Racconta cosa è andato bene questa settimana...",
+      "currentWeight": "Qual è il tuo peso attuale (in kg)?",
+      "weightPlaceholder": "Es. 72.5",
+      "weightOptional": "Opzionale",
+      "submit": "Invia Check",
+      "validationError": "Per favore rispondi a tutte le domande prima di inviare il check."
+    },
+    "details": {
+      "submittedOn": "Inviato il",
+      "feedbackOf": "Check del"
+    }
+  },
+  "referral": {
+    "title": "Porta un amico!",
+    "message": "Se si unirà al mio team, otterrai uno sconto di €10 sul prossimo acquisto."
+  },
+  "pdf": {
+    "myTrainingPlan": "La Mia Scheda di Allenamento",
+    "noPlanYet": "Nessuna scheda disponibile",
+    "noPlanMessage": "Il tuo personal trainer non ha ancora caricato una scheda di allenamento per te. Contattalo per maggiori informazioni.",
+    "fileSize": "Dimensione",
+    "uploadedAt": "Caricato il",
+    "updatedAt": "Aggiornato il",
+    "download": "Scarica Scheda",
+    "downloading": "Download in corso...",
+    "downloadFailed": "Download fallito. Riprova più tardi.",
+    "tip": "Consiglio",
+    "tipMessage": "Salva la scheda sul tuo dispositivo per consultarla anche offline durante gli allenamenti."
+  },
+  "trainingDays": {
+    "title": "I tuoi giorni di allenamento",
+    "dayTitle": "Giorno {{number}}",
+    "videoCount": "{{count}} video",
+    "noVideos": "Nessun video per oggi",
+    "noDays": "Nessun giorno di allenamento",
+    "noDaysMessage": "Il tuo personal trainer non ha ancora organizzato i video in giorni di allenamento.",
+    "viewAllVideos": "Visualizza tutti i video"
+  }
+}

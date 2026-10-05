@@ -24,7 +24,7 @@ const getPageSize = () => {
 };
 
 const VideoManagement: React.FC = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['admin', 'common']);
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
@@ -112,18 +112,18 @@ const VideoManagement: React.FC = () => {
       };
       video.src = URL.createObjectURL(file);
     } else {
-      alert(t('admin.videos.onlyVideoFiles'));
+      alert(t('videos.onlyVideoFiles'));
     }
   };
 
   const handleUploadVideo = async () => {
     if (!selectedFile) {
-      alert(t('admin.videos.selectVideoFile'));
+      alert(t('videos.selectVideoFile'));
       return;
     }
 
     if (!createVideoForm.category) {
-      alert(t('admin.videos.selectCategoryFirst'));
+      alert(t('videos.selectCategoryFirst'));
       return;
     }
 
@@ -175,11 +175,11 @@ const VideoManagement: React.FC = () => {
 
       // Update form with uploaded file path
       setCreateVideoForm(prev => ({ ...prev, filePath }));
-      alert(t('admin.videos.uploadSuccess'));
+      alert(t('videos.uploadSuccess'));
 
     } catch (error) {
       console.error('Upload error:', error);
-      alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.videos.uploadFailed')}`);
+      alert(`${t('errors.error')}: ${error instanceof Error ? error.message : t('videos.uploadFailed')}`);
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -206,14 +206,14 @@ const VideoManagement: React.FC = () => {
       setShowCreateVideo(false);
       setPage(1);
       loadVideos();
-      alert(t('admin.videos.videoCreatedSuccess'));
+      alert(t('videos.videoCreatedSuccess'));
     } catch (error) {
-      alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.videos.createVideoFailed')}`);
+      alert(`${t('errors.error')}: ${error instanceof Error ? error.message : t('videos.createVideoFailed')}`);
     }
   };
 
   const handleDeleteVideo = async (videoId: number, videoTitle: string) => {
-    if (!window.confirm(t('admin.videos.deleteConfirm', { title: videoTitle }))) {
+    if (!window.confirm(t('videos.deleteConfirm', { title: videoTitle }))) {
       return;
     }
 
@@ -223,9 +223,9 @@ const VideoManagement: React.FC = () => {
       });
 
       loadVideos();
-      alert(t('admin.videos.videoDeletedSuccess'));
+      alert(t('videos.videoDeletedSuccess'));
     } catch (error) {
-      alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : t('admin.videos.deleteVideoFailed')}`);
+      alert(`${t('errors.error')}: ${error instanceof Error ? error.message : t('videos.deleteVideoFailed')}`);
     }
   };
 
@@ -270,7 +270,7 @@ const VideoManagement: React.FC = () => {
       setEditForm({ title: '', description: '', muscleGroup: '' });
       alert('Video aggiornato con successo!');
     } catch (error) {
-      alert(`${t('admin.errors.error')}: ${error instanceof Error ? error.message : 'Aggiornamento fallito'}`);
+      alert(`${t('errors.error')}: ${error instanceof Error ? error.message : 'Aggiornamento fallito'}`);
     }
   };
 
@@ -286,13 +286,13 @@ const VideoManagement: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">{t('admin.videos.title')}</h2>
+        <h2 className="text-2xl font-bold text-gray-900">{t('videos.title')}</h2>
         <button
           onClick={() => setShowCreateVideo(true)}
           className="bg-gray-900 text-white px-4 py-2.5 rounded-xl hover:bg-gray-800 transition-colors flex items-center space-x-2"
         >
           {React.createElement(FiPlus as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
-          <span>{t('admin.videos.newVideo')}</span>
+          <span>{t('videos.newVideo')}</span>
         </button>
       </div>
 
@@ -346,7 +346,7 @@ const VideoManagement: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900">{t('admin.videos.newVideo')}</h3>
+              <h3 className="text-xl font-bold text-gray-900">{t('videos.newVideo')}</h3>
               <button
                 onClick={() => setShowCreateVideo(false)}
                 className="text-gray-500 hover:text-gray-700"
@@ -357,39 +357,39 @@ const VideoManagement: React.FC = () => {
 
             <form onSubmit={handleCreateVideo} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('admin.videos.videoTitle')}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('videos.videoTitle')}</label>
                 <input
                   type="text"
                   required
                   value={createVideoForm.title}
                   onChange={(e) => setCreateVideoForm(prev => ({ ...prev, title: e.target.value }))}
                   className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
-                  placeholder={t('admin.videos.titlePlaceholder')}
+                  placeholder={t('videos.titlePlaceholder')}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('admin.videos.description')}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('videos.description')}</label>
                 <textarea
                   value={createVideoForm.description}
                   onChange={(e) => setCreateVideoForm(prev => ({ ...prev, description: e.target.value }))}
                   className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                   rows={3}
-                  placeholder={t('admin.videos.descriptionPlaceholder')}
+                  placeholder={t('videos.descriptionPlaceholder')}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('admin.videos.category')}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('videos.category')}</label>
                 <select
                   required
                   value={createVideoForm.category}
                   onChange={(e) => setCreateVideoForm(prev => ({ ...prev, category: e.target.value }))}
                   className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                 >
-                  <option value="">{t('admin.videos.selectCategory')}</option>
-                  <option value="palestra">{t('admin.videos.categories.palestra')}</option>
-                  <option value="corpoLibero">{t('admin.videos.categories.corpoLibero')}</option>
+                  <option value="">{t('videos.selectCategory')}</option>
+                  <option value="palestra">{t('videos.categories.palestra')}</option>
+                  <option value="corpoLibero">{t('videos.categories.corpoLibero')}</option>
                 </select>
               </div>
 
@@ -409,7 +409,7 @@ const VideoManagement: React.FC = () => {
 
               {/* Video File Upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5.5">{t('admin.videos.videoFile')}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5.5">{t('videos.videoFile')}</label>
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <input
@@ -426,14 +426,14 @@ const VideoManagement: React.FC = () => {
                         className="bg-blue-600 text-white px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2"
                       >
                         {React.createElement(FiUpload as React.ComponentType<{ className?: string }>, { className: "w-4 h-4" })}
-                        <span>{t('admin.videos.upload')}</span>
+                        <span>{t('videos.upload')}</span>
                       </button>
                     )}
                   </div>
 
                   {selectedFile && (
                     <div className="text-sm text-gray-600">
-                      <strong>{t('admin.videos.selectedFile')}:</strong> {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                      <strong>{t('videos.selectedFile')}:</strong> {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
                     </div>
                   )}
 
@@ -441,7 +441,7 @@ const VideoManagement: React.FC = () => {
                   {isUploading && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">{t('admin.videos.uploading')}</span>
+                        <span className="text-gray-600">{t('videos.uploading')}</span>
                         <span className="font-semibold text-blue-600">{uploadProgress}%</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2.5">
@@ -456,14 +456,14 @@ const VideoManagement: React.FC = () => {
                   {/* File Path (auto-populated after upload) */}
                   {createVideoForm.filePath && (
                     <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                      <div className="text-xs font-semibold text-green-700 mb-1">{t('admin.videos.uploadedPath')}:</div>
+                      <div className="text-xs font-semibold text-green-700 mb-1">{t('videos.uploadedPath')}:</div>
                       <div className="text-xs text-green-600 break-all">{createVideoForm.filePath}</div>
                     </div>
                   )}
 
                   {!createVideoForm.category && (
                     <div className="text-xs text-orange-600">
-                      {t('admin.videos.selectCategoryFirst')}
+                      {t('videos.selectCategoryFirst')}
                     </div>
                   )}
                 </div>
@@ -471,7 +471,7 @@ const VideoManagement: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('admin.videos.duration')}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('videos.duration')}</label>
                   <input
                     type="number"
                     required
@@ -481,7 +481,7 @@ const VideoManagement: React.FC = () => {
                     className="w-full appearance-none bg-white px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors select-arrow"
                   />
                   <div className="text-xs text-gray-500 mt-1">
-                    {t('admin.videos.autoDetected')}
+                    {t('videos.autoDetected')}
                   </div>
                 </div>
                 <p className="text-xs text-gray-500">
@@ -495,13 +495,13 @@ const VideoManagement: React.FC = () => {
                   onClick={() => setShowCreateVideo(false)}
                   className="flex-1 bg-gray-100 text-gray-700 py-2.5 px-4 rounded-xl hover:bg-gray-200 transition-colors"
                 >
-                  {t('common.cancel')}
+                  {t('common:common.cancel')}
                 </button>
                 <button
                   type="submit"
                   className="flex-1 bg-gray-900 text-white py-2.5 px-4 rounded-xl hover:bg-gray-800 transition-colors"
                 >
-                  {t('admin.videos.newVideo')}
+                  {t('videos.newVideo')}
                 </button>
               </div>
             </form>
@@ -550,8 +550,8 @@ const VideoManagement: React.FC = () => {
               )}
 
               <div className="flex items-center justify-between text-xs text-gray-400 mb-3">
-                <span>{video.userCount} {t('admin.users.tabTitle')}</span>
-                <span>{t('admin.videos.createdAt')}: {formatDate(video.createdAt)}</span>
+                <span>{video.userCount} {t('users.tabTitle')}</span>
+                <span>{t('videos.createdAt')}: {formatDate(video.createdAt)}</span>
               </div>
 
               <div className="hidden sm:block text-xs text-gray-500 bg-gray-100 rounded p-2 mb-3">
@@ -686,7 +686,7 @@ const VideoManagement: React.FC = () => {
                   onClick={() => setEditingVideo(null)}
                   className="flex-1 bg-gray-100 text-gray-700 py-2.5 px-4 rounded-xl hover:bg-gray-200 transition-colors"
                 >
-                  {t('common.cancel')}
+                  {t('common:common.cancel')}
                 </button>
                 <button
                   type="submit"
