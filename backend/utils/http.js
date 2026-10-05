@@ -1,3 +1,5 @@
+const config = require('../config');
+
 /**
  * HTTP helpers shared by every route:
  *   - HttpError + shortcuts (badRequest, notFound…) to fail with a status;
@@ -50,7 +52,7 @@ function errorHandler(err, req, res, next) {
     const status = err.status || err.statusCode || 500;
     if (status >= 500) console.error(`${req.method} ${req.originalUrl}:`, err);
 
-    const message = status >= 500 && process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message;
+    const message = status >= 500 && config.isProduction ? 'Internal Server Error' : err.message;
     res.status(status).json({ success: false, error: message, ...(err.code && status < 500 ? { code: err.code } : {}) });
 }
 

@@ -1,22 +1,22 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const config = require('../../config');
 const { db } = require('../../utils/database');
 const { route, id, badRequest, notFound, conflict, isUniqueViolation } = require('../../utils/http');
 
 // Admin: trainers, clients, their login links and individual video permissions
 const router = express.Router();
 
-const APP_URL = process.env.PUBLIC_APP_URL || 'https://www.esercizifacili.com';
 const DEFAULT_TRAINER_ID = 1; // Joshua
 
 /** Dashboard login link (no expiry: links already sent to clients must keep working). */
 function loginLink(user) {
     const loginToken = jwt.sign(
         { userId: user.id, username: user.username, email: user.email, type: 'login_link' },
-        process.env.JWT_SECRET
+        config.jwtSecret
     );
-    return { loginToken, loginUrl: `${APP_URL}/dashboard/${loginToken}` };
+    return { loginToken, loginUrl: `${config.appUrl}/dashboard/${loginToken}` };
 }
 
 const USER_COLUMNS = `u.id, u.username, u.email, u.first_name, u.last_name, u.is_paying, u.checkin_exempt,

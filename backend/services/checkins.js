@@ -1,3 +1,4 @@
+const config = require('../config');
 const { db } = require('../utils/database');
 
 /**
@@ -63,7 +64,7 @@ async function checkinStatusOf(userId) {
 
 /** Active clients (not the admin) who are due a check and have an email to remind. */
 async function clientsToRemind(now = new Date()) {
-    const rows = await db.query(`${STATUS_QUERY} WHERE u.is_active = 1 AND u.username <> ?`, [process.env.ADMIN_USERNAME || 'admin']);
+    const rows = await db.query(`${STATUS_QUERY} WHERE u.is_active = 1 AND u.username <> ?`, [config.adminUsername]);
     return rows
         .filter((row) => row.email && checkinStatus(row, now).shouldShow)
         .map((row) => ({ userId: row.id, firstName: row.first_name || row.username, email: row.email, trainerName: row.trainer_name }));

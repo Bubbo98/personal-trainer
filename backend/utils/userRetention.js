@@ -8,6 +8,7 @@
  * Never touched: the admin account (ADMIN_USERNAME) and the user ids listed in
  * RETENTION_PROTECTED_USER_IDS (comma separated, default "165" = Test User).
  */
+const config = require('../config');
 const { db } = require('./database');
 const { deleteFiles } = require('../services/storedFiles');
 
@@ -17,16 +18,9 @@ const DELETE_AFTER_DAYS = 21;
 const PLAN_EXPIRED_MESSAGE =
     'La tua scheda è scaduta da più di 10 giorni: contatta il tuo personal trainer per rinnovarla.';
 
-function protectedUserIds() {
-    return (process.env.RETENTION_PROTECTED_USER_IDS || '165')
-        .split(',')
-        .map((id) => parseInt(id.trim(), 10))
-        .filter((id) => !Number.isNaN(id));
-}
-
 /** True when the user's plan expired more than ACCESS_GRACE_DAYS ago. */
 async function isAccessExpired(userId) {
-    if (protectedUserIds().includes(Number(userId))) return false;
+    if (config.retentionProtectedUserIds.includes(Number(userId))) return false;
     const row = await db.get(
         `SELECT 1 FROM user_pdf_files
          WHERE user_id = ? AND expiration_date IS NOT NULL AND expiration_date < datetime('now', ?)`,
@@ -44,10 +38,9 @@ async function findUsersToDelete() {
          WHERE u.username <> ?
            AND (u.is_active = 0 OR (p.expiration_date IS NOT NULL AND p.expiration_date < datetime('now', ?)))
          ORDER BY u.id`,
-        [process.env.ADMIN_USERNAME || 'admin', `-${DELETE_AFTER_DAYS} days`]
+        [config.adminUsername, `-${DELETE_AFTER_DAYS} days`]
     );
-    const protectedIds = protectedUserIds();
-    return rows.filter((u) => !protectedIds.includes(u.id));
+    return rows.filter((u) => !config.retentionProtectedUserIds.includes(u.id));
 }
 
 /** Deletes a user and every row that belongs to them (one transaction, children first), then their files on R2. */

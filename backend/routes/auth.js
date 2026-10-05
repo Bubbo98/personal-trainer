@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
+const config = require('../config');
 const { db } = require('../utils/database');
 const { route, badRequest, unauthorized, forbidden } = require('../utils/http');
 const { isAccessExpired, PLAN_EXPIRED_MESSAGE } = require('../utils/userRetention');
@@ -21,7 +22,7 @@ const loginLimiter = rateLimit({
 });
 
 const sessionToken = (user) =>
-    jwt.sign({ userId: user.id, username: user.username, email: user.email }, process.env.JWT_SECRET, { expiresIn: SESSION_TTL });
+    jwt.sign({ userId: user.id, username: user.username, email: user.email }, config.jwtSecret, { expiresIn: SESSION_TTL });
 
 const toUser = (u) => ({
     id: u.id,
@@ -50,7 +51,7 @@ async function planAccessExpired(userId) {
 const planExpired = () => forbidden(PLAN_EXPIRED_MESSAGE, 'PLAN_EXPIRED');
 
 const verifyJwt = (token) => new Promise((resolve) => {
-    jwt.verify(token, process.env.JWT_SECRET, (err, payload) => resolve(err ? null : payload));
+    jwt.verify(token, config.jwtSecret, (err, payload) => resolve(err ? null : payload));
 });
 
 // POST /api/auth/login — Body: { username, password }

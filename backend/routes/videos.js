@@ -1,13 +1,13 @@
 const express = require('express');
 const { db } = require('../utils/database');
-const { verifyActiveUser } = require('../middleware/auth');
+const { authenticateToken, verifyActiveUser } = require('../middleware/auth');
 const { signedUrlOrNull } = require('../utils/r2');
 const { route, id, notFound } = require('../utils/http');
 const { loadDaysWithVideos } = require('../services/trainingDays');
 
-// Mounted behind authenticateToken (server.js): client video library
+// Client video library
 const router = express.Router();
-router.use(verifyActiveUser);
+router.use(authenticateToken, verifyActiveUser);
 
 /** Videos the user may watch (active permission, not expired), newest first. */
 async function permittedVideos(userId, { videoId, category } = {}) {

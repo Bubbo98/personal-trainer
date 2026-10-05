@@ -1,11 +1,9 @@
 const jwt = require('jsonwebtoken');
+const config = require('../config');
 const { db } = require('../utils/database');
-require('dotenv').config();
-
-const adminUsername = () => process.env.ADMIN_USERNAME || 'admin';
 
 /** True when the authenticated user is the admin account. */
-const isAdmin = (user) => !!user && user.username === adminUsername();
+const isAdmin = (user) => !!user && user.username === config.adminUsername;
 
 /**
  * Bearer session token → req.user ({ userId, username, email }).
@@ -19,7 +17,7 @@ function authenticateToken(req, res, next) {
         return res.status(401).json({ success: false, error: 'Access token required' });
     }
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, payload) => {
+    jwt.verify(token, config.jwtSecret, (err, payload) => {
         if (err || payload.type === 'login_link') {
             return res.status(403).json({ success: false, error: 'Invalid or expired token' });
         }

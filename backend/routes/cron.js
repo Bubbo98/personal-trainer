@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const express = require('express');
+const config = require('../config');
 const { route, unauthorized } = require('../utils/http');
 const { run: sendReminders } = require('../scripts/send-checkin-reminders');
 const { findUsersToDelete, deleteUserCompletely } = require('../utils/userRetention');
@@ -8,7 +9,7 @@ const { findUsersToDelete, deleteUserCompletely } = require('../utils/userRetent
 const router = express.Router();
 
 function requireCronSecret(req, res, next) {
-    const secret = process.env.CRON_SECRET;
+    const secret = config.cronSecret;
     if (!secret) {
         console.error('CRON_SECRET not configured');
         return res.status(500).json({ success: false, error: 'Cron not configured' });

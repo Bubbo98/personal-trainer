@@ -1,9 +1,9 @@
 const { createClient } = require('@libsql/client');
-require('dotenv').config();
+const config = require('../config');
 
 /**
  * One libsql client for the whole process: Turso in production, a local file
- * otherwise (TURSO_DATABASE_URL="file:…", or DB_PATH as a fallback).
+ * otherwise (see config.database).
  *
  *   db.query(sql, params)   → rows
  *   db.get(sql, params)     → first row or null
@@ -14,15 +14,10 @@ require('dotenv').config();
 
 let client = null;
 
-function databaseUrl() {
-    if (process.env.TURSO_DATABASE_URL) return process.env.TURSO_DATABASE_URL;
-    return `file:${process.env.DB_PATH || './database/app.db'}`;
-}
-
 function getClient() {
     if (!client) {
-        const url = databaseUrl();
-        client = createClient(url.startsWith('file:') ? { url } : { url, authToken: process.env.TURSO_AUTH_TOKEN });
+        const { url, authToken } = config.database;
+        client = createClient(url.startsWith('file:') ? { url } : { url, authToken });
     }
     return client;
 }
