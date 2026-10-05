@@ -4,7 +4,8 @@
  *
  *   node scripts/snapshot-prod-db.js [outFile]   (default: database/prod-copy.db)
  *
- * The file holds real client data: it lives under backend/database/, which git ignores.
+ * Client files on R2 are mirrored to database/prod-files/<key>.
+ * Both hold real client data: they live under backend/database/, which git ignores.
  */
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const fs = require('fs');
@@ -14,6 +15,7 @@ const { createClient } = require('@libsql/client');
 const BATCH_ROWS = 200;
 // Rows per read: plan PDFs are ~2 MB each, one SELECT * of them got the socket closed
 const PAGE_ROWS = 5;
+const FILES_DIR = path.join(__dirname, '..', 'database', 'prod-files');
 
 async function main() {
     const outFile = path.resolve(process.argv[2] || path.join(__dirname, '..', 'database', 'prod-copy.db'));
@@ -55,6 +57,22 @@ async function main() {
     }
 
     for (const { sql } of schema.filter((s) => s.type !== 'table')) await local.execute(sql);
+
+    // Client files live on R2: mirror them next to the snapshot (tests read them from there)
+    const keys = (await local.execute(
+        `SELECT file_key FROM user_pdf_files WHERE file_key IS NOT NULL
+         UNION ALL SELECT file_key FROM body_composition_reports WHERE file_key IS NOT NULL`
+    )).rows.map((r) => r.file_key);
+    const r2 = require('../utils/r2');
+    let downloaded = 0;
+    for (const key of keys) {
+        const target = path.join(FILES_DIR, key);
+        if (fs.existsSync(target)) continue; // keys are unique per upload: a file never changes
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        fs.writeFileSync(target, await r2.getObjectBuffer(key));
+        downloaded++;
+    }
+    console.log(`R2 files: ${keys.length} (${downloaded} downloaded) in ${FILES_DIR}`);
 
     local.close();
     prod.close();

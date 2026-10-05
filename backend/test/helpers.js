@@ -12,6 +12,7 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 
 const SNAPSHOT = path.join(__dirname, '..', 'database', 'prod-copy.db');
+const SNAPSHOT_FILES = path.join(__dirname, '..', 'database', 'prod-files');
 
 const ADMIN = { id: 311, username: 'joshua_admin' };
 const TEST_USER = { id: 165, username: 'Bubbo' };
@@ -64,9 +65,12 @@ async function start() {
     r2.existingKeys = new Set();
     r2.objectExists = async (key) => r2.existingKeys.has(key) || r2.bucket.has(key);
     r2.putObject = async (key, body) => { r2.bucket.set(key, Buffer.from(body)); };
+    // Objects written by the tests, else production's files mirrored by the snapshot script
     r2.getObjectBuffer = async (key) => {
-        if (!r2.bucket.has(key)) throw Object.assign(new Error(`NoSuchKey: ${key}`), { name: 'NoSuchKey' });
-        return r2.bucket.get(key);
+        if (r2.bucket.has(key)) return r2.bucket.get(key);
+        const mirrored = path.join(SNAPSHOT_FILES, key);
+        if (fs.existsSync(mirrored)) return fs.readFileSync(mirrored);
+        throw Object.assign(new Error(`NoSuchKey: ${key}`), { name: 'NoSuchKey' });
     };
     r2.deleteObject = async (key) => { r2.bucket.delete(key); };
 

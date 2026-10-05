@@ -391,26 +391,38 @@ describe('client files on R2', () => {
         return form;
     };
 
-    it('a plan stored before the move (base64 in the row) still downloads', async () => {
-        const row = (await db().execute({ sql: 'SELECT file_key, length(file_data) n FROM user_pdf_files WHERE user_id = ?', args: [user] })).rows[0];
-        assert.equal(row.file_key, null);
-        assert.ok(Number(row.n) > 0);
+    /** Michela's real plan, from R2 (mirrored by the snapshot). */
+    const sameBytes = (a, b) => assert.ok(Buffer.from(a).equals(Buffer.from(b)), `different files: ${a.length} vs ${b.length} bytes`);
+    const michelaPlan = async () => {
+        const row = (await db().execute({ sql: 'SELECT file_key, file_data FROM user_pdf_files WHERE user_id = ?', args: [user] })).rows[0];
+        return require('../services/storedFiles').readFile(row);
+    };
+
+    it('production plans download from R2', async () => {
         const res = await api('GET', `/api/pdf/download?userId=${user}`, { token: token() });
+        assert.equal(res.status, 200);
+        sameBytes(res.body, await michelaPlan());
         assert.equal(res.body.subarray(0, 4).toString(), '%PDF');
     });
 
+    it('a row from before the move (base64, no file_key) still downloads', async () => {
+        const plan = await michelaPlan();
+        await db().execute({ sql: 'UPDATE user_pdf_files SET file_key = NULL, file_data = ? WHERE user_id = 203', args: [plan.toString('base64')] });
+        const res = await api('GET', '/api/pdf/download?userId=203', { token: token() });
+        sameBytes(res.body, plan);
+    });
+
     it('an uploaded plan goes to R2, not into the row; replacing it deletes the old file', async () => {
-        // A real plan (Michela's, from the snapshot) so parse-pdf can read it back from R2
-        const stored = (await db().execute({ sql: 'SELECT file_data FROM user_pdf_files WHERE user_id = ?', args: [user] })).rows[0];
-        const first = Buffer.from(stored.file_data, 'base64');
+        // A real plan so parse-pdf can read it back from R2
+        const first = await michelaPlan();
         assert.equal((await api('POST', `/api/pdf/admin/upload/${user}`, { token: token(), body: pdfForm(first, 'Scheda 1.pdf') })).status, 200);
         const row1 = (await db().execute({ sql: 'SELECT file_key, file_data FROM user_pdf_files WHERE user_id = ?', args: [user] })).rows[0];
         assert.match(row1.file_key, new RegExp(`^plans/${user}/\\d+-[0-9a-f-]+\\.pdf$`));
         assert.equal(row1.file_data, '');
-        assert.deepEqual(r2().bucket.get(row1.file_key), first);
+        sameBytes(r2().bucket.get(row1.file_key), first);
 
         const download = await api('GET', '/api/pdf/download', { token: tokenFor({ id: user, username: 'Michela Sciocchetti' }) });
-        assert.deepEqual(download.body, first);
+        sameBytes(download.body, first);
         const parsed = await api('POST', `/api/workout/admin/parse-pdf/${user}`, { token: token() });
         assert.equal(parsed.status, 200);
         assert.equal(parsed.body.data.days.flatMap((d) => d.exercises).length, 24);

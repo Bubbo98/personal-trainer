@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const pdfParse = require('pdf-parse');
 const { start, stop, db } = require('./helpers');
 const { parsePdfText, parseWeightSlots } = require('../services/planParser');
+const { readFile } = require('../services/storedFiles');
 
 // Stats left inside a name ("… 4 10+cedimento 1'30" 30 kg …") mean two table rows were merged
 const MERGED_ROW = /\b\d+\s+[^\s(]\S*\s+\d+(?:[.,]\d+)?\s*(?:['’′"”″]|sec\b|min\b)/i;
@@ -18,7 +19,7 @@ describe('plan PDF parser', () => {
 
     before(async () => {
         await start();
-        plans = (await db().execute(`SELECT u.id, u.first_name, u.last_name, p.file_data
+        plans = (await db().execute(`SELECT u.id, u.first_name, u.last_name, p.file_key, p.file_data
                                       FROM user_pdf_files p JOIN users u ON u.id = p.user_id`)).rows;
     });
 
@@ -27,7 +28,7 @@ describe('plan PDF parser', () => {
         const problems = [];
         for (const plan of plans) {
             if (KNOWN_UNSUPPORTED.includes(plan.last_name.trim())) continue;
-            const { text } = await pdfParse(Buffer.from(plan.file_data, 'base64'));
+            const { text } = await pdfParse(await readFile(plan));
             for (const day of parsePdfText(text)) {
                 for (const ex of day.exercises) {
                     if (MERGED_ROW.test(ex.name)) problems.push(`${plan.first_name} ${plan.last_name}, ${day.dayName}: ${ex.name}`);
