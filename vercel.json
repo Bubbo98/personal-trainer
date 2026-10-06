@@ -4,39 +4,6 @@
       "VERCEL_SUPPORT_LARGE_FUNCTIONS": "1"
     }
   },
-  "redirects": [
-    {
-      "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "esercizifacili.com"
-        }
-      ],
-      "destination": "https://www.esercizifacili.com/:path*",
-      "permanent": true
-    },
-    {
-      "source": "/index.html",
-      "destination": "/",
-      "permanent": true
-    },
-    {
-      "source": "/privacy",
-      "destination": "/privacy-policy",
-      "permanent": true
-    },
-    {
-      "source": "/terms",
-      "destination": "/terms-of-service",
-      "permanent": true
-    },
-    {
-      "source": "/cookies",
-      "destination": "/cookie-policy",
-      "permanent": true
-    }
-  ],
   "builds": [
     {
       "src": "package.json",
@@ -69,55 +36,74 @@
       "schedule": "0 3 * * *"
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "destination": "/backend/server.js"
+      "src": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "esercizifacili.com"
+        }
+      ],
+      "status": 308,
+      "headers": {
+        "Location": "https://www.esercizifacili.com/$1"
+      }
     },
     {
-      "source": "/about",
-      "destination": "/about/index.html"
+      "src": "/api/(.*)",
+      "dest": "/backend/server.js"
     },
     {
-      "source": "/services",
-      "destination": "/services/index.html"
+      "src": "/index.html",
+      "status": 308,
+      "headers": {
+        "Location": "/"
+      }
     },
     {
-      "source": "/contact",
-      "destination": "/contact/index.html"
+      "src": "/privacy",
+      "status": 308,
+      "headers": {
+        "Location": "/privacy-policy"
+      }
     },
     {
-      "source": "/booking",
-      "destination": "/booking/index.html"
+      "src": "/terms",
+      "status": 308,
+      "headers": {
+        "Location": "/terms-of-service"
+      }
     },
     {
-      "source": "/privacy-policy",
-      "destination": "/privacy-policy/index.html"
+      "src": "/cookies",
+      "status": 308,
+      "headers": {
+        "Location": "/cookie-policy"
+      }
     },
     {
-      "source": "/terms-of-service",
-      "destination": "/terms-of-service/index.html"
+      "src": "/(.+)/",
+      "status": 308,
+      "headers": {
+        "Location": "/$1"
+      }
     },
     {
-      "source": "/cookie-policy",
-      "destination": "/cookie-policy/index.html"
+      "src": "/(about|services|contact|booking|privacy-policy|terms-of-service|cookie-policy)",
+      "dest": "/$1/index.html"
     },
     {
-      "source": "/dashboard",
-      "destination": "/app.html"
+      "src": "/(dashboard|admin)(/.*)?",
+      "dest": "/app.html"
     },
     {
-      "source": "/dashboard/(.*)",
-      "destination": "/app.html"
+      "handle": "filesystem"
     },
     {
-      "source": "/admin",
-      "destination": "/app.html"
-    },
-    {
-      "source": "/admin/(.*)",
-      "destination": "/app.html"
+      "src": "/(.*)",
+      "status": 404,
+      "dest": "/404.html"
     }
-  ],
-  "trailingSlash": false
+  ]
 }
