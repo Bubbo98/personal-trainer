@@ -145,17 +145,24 @@ export function buildPlanDays(exercises: Exercise[], trainingDays: TrainingDay[]
     .filter((day) => day.exercises.length > 0 || day.extras.length > 0);
 }
 
-export type DayItem =
-  | { type: 'videos'; key: string; videos: Video[] }
-  | { type: 'group'; key: string; label: string | null; videos: Video[] };
+interface GroupableVideo {
+  id: number;
+  assignmentId?: number;
+  groupId?: number | null;
+  groupLabel?: string | null;
+}
+
+export type DayItem<V extends GroupableVideo = Video> =
+  | { type: 'videos'; key: string; videos: V[] }
+  | { type: 'group'; key: string; label: string | null; videos: V[] };
 
 /**
  * A training day's videos in order, with consecutive loose videos batched in
  * one grid and grouped videos (supersets) gathered under their group.
  */
-export function groupDayVideos(videos: Video[]): DayItem[] {
-  const items: DayItem[] = [];
-  const groups = new Map<number, Extract<DayItem, { type: 'group' }>>();
+export function groupDayVideos<V extends GroupableVideo>(videos: V[]): DayItem<V>[] {
+  const items: DayItem<V>[] = [];
+  const groups = new Map<number, Extract<DayItem<V>, { type: 'group' }>>();
   for (const video of videos) {
     const videoKey = String(video.assignmentId ?? video.id);
     if (video.groupId != null) {

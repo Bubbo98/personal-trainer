@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { FiChevronRight, FiInfo, FiPlay } from 'react-icons/fi';
 import Modal from '../../../components/ui/Modal';
 import { formatDate, formatDuration } from '../../../lib/format';
-import { thumbnailUrl } from '../../../utils/thumbnails';
+import { thumbnailUrl } from '../../../lib/thumbnails';
 import type { Technique, Video } from '../types';
 import VideoPlayerModal from './VideoPlayerModal';
 
