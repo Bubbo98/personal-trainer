@@ -34,55 +34,43 @@ Sistema completo per la gestione di video personalizzati per clienti personal tr
 
 ## 🚀 **Quick Start**
 
-### **1. Clone e Setup**
+Requisiti: Node.js ≥ 22, Yarn 1 (frontend) e npm (backend).
+
 ```bash
 git clone https://github.com/Bubbo98/personal-trainer.git
 cd personal-trainer
-npm install
+yarn install                # frontend
+
+cd backend && npm install   # backend (usa backend/.env)
+npm run dev                 # API su http://localhost:3001
 ```
 
-### **2. Backend Setup**
+In un altro terminale, dalla root:
+
 ```bash
-cd backend
-npm install
-npm run init-db
-
-# Se aggiorni da versione precedente, esegui migrazione PDF:
-node scripts/add-pdf-expiration.js
-
-npm run dev
+yarn dev                    # sito su http://localhost:3000, /api inoltrato al backend
 ```
 
-### **3. Frontend Start**
-```bash
-# In altra terminal
-npm start
-```
-
-### **4. Accesso Admin CMS**
-- URL: `http://localhost:3000/admin`
-- Username: `joshua_admin`
-- Password: `Joshua@PT_Milano2025!#Secure`
+- Area clienti: `http://localhost:3000/dashboard/<token del link personale>`
+- Admin: `http://localhost:3000/admin` (credenziali dell'account admin configurato nel backend)
 
 ## 📁 **Struttura Progetto**
 
 ```
-personal-trainer-app/
+├── index.html              # Pagina Vite (meta SEO di default)
 ├── src/
-│   ├── components/          # Componenti React riutilizzabili
-│   ├── pages/              # Pagine principali (Home, About, Services, etc.)
-│   ├── locales/            # File traduzioni (IT/EN)
-│   └── utils/              # Utility e helper functions
-├── backend/
-│   ├── routes/             # API endpoints (auth, videos, admin)
-│   ├── middleware/         # Middleware di autenticazione
-│   ├── database/           # Schema e script database
-│   └── scripts/            # Script di inizializzazione
-├── public/
-│   ├── videos/             # Storage video organizzato per categorie
-│   ├── images/             # Immagini del sito
-│   └── assets/             # Altri asset statici
-└── docs/                   # Documentazione completa
+│   ├── main.tsx, App.tsx   # Avvio, provider, route (pagine caricate on demand)
+│   ├── pages/              # Una pagina per route
+│   ├── features/
+│   │   ├── dashboard/      # Area clienti (giorni, pesi, video, scheda, check, recensione)
+│   │   ├── admin/          # Amministrazione (utenti, check, video, recensioni, integratori)
+│   │   └── legal/          # Privacy, termini e cookie come documenti it/en
+│   ├── components/         # Header, Footer, Hero… e ui/ (Modal, Toast, Button, campi…)
+│   ├── lib/                # Client API, formattazione date, meta pagina, utility
+│   ├── locales/{it,en}/    # Traduzioni per namespace (common, public, dashboard, admin)
+│   └── test/               # Setup e helper dei test
+├── public/                 # Immagini (WebP), icone, robots.txt, sitemap.xml
+└── backend/                # API Express (vedi backend/README.md)
 ```
 
 ## 🎛️ **Admin CMS**
@@ -180,20 +168,13 @@ vercel --prod
 
 ### **Environment Variables**
 
-⚠️ **IMPORTANTE**: Prima del deploy in produzione, genera nuove chiavi sicure!
-
 ```env
-# Frontend
-REACT_APP_API_URL=https://tuodominio.com/api
-
-# Backend - MODIFICA QUESTE CHIAVI PER LA PRODUZIONE!
-JWT_SECRET=3c6618153b67e5654191362f29bc197d83b57e4b63a16b321597b6a629f0722488d1284e3faf52fd36bb6ea57fa67ad298b41c51a2e05620a45584a6b069ad46
-DB_PATH=./database/app.db
-NODE_ENV=production
-FRONTEND_URL=https://tuodominio.com
-ADMIN_USERNAME=joshua_admin
-ADMIN_PASSWORD=Joshua@PT_Milano2025!#Secure
+# Frontend (opzionale): URL delle API. Di default /api sullo stesso dominio
+REACT_APP_API_URL=/api
 ```
+
+Le variabili del backend (JWT_SECRET, Turso, R2, Resend, CRON_SECRET…) sono descritte in `backend/README.md` e `backend/config.js`.
+⚠️ Non scrivere mai valori reali di segreti o password in file del repository.
 
 ### **🔐 Generazione Chiavi Sicure**
 ```bash
@@ -235,22 +216,23 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 
 ### **Scripts Disponibili**
 ```bash
-# Frontend
-npm start          # Dev server
-npm run build      # Build produzione
-npm test           # Run tests
+# Frontend (root)
+yarn dev           # Dev server Vite (porta 3000)
+yarn build         # Type-check + build di produzione in build/
+yarn test          # Test (Vitest + Testing Library)
+yarn lint          # ESLint
+yarn preview       # Anteprima della build
 
-# Backend
+# Backend (backend/)
 npm run dev        # Dev server con nodemon
-npm run init-db    # Inizializza database
-npm start          # Production server
+npm test           # Test su una copia del database
 ```
 
 ### **Tech Stack**
-- **Frontend**: React 19, TypeScript, Tailwind CSS, React Router
-- **Backend**: Node.js, Express, SQLite, JWT, bcrypt
-- **Build**: Create React App, Webpack
-- **Deploy**: Vercel, Serverless Functions
+- **Frontend**: React 19, TypeScript 6, Vite, Tailwind CSS, React Router 7, TanStack Query, i18next (it/en)
+- **Test**: Vitest, Testing Library
+- **Backend**: Node.js, Express, Turso (libSQL), Cloudflare R2, JWT
+- **Deploy**: Vercel
 
 ## 📈 **Roadmap**
 

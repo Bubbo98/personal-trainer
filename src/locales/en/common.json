@@ -4,38 +4,6 @@
     "services": "Services",
     "contact": "Contact"
   },
-  "pages": {
-    "home": {
-      "title": "Personal Trainer Joshua"
-    },
-    "about": {
-      "title": "About"
-    },
-    "contact": {
-      "title": "Contact"
-    },
-    "services": {
-      "title": "Services"
-    },
-    "booking": {
-      "title": "Book Your Consultation"
-    },
-    "dashboard": {
-      "title": "Dashboard"
-    },
-    "admin": {
-      "title": "Admin Panel"
-    },
-    "privacy": {
-      "title": "Privacy Policy"
-    },
-    "terms": {
-      "title": "Terms of Service"
-    },
-    "cookies": {
-      "title": "Cookie Policy"
-    }
-  },
   "footer": {
     "personalTrainer": "Personal Trainer",
     "schedule": "Schedule",
@@ -51,7 +19,10 @@
     "cookiePolicy": "Cookie Policy",
     "qualifiedTrainer": "🏃‍♂️ Qualified and certified Personal Trainer - Milan",
     "disclaimer": "Training programs are personalized and developed based on individual needs. It is always recommended to consult a physician before starting any fitness program.",
-    "functionalTraining": "Functional Training Milan"
+    "functionalTraining": "Functional Training Milan",
+    "logoAlt": "Joshua Maurizio and Denise Bergamo logo",
+    "partnerLogoAlt": "Allenamento Funzionale Milano logo",
+    "legalLinks": "Legal documents"
   },
   "common": {
     "cancel": "Cancel",
@@ -91,6 +62,43 @@
     "label": "Language",
     "it": "Italiano",
     "en": "English",
-    "switchTo": "Switch to Italian"
+    "switchTo": "Passa all’italiano",
+    "short": "IT"
+  },
+  "legal": {
+    "updated": "Last updated: {{date}}"
+  },
+  "meta": {
+    "home": {
+      "title": "Personal Trainer Joshua - Personal Training in Milan",
+      "description": "Certified personal trainer in Milan. Personal training, calisthenics, bodybuilding and online coaching. Book your free consultation!"
+    },
+    "about": {
+      "title": "About | Personal Trainer Joshua",
+      "description": "Meet Joshua Maurizio and Denise Bergamo, AIPT and Burningate certified personal trainers in Milan, experienced in calisthenics, bodybuilding and functional training."
+    },
+    "services": {
+      "title": "Services | Personal Trainer Joshua",
+      "description": "Personal training services in Milan: 1-to-1 sessions, calisthenics, bodybuilding, group classes and online coaching. Book now!"
+    },
+    "contact": {
+      "title": "Contact | Personal Trainer Joshua",
+      "description": "Contact Joshua, personal trainer in Milan: phone, email, Instagram and TikTok. Gym in Via Cortina d'Ampezzo 14, Milan."
+    },
+    "booking": {
+      "title": "Book your consultation | Personal Trainer Joshua",
+      "description": "Book a free consultation with Joshua, personal trainer in Milan. Pick a date and time straight from the online calendar."
+    }
+  },
+  "header": {
+    "home": "Back to the home page",
+    "nav": "Main navigation"
+  },
+  "carousel": {
+    "previous": "Previous image",
+    "next": "Next image",
+    "goTo": "Go to image {{number}} of {{total}}",
+    "pause": "Pause",
+    "play": "Play"
   }
 }

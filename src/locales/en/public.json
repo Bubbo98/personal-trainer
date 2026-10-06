@@ -3,7 +3,8 @@
     "title": "Ready for a change?",
     "subtitle": "The time has come",
     "consultation": "Book your consultation",
-    "discover": "Discover my services"
+    "discover": "Discover my services",
+    "imageAlt": "Joshua Maurizio, personal trainer"
   },
   "about": {
     "title": "MEET JOSHUA",
@@ -73,7 +74,9 @@
           "content": "After years of fitness studies and training of all kinds, I have transformed passion into concrete experience. Today I combine knowledge and practice to obtain effective and lasting results."
         }
       ]
-    }
+    },
+    "portraitAlt": "Joshua Maurizio",
+    "timelineImages": "{{title}} - photos"
   },
   "services": {
     "title": "Discover my services",
@@ -100,20 +103,29 @@
     "onlineCoaching": {
       "title": "Online Coaching Service",
       "description": "Tailored online coaching with personalized programs and constant support wherever you are.\nTrain with flexibility and achieve your goals with the guidance of a professional."
-    }
+    },
+    "placeholderLabel": "No service selected"
   },
   "booking": {
     "title": "Book your consultation",
     "description": "Select your preferred date and time for your free consultation.",
     "note": "During the introductory call, we'll arrange when to meet for the first time at the gym.",
-    "directContact": "Contact me directly at"
+    "directContact": "Contact me directly at",
+    "imageAlt": "Book your consultation",
+    "calendarLabel": "Booking calendar"
   },
   "contact": {
     "phone": "Tel: 3282062823",
     "email": "josh17111991@gmail.com",
     "social": "Social",
     "website": "Website",
-    "bookConsultation": "Book your consultation"
+    "bookConsultation": "Book your consultation",
+    "photosLabel": "Photos of Joshua at the gym",
+    "photoAlt1": "Joshua Personal Trainer",
+    "photoAlt2": "Personal training",
+    "gymAddress": "Via Cortina d'Ampezzo 14, Milano 20139",
+    "mapTitle": "Map of Allenamento Funzionale Milano",
+    "opensInNewTab": "(opens in a new tab)"
   },
   "reviews": {
     "title": "What my clients say",
@@ -125,6 +137,8 @@
     "startJourney": "Start your journey",
     "previousReviews": "Previous reviews",
     "nextReviews": "Next reviews",
-    "goToPage": "Go to page"
+    "goToPage": "Go to page",
+    "sectionLabel": "Client reviews",
+    "loadFailed": "The reviews could not be loaded."
   }
 }

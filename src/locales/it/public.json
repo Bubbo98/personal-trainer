@@ -3,7 +3,8 @@
     "title": "Hai voglia di cambiamento?",
     "subtitle": "È arrivato il momento",
     "consultation": "Prenota la tua consulenza",
-    "discover": "Scopri i miei servizi"
+    "discover": "Scopri i miei servizi",
+    "imageAlt": "Joshua Maurizio, personal trainer"
   },
   "about": {
     "title": "CONOSCI JOSHUA",
@@ -73,7 +74,9 @@
           "content": "Dopo anni di studi nel fitness e allenamenti di ogni tipo, ho trasformato la passione in esperienza concreta. Oggi unisco conoscenza e pratica per ottenere risultati efficaci e duraturi."
         }
       ]
-    }
+    },
+    "portraitAlt": "Joshua Maurizio",
+    "timelineImages": "{{title}} - foto"
   },
   "services": {
     "title": "Scopri i miei servizi",
@@ -100,20 +103,29 @@
     "onlineCoaching": {
       "title": "Servizio Coaching Online",
       "description": "Coaching online su misura, con programmi personalizzati e supporto costante ovunque tu sia.\nAllenati con flessibilità e raggiungi i tuoi obiettivi con la guida di un professionista."
-    }
+    },
+    "placeholderLabel": "Nessun servizio selezionato"
   },
   "booking": {
     "title": "Prenota la tua consulenza",
     "description": "Seleziona il giorno e l'orario che preferisci per la tua consulenza gratuita.",
     "note": "Durante la chiamata conoscitiva, gestiremo insieme quando vederci per la prima volta in palestra.",
-    "directContact": "Contattami direttamente al numero"
+    "directContact": "Contattami direttamente al numero",
+    "imageAlt": "Prenota la tua consulenza",
+    "calendarLabel": "Calendario delle prenotazioni"
   },
   "contact": {
     "phone": "Tel: 3282062823",
     "email": "josh17111991@gmail.com",
     "social": "Social",
     "website": "Sito web",
-    "bookConsultation": "Prenota la tua consulenza"
+    "bookConsultation": "Prenota la tua consulenza",
+    "photosLabel": "Foto di Joshua in palestra",
+    "photoAlt1": "Joshua Personal Trainer",
+    "photoAlt2": "Allenamento personalizzato",
+    "gymAddress": "Via Cortina d'Ampezzo 14, Milano 20139",
+    "mapTitle": "Mappa di Allenamento Funzionale Milano",
+    "opensInNewTab": "(si apre in una nuova scheda)"
   },
   "reviews": {
     "title": "Cosa dicono i miei clienti",
@@ -125,6 +137,8 @@
     "startJourney": "Inizia il tuo percorso",
     "previousReviews": "Recensioni precedenti",
     "nextReviews": "Recensioni successive",
-    "goToPage": "Vai alla pagina"
+    "goToPage": "Vai alla pagina",
+    "sectionLabel": "Recensioni dei clienti",
+    "loadFailed": "Impossibile caricare le recensioni."
   }
 }

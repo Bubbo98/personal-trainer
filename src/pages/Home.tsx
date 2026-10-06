@@ -1,28 +1,21 @@
-import React from 'react';
-import { Helmet } from 'react-helmet-async';
 import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
 import Hero from '../components/Hero';
 import Reviews from '../components/Reviews';
 import Footer from '../components/Footer';
+import { usePageMeta } from '../lib/usePageMeta';
 
-// Types
-interface HomePageProps {}
-
-const Home: React.FC<HomePageProps> = () => {
+const Home = () => {
   const { t } = useTranslation('common');
-  const pageClassName = 'h-full w-full';
+  usePageMeta({ title: t('meta.home.title'), description: t('meta.home.description'), path: '/' });
 
   return (
-    <div className={pageClassName}>
-      <Helmet>
-        <title>{t('pages.home.title')}</title>
-        <link rel="canonical" href="https://www.esercizifacili.com/" />
-        <meta property="og:url" content="https://www.esercizifacili.com/" />
-      </Helmet>
+    <div className="min-h-full w-full">
       <Header />
-      <Hero />
-      <Reviews />
+      <main>
+        <Hero />
+        <Reviews />
+      </main>
       <Footer />
     </div>
   );

@@ -4,38 +4,6 @@
     "services": "Servizi",
     "contact": "Contatti"
   },
-  "pages": {
-    "home": {
-      "title": "Personal Trainer Joshua"
-    },
-    "about": {
-      "title": "Chi Sono"
-    },
-    "contact": {
-      "title": "Contatti"
-    },
-    "services": {
-      "title": "Servizi"
-    },
-    "booking": {
-      "title": "Prenota la Tua Consulenza"
-    },
-    "dashboard": {
-      "title": "Dashboard"
-    },
-    "admin": {
-      "title": "Admin Panel"
-    },
-    "privacy": {
-      "title": "Privacy Policy"
-    },
-    "terms": {
-      "title": "Termini e Condizioni di Servizio"
-    },
-    "cookies": {
-      "title": "Cookie Policy"
-    }
-  },
   "footer": {
     "personalTrainer": "Personal Trainer",
     "schedule": "Orari",
@@ -51,7 +19,10 @@
     "cookiePolicy": "Cookie Policy",
     "qualifiedTrainer": "🏃‍♂️ Personal Trainer qualificato e certificato - Milano",
     "disclaimer": "I programmi di allenamento sono personalizzati e sviluppati in base alle esigenze individuali. Si consiglia sempre di consultare un medico prima di iniziare qualsiasi programma di fitness.",
-    "functionalTraining": "Allenamento Funzionale Milano"
+    "functionalTraining": "Allenamento Funzionale Milano",
+    "logoAlt": "Logo Joshua Maurizio e Denise Bergamo",
+    "partnerLogoAlt": "Logo Allenamento Funzionale Milano",
+    "legalLinks": "Documenti legali"
   },
   "common": {
     "cancel": "Annulla",
@@ -91,6 +62,43 @@
     "label": "Lingua",
     "it": "Italiano",
     "en": "English",
-    "switchTo": "Passa all'inglese"
+    "switchTo": "Passa all’inglese",
+    "short": "EN"
+  },
+  "legal": {
+    "updated": "Ultimo aggiornamento: {{date}}"
+  },
+  "meta": {
+    "home": {
+      "title": "Personal Trainer Joshua - Allenamenti Personalizzati Milano",
+      "description": "Personal Trainer certificato a Milano. Allenamenti personalizzati, calisthenics, bodybuilding e consulenze online. Prenota la tua consulenza gratuita!"
+    },
+    "about": {
+      "title": "Chi sono | Personal Trainer Joshua",
+      "description": "Scopri chi sono Joshua Maurizio e Denise Bergamo, Personal Trainer certificati AIPT e Burningate a Milano. Esperienza in calisthenics, bodybuilding e allenamento funzionale."
+    },
+    "services": {
+      "title": "Servizi | Personal Trainer Joshua",
+      "description": "Scopri i servizi di Personal Training a Milano: allenamenti 1-to-1, calisthenics, bodybuilding, corsi di gruppo e coaching online. Prenota ora!"
+    },
+    "contact": {
+      "title": "Contatti | Personal Trainer Joshua",
+      "description": "Contatta Joshua, Personal Trainer a Milano. Telefono, email, Instagram e TikTok. Palestra in Via Cortina d'Ampezzo 14, Milano."
+    },
+    "booking": {
+      "title": "Prenota la tua consulenza | Personal Trainer Joshua",
+      "description": "Prenota una consulenza gratuita con Joshua, Personal Trainer a Milano. Scegli data e orario direttamente dal calendario online."
+    }
+  },
+  "header": {
+    "home": "Torna alla home",
+    "nav": "Navigazione principale"
+  },
+  "carousel": {
+    "previous": "Immagine precedente",
+    "next": "Immagine successiva",
+    "goTo": "Vai all’immagine {{number}} di {{total}}",
+    "pause": "Metti in pausa",
+    "play": "Riproduci"
   }
 }

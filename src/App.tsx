@@ -1,7 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { HelmetProvider } from 'react-helmet-async';
 import { Analytics } from '@vercel/analytics/react';
 import Home from './pages/Home';
 import PageLoader from './components/ui/PageLoader';
@@ -31,7 +30,6 @@ const ScrollToTop = () => {
 };
 
 const App = () => (
-  <HelmetProvider>
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
         <ConfirmProvider>
@@ -46,8 +44,7 @@ const App = () => (
                 <Route path="/services" element={<Services />} />
                 <Route path="/booking" element={<Booking />} />
                 <Route path="/dashboard/:token?" element={<Dashboard />} />
-                <Route path="/admin" element={<AdminCMS />} />
-                <Route path="/admin/users/:userId" element={<AdminCMS />} />
+                <Route path="/admin/*" element={<AdminCMS />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/terms-of-service" element={<TermsOfService />} />
                 <Route path="/cookie-policy" element={<CookiePolicy />} />
@@ -63,7 +60,6 @@ const App = () => (
         </ConfirmProvider>
       </ToastProvider>
     </QueryClientProvider>
-  </HelmetProvider>
 );
 
 export default App;
