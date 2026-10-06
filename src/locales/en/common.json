@@ -88,6 +88,18 @@
     "booking": {
       "title": "Book your consultation | Personal Trainer Joshua",
       "description": "Book a free consultation with Joshua, personal trainer in Milan. Pick a date and time straight from the online calendar."
+    },
+    "privacy": {
+      "title": "Privacy Policy | Personal Trainer Joshua",
+      "description": "Information on the processing of personal data under Art. 13 of EU Regulation 2016/679 (GDPR)"
+    },
+    "terms": {
+      "title": "Terms and Conditions of Service | Personal Trainer Joshua",
+      "description": "General terms and conditions for using the personal training services"
+    },
+    "cookies": {
+      "title": "Cookie Policy | Personal Trainer Joshua",
+      "description": "How this website uses cookies and similar technologies"
     }
   },
   "header": {

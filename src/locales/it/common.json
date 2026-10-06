@@ -88,6 +88,18 @@
     "booking": {
       "title": "Prenota la tua consulenza | Personal Trainer Joshua",
       "description": "Prenota una consulenza gratuita con Joshua, Personal Trainer a Milano. Scegli data e orario direttamente dal calendario online."
+    },
+    "privacy": {
+      "title": "Privacy Policy | Personal Trainer Joshua",
+      "description": "Informativa sul trattamento dei dati personali ai sensi dell'art. 13 del Regolamento UE 2016/679 (GDPR)"
+    },
+    "terms": {
+      "title": "Termini e Condizioni di Servizio | Personal Trainer Joshua",
+      "description": "Termini e condizioni generali per l'utilizzo dei servizi di personal training"
+    },
+    "cookies": {
+      "title": "Cookie Policy | Personal Trainer Joshua",
+      "description": "Informazioni sull'uso dei cookie e tecnologie simili su questo sito web"
     }
   },
   "header": {
