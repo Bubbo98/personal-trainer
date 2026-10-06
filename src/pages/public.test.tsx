@@ -58,6 +58,7 @@ describe('Contact', () => {
     const address = document.querySelector('address')!;
     expect(within(address as HTMLElement).getByRole('link', { name: /328 206 2823/ })).toHaveAttribute('href', 'tel:+393282062823');
     expect(within(address as HTMLElement).getByRole('link', { name: /@mauriziojoshuapt/ })).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(within(address as HTMLElement).getByRole('link', { name: /@joshua\.maurizio/ })).toHaveAttribute('href', 'https://www.tiktok.com/@joshua.maurizio');
     expect(screen.getByTitle('Mappa di Allenamento Funzionale Milano')).toHaveAttribute('src', expect.stringContaining('output=embed'));
   });
 });

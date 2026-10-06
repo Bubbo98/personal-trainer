@@ -52,7 +52,7 @@ export type VideoCategory = (typeof VIDEO_CATEGORIES)[number];
 // Stored values: the labels are translated (admin:muscleGroups.*)
 export const MUSCLE_GROUPS = [
   'Polpaccio', 'Quadricipite', 'Femorale', 'Gluteo', 'Lombare', 'Dorsale', 'Trapezio', 'Pettorale', 'Spalle',
-  'Bicipite', 'Tricipite', 'Addome', 'Avambraccio', 'Cardio', 'Stability', 'Transizioni', 'Tecniche', 'Stretching',
+  'Bicipite', 'Tricipite', 'Addome', 'Avambraccio', 'Cardio', 'Stability', 'Transizioni', 'Tecniche', 'Stretching', 'Rehab',
 ] as const;
 export type MuscleGroup = (typeof MUSCLE_GROUPS)[number];
 

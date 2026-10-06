@@ -11,7 +11,8 @@ export const CONTACT = {
 export const SOCIAL = {
   instagram: 'https://www.instagram.com/mauriziojoshuapt',
   instagramHandle: '@mauriziojoshuapt',
-  tiktok: 'https://www.tiktok.com/@jd.push.pull',
-  tiktokHandle: '@jd.push.pull',
-  deniseInstagram: 'https://www.instagram.com/lamendye',
+  tiktok: 'https://www.tiktok.com/@joshua.maurizio',
+  tiktokHandle: '@joshua.maurizio',
+  deniseInstagram: 'https://www.instagram.com/la_mandye',
+  deniseInstagramHandle: '@la_mandye',
 } as const;

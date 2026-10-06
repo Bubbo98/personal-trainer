@@ -111,7 +111,7 @@ const MoreSection = ({ hasPlan, trainerId }: { hasPlan: boolean; trainerId?: num
               rel="noopener noreferrer"
               className="flex-shrink-0 bg-white text-purple-600 font-semibold px-4 py-2 rounded-lg hover:bg-purple-50 transition-colors text-sm"
             >
-              @lamendye
+              {SOCIAL.deniseInstagramHandle}
             </a>
           </div>
         ) : (
@@ -120,26 +120,26 @@ const MoreSection = ({ hasPlan, trainerId }: { hasPlan: boolean; trainerId?: num
               href={SOCIAL.instagram}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Instagram @mauriziojoshuapt"
+              aria-label={`Instagram ${SOCIAL.instagramHandle}`}
               className="flex items-center justify-center sm:justify-start gap-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-4 shadow-lg hover:opacity-90 transition-opacity"
             >
               <SiInstagram className="w-7 h-7 sm:w-8 sm:h-8 text-white flex-shrink-0" aria-hidden />
               <span className="hidden sm:block min-w-0">
                 <span className="block text-white font-semibold text-sm leading-tight">Instagram</span>
-                <span className="block text-purple-100 text-xs truncate">@mauriziojoshuapt</span>
+                <span className="block text-purple-100 text-xs truncate">{SOCIAL.instagramHandle}</span>
               </span>
             </a>
             <a
               href={SOCIAL.tiktok}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="TikTok @jd.push.pull"
+              aria-label={`TikTok ${SOCIAL.tiktokHandle}`}
               className="flex items-center justify-center sm:justify-start gap-3 bg-gradient-to-r from-gray-900 to-gray-700 rounded-xl p-4 shadow-lg hover:opacity-90 transition-opacity"
             >
               <SiTiktok className="w-7 h-7 sm:w-8 sm:h-8 text-white flex-shrink-0" aria-hidden />
               <span className="hidden sm:block min-w-0">
                 <span className="block text-white font-semibold text-sm leading-tight">TikTok</span>
-                <span className="block text-gray-300 text-xs truncate">@jd.push.pull</span>
+                <span className="block text-gray-300 text-xs truncate">{SOCIAL.tiktokHandle}</span>
               </span>
             </a>
           </div>
