@@ -21,7 +21,8 @@ const isSkippable = (line) =>
     !line ||
     /^```/.test(line) ||
     /^\|?[\s|:-]*-{3,}[\s|:-]*$/.test(line) || // |---|---|
-    /^\|?\s*esercizio\s*\|/i.test(line);       // column headers
+    /^\|?\s*esercizio\s*\|/i.test(line) ||     // column headers
+    /^serie$/i.test(cellsOf(line)[1] || '');   // headers named otherwise ("Nome | Serie | …")
 
 const cellsOf = (line) => line.replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim());
 
@@ -42,7 +43,8 @@ function parsePlanText(text) {
         const lineNumber = index + 1;
         if (isSkippable(line)) return;
 
-        const dayMatch = cellsOf(line).join(' | ').match(/^GIORNO\s+(\d+)\b\s*(?:[|:(–-]\s*)?(.*?)\s*\)?\s*\|*\s*$/i);
+        // "GIORNO 1 | Petto", "GIORNO 1 - Petto (lunedì)", "GIORNO 1 (Petto)", "GIORNO 1"
+        const dayMatch = cellsOf(line).join(' | ').match(/^GIORNO\s+(\d+)\b\s*(?:\((.*)\)|[|:–-]?\s*(.*?))[\s|]*$/i);
         if (dayMatch) {
             const dayNumber = Number(dayMatch[1]);
             if (days.some((d) => d.dayNumber === dayNumber)) {
@@ -50,7 +52,7 @@ function parsePlanText(text) {
                 day = null;
                 return;
             }
-            const title = dayMatch[2].replace(/\s*\|\s*/g, ' ').trim();
+            const title = (dayMatch[2] ?? dayMatch[3]).replace(/\s*\|\s*/g, ' ').trim();
             day = { dayNumber, dayName: title ? `Giorno ${dayNumber} - ${title}` : `Giorno ${dayNumber}`, exercises: [] };
             days.push(day);
             return;

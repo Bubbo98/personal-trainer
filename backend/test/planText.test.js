@@ -42,6 +42,17 @@ describe('plan written as text', () => {
         assert.deepEqual(row(days[0].exercises[0]), ['Lat machine', '4', '10', '1\'30"', 'TUT (negativa 3") · Peso consigliato: 45 kg totali', 1]);
     });
 
+    it('reads the day title however it is written and skips any header row', () => {
+        const titles = ['GIORNO 1 | Petto', 'GIORNO 1 - Petto (lunedì)', 'GIORNO 1 (Petto)', 'Giorno 1: Petto', '| GIORNO 1 | Petto | | | | |', 'GIORNO 1'];
+        const names = titles.map((title) => {
+            const { days, errors } = parsePlanText([title, 'Nome | Serie | Reps | Recupero | Peso | Note', 'Panca | 4 | 8 | 2\' | 30 kg |'].join('\n'));
+            assert.deepEqual(errors, [], title);
+            assert.equal(days[0].exercises.length, 1, title);
+            return days[0].dayName;
+        });
+        assert.deepEqual(names, ['Giorno 1 - Petto', 'Giorno 1 - Petto (lunedì)', 'Giorno 1 - Petto', 'Giorno 1 - Petto', 'Giorno 1 - Petto', 'Giorno 1']);
+    });
+
     it('reports every line it cannot read instead of guessing', () => {
         const { errors } = parsePlanText([
             'Scheda di Mario',
