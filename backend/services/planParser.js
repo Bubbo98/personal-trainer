@@ -20,7 +20,8 @@ function parseWeightSlots(notes) {
   // Several weights ("50 kg / 10 kg x lato", superset) win over "x lato"
   if (kgCount > 1) return kgCount;
   if (/\bx\s+(braccio|lato|gamba|mano)\b/i.test(w)) return 1;
-  if (kgCount === 1) return Math.max(1, (w.match(/\d+(?:\.\d+)?/g) || []).length);
+  // "12,5 kg" is one weight; "8 - 6 - 4 kg" (dropset) three
+  if (kgCount === 1) return Math.max(1, (w.match(/\d+(?:[.,]\d+)?/g) || []).length);
   return 1;
 }
 
