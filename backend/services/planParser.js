@@ -56,8 +56,8 @@ function parsePdfText(text) {
   const STATS_RE = new RegExp(
     `(\\d+)\\s+` +
     // reps: "12", "10 + 12", "12/12" (superset), "10+cedimento", "4-6-8-6-4" (ladder),
-    // "15 x lato" / "15 per lato"
-    `(\\d+[${DQUOTE}${PRIME}]{0,2}(?:\\s*[+/-]\\s*(?:\\d+[${DQUOTE}${PRIME}]{0,2}|cedimento|max))*(?:\\s+(?:x|per)\\s+\\w+)?)\\s+` +
+    // "15 x lato" / "15 per lato", "30 sec", "max"
+    `((?:\\d+(?:[${DQUOTE}${PRIME}]{1,2}|\\s*(?:sec|min)\\b)?(?:\\s*[+/-]\\s*(?:\\d+(?:[${DQUOTE}${PRIME}]{1,2}|\\s*(?:sec|min)\\b)?|cedimento|max))*(?:\\s+(?:x|per)\\s+\\w+)?)|max)\\s+` +
     `(\\d+(?:[.,]\\d+)?[${PRIME}][${PRIME}\\d]*)`,
     'i'
   );
@@ -80,7 +80,7 @@ function parsePdfText(text) {
   // A weight cell that wrapped onto its own line(s) after the row ("8 kg",
   // "10 kg x" + "braccio", "30 kg / 12,5" + "kg x braccio", "Corpo libero"):
   // it belongs to the previous exercise.
-  const WEIGHT_TAIL_RE = /^(?:(?:\d+(?:[.,]\d+)?|kg|x|\/|\+|braccio|lato|gamba|mano|totali|corpo|libero)\s*)*(?:kg|braccio|lato|gamba|mano|corpo|libero)(?:\s*(?:x|\/|\+|\d+(?:[.,]\d+)?|kg|braccio|lato|gamba|mano|corpo|libero))*$/i;
+  const WEIGHT_TAIL_RE = /^(?:(?:\d+(?:[.,]\d+)?|kg|x|\/|\+|braccio|lato|gamba|mano|totali|corpo|libero)\s*)*(?:kg|braccio|lato|gamba|mano|corpo|libero)(?:\s*(?:x|\/|\+|\d+(?:[.,]\d+)?|kg|braccio|lato|gamba|mano|totali|totale|corpo|libero))*$/i;
 
   // Technique notes written on their own line under the exercise name
   // ("TUT 3'' solo negativa", "Rest Pause: 12 rip. + …", "Ladder 1-2-3…").
@@ -90,11 +90,50 @@ function parsePdfText(text) {
   const TECHNIQUE_LINE_RE = /^(?:TUT\b|Isometria\b|Rest\s*Pause\b|Ladder\b|Drop\s*set\b|DS\b|RP\b|Cedimento\b|Lavoro\s+neurale\b)/i;
   let pendingTechniqueLines = [];
 
+  // Rows whose cells pdf-parse puts one per line: the name lines, then sets and
+  // reps ("Trazioni … 4" / "5" / "2'30"" / "5 kg"), or for a superset ("SS:")
+  // the sets and one reps value per exercise ("3" / "12" / "15" / "1'30""). The
+  // numbers wait here until the rest cell completes the row.
+  const CELL_NUMBER_RE = /^\d+(?:\s+(?:x|per)\s+\w+|\s+secondi)?$/i;
+  const SOLO_REST_RE = new RegExp(
+    `^(?:(\\d+(?:[.,]\\d+)?[${PRIME}](?:\\d+)?)[${DQUOTE}]?|(\\d+[${DQUOTE}]|${NUM}\\s*(?:sec|min)(?:\\s+${NUM}\\s*sec)?))$`,
+    'i'
+  );
+  let pendingCells = [];
+  let pendingNameLines = [];
+
   const appendNameLine = (text) => {
     const clean = text.replace(/^[-–•]\s*/, '').trim();
     if (!clean) return;
     if (pendingName && TECHNIQUE_LINE_RE.test(clean)) pendingTechniqueLines.push(clean);
     pendingName = pendingName ? `${pendingName} ${clean}` : clean;
+    pendingNameLines.push(clean);
+  };
+
+  /** Completes a row split one cell per line; false when the buffered cells don't fit. */
+  const flushCellRow = (rest) => {
+    const cells = [...pendingCells];
+    const lines = [...pendingNameLines];
+    // The sets may have stayed on the last name line ("Trazioni … presa prona 4")
+    const setsInName = lines.length && lines[lines.length - 1].match(/^(.*\S)\s+(\d+)$/);
+    if (setsInName) {
+      lines[lines.length - 1] = setsInName[1];
+      cells.unshift(setsInName[2]);
+    }
+    if (cells.length < 2 || !/^\d+$/.test(cells[0])) return false;
+    const [sets, ...reps] = cells;
+
+    const superset = /^SS\s*:?$/i.test(lines[0] || '');
+    if (superset) lines.shift();
+    // A lowercase line continues the previous name ("… presa" / "prona")
+    const names = [];
+    for (const l of lines) {
+      if (names.length && !/^\p{Lu}/u.test(l)) names[names.length - 1] += ` ${l}`;
+      else names.push(l);
+    }
+    pendingName = names.length === reps.length ? names.join(' + ') : names.join(' ');
+    flushExercise(sets, reps.join(' + '), rest, '');
+    return true;
   };
 
   /** Table format only: moves the technique lines from the pending name to the notes. */
@@ -133,6 +172,8 @@ function parsePdfText(text) {
     pendingName = '';
     pendingTechnique = '';
     pendingTechniqueLines = [];
+    pendingCells = [];
+    pendingNameLines = [];
   };
 
   for (const line of lines) {
@@ -141,7 +182,7 @@ function parsePdfText(text) {
     const dayMatch = line.match(/^GIORNO\s+(\d+)\s*(.*)$/i);
     if (dayMatch) {
       pendingName = '';
-      pendingTechnique = ''; pendingTechniqueLines = [];
+      pendingTechnique = ''; pendingTechniqueLines = []; pendingCells = []; pendingNameLines = [];
       inWorkout = false;
       inTable = false;
       inParenthetical = false;
@@ -159,15 +200,23 @@ function parsePdfText(text) {
     if (!currentDay) continue;
 
     if (/^WORKOUT:/i.test(line))           { inWorkout = true; inParenthetical = false; continue; }
-    if (/^WARM\s*UP/i.test(line))          { pendingName = ''; pendingTechnique = ''; pendingTechniqueLines = []; inWorkout = false; inTable = false; inParenthetical = false; continue; }
-    if (/^STRETCHING/i.test(line))         { pendingName = ''; pendingTechnique = ''; pendingTechniqueLines = []; inWorkout = false; inTable = false; inParenthetical = false; continue; }
+    if (/^WARM\s*UP/i.test(line))          { pendingName = ''; pendingTechnique = ''; pendingTechniqueLines = []; pendingCells = []; pendingNameLines = []; inWorkout = false; inTable = false; inParenthetical = false; continue; }
+    if (/^STRETCHING/i.test(line))         { pendingName = ''; pendingTechnique = ''; pendingTechniqueLines = []; pendingCells = []; pendingNameLines = []; inWorkout = false; inTable = false; inParenthetical = false; continue; }
     if (!inWorkout) continue;
 
     if (/^CIRCUITO:/i.test(line))          { inTable = false; continue; }
     if (/^ESERCIZIO\s+SERIE/i.test(line))  { inTable = true; continue; }
     if (!inTable) continue;
 
+    if (pendingName && CELL_NUMBER_RE.test(line)) { pendingCells.push(line.replace(/\s+/g, ' ')); continue; }
     if (/^\d+$/.test(line)) continue;
+
+    if (pendingCells.length) {
+      const rest = line.match(SOLO_REST_RE);
+      if (rest && flushCellRow(rest[1] || rest[2])) continue;
+      // Anything else: the numbers were page numbers in the middle of a name
+      pendingCells = [];
+    }
 
     if (inParenthetical) {
       if (line.includes(')')) inParenthetical = false;

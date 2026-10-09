@@ -8,9 +8,9 @@ const { readFile } = require('../services/storedFiles');
 // Stats left inside a name ("… 4 10+cedimento 1'30" 30 kg …") mean two table rows were merged
 const MERGED_ROW = /\b\d+\s+[^\s(]\S*\s+\d+(?:[.,]\d+)?\s*(?:['’′"”″]|sec\b|min\b)/i;
 
-// Plans whose table cells pdf-parse splits irregularly ("Bird dog" / "3" / "8" /
-// "8 per lato" / "1'30""): not supported yet. Any other merged row is a regression.
-const KNOWN_UNSUPPORTED = ['Barni', 'Savioli', 'Tosi', 'Rizzelli', 'LIZZI'];
+// Plans whose table cells pdf-parse splits irregularly ("3 (in SS) 10" / "+" / "12" /
+// "1’30” a fine" / "superset"): not supported yet. Any other merged row is a regression.
+const KNOWN_UNSUPPORTED = ['Barni', 'Savioli', 'Tosi', 'Rizzelli', 'Capoano'];
 
 after(stop);
 
@@ -59,6 +59,44 @@ describe('plan PDF parser', () => {
             ['4', '10+cedimento', '1\'30'],
             ['1', '4-6-8-6-4', '1\''],
             ['3', '30"', '45"'],
+        ]);
+    });
+
+    it('reads rows and supersets split one cell per line', () => {
+        const text = [
+            'GIORNO 1 (Test)', 'WORKOUT:', 'Esercizio Serie Ripetizioni Recupero Peso',
+            'Trazioni alla torre zavorrate presa prona 4', '5', '2\'30"', '5 kg',
+            'Low row presa neutra 4 6 2\' 20 kg per lato',
+            'SS:', 'Push down al castello con barra dritta presa', 'prona',
+            'Curl a martello con manubri in piedi presa', 'neutra',
+            '3', '10', '10', '1\'30"', '25 kg totali', '12 kg x braccio',
+            'Plank sugli avambracci - Isometria 1’ 4 1 1\' Corpo libero',
+            'STRETCHING',
+        ].join('\n');
+        const [day] = parsePdfText(text);
+        assert.deepEqual(day.exercises.map((e) => [e.name, e.sets, e.reps, e.rest, e.notes]), [
+            ['Trazioni alla torre zavorrate presa prona', '4', '5', '2\'30', 'Peso consigliato: 5 kg'],
+            ['Low row presa neutra', '4', '6', '2\'', 'Peso consigliato: 20 kg per lato'],
+            ['Push down al castello con barra dritta presa prona + Curl a martello con manubri in piedi presa neutra',
+                '3', '10 + 10', '1\'30', 'Peso consigliato: 25 kg totali / 12 kg x braccio'],
+            ['Plank sugli avambracci - Isometria 1’', '4', '1', '1\'', ''],
+        ]);
+        assert.equal(day.exercises[2].weightSlots, 2);
+    });
+
+    it('reads timed and "max" reps with the rest in minutes', () => {
+        const text = [
+            'GIORNO 1 (Test)', 'WORKOUT:', 'Esercizio Serie Ripetizioni Recupero Peso',
+            'Plank sui gomiti 3 30 sec 1\' corpo libero',
+            'Trazioni 4 max 2\' corpo libero',
+            'Wall sit 3 45" 1\'30" corpo libero',
+            'STRETCHING',
+        ].join('\n');
+        const [day] = parsePdfText(text);
+        assert.deepEqual(day.exercises.map((e) => [e.name, e.sets, e.reps, e.rest]), [
+            ['Plank sui gomiti', '3', '30 sec', '1\''],
+            ['Trazioni', '4', 'max', '2\''],
+            ['Wall sit', '3', '45"', '1\'30'],
         ]);
     });
 });
