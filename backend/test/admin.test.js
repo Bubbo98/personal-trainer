@@ -239,6 +239,15 @@ describe('admin training days', () => {
 });
 
 describe('admin workout plan', () => {
+    it('POST /api/workout/admin/parse-text reads the plan written as text (admin only)', async () => {
+        const body = { text: 'GIORNO 1 | Petto\nPanca piana | 4 | 8 | 2\' | 30 kg\nCroci 3 12 1\'' };
+        assert.equal((await api('POST', '/api/workout/admin/parse-text', { token: userToken(), body })).status, 403);
+        const res = await api('POST', '/api/workout/admin/parse-text', { token: token(), body });
+        assert.equal(res.status, 200);
+        assert.equal(res.body.data.days[0].exercises[0].name, 'Panca piana');
+        assert.deepEqual(res.body.data.errors, [{ line: 3, text: 'Croci 3 12 1\'', reason: 'columns' }]);
+    });
+
     it('POST /api/workout/admin/parse-pdf/:userId extracts the stored plan', async () => {
         const res = await api('POST', `/api/workout/admin/parse-pdf/${MICHELA}`, { token: token() });
         assert.equal(res.status, 200);

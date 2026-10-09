@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { FiBarChart2, FiChevronDown, FiPlus, FiRefreshCw, FiSave, FiTrash2 } from 'react-icons/fi';
+import { FiBarChart2, FiChevronDown, FiClipboard, FiPlus, FiRefreshCw, FiSave, FiTrash2 } from 'react-icons/fi';
 import Button from '../../../../components/ui/Button';
 import { useConfirm } from '../../../../components/ui/ConfirmDialog';
 import { inputClass } from '../../../../components/ui/Field';
@@ -18,6 +18,7 @@ import { useDragSensors } from '../../components/useDragSensors';
 import { DragHandle, Sortable } from '../../components/sortable';
 import { adminKeys, usePlanExercises, useWeightLogs } from '../../queries';
 import type { AdminWeightLog, PlanDay, PlanExercise } from '../../types';
+import ImportPlanTextModal from './ImportPlanTextModal';
 import { emptyExercise, fromParsed, nextDayNumber, planIsValid, toPlanDays, toPlanPayload } from './planEditor';
 
 const cell = inputClass.replace('px-4 py-2.5', 'px-3 py-2').replace('rounded-xl', 'rounded-lg') + ' text-sm';
@@ -126,6 +127,7 @@ const PlanEditor = ({ userId, initial, hasPlan }: { userId: number; initial: Pla
   const queryClient = useQueryClient();
   const [days, setDays] = useState(initial);
   const [dirty, setDirty] = useState(false);
+  const [importing, setImporting] = useState(false);
   const update = (next: PlanDay[]) => {
     setDays(next);
     setDirty(true);
@@ -177,6 +179,9 @@ const PlanEditor = ({ userId, initial, hasPlan }: { userId: number; initial: Pla
         >
           {parse.isPending ? t('plan.parsing') : t('plan.parse')}
         </Button>
+        <Button variant="secondary" onClick={() => setImporting(true)} icon={<FiClipboard className="w-4 h-4" aria-hidden />}>
+          {t('plan.importText')}
+        </Button>
         <Button
           variant="secondary"
           onClick={() => {
@@ -212,6 +217,17 @@ const PlanEditor = ({ userId, initial, hasPlan }: { userId: number; initial: Pla
           )}
         </div>
       </div>
+
+      {importing && (
+        <ImportPlanTextModal
+          onClose={() => setImporting(false)}
+          onImport={(imported) => {
+            setImporting(false);
+            update(fromParsed(imported));
+            toast.success(t('plan.imported', { exercises: imported.reduce((n, d) => n + d.exercises.length, 0), days: imported.length }));
+          }}
+        />
+      )}
 
       {days.length === 0 && <EmptyState title={t('plan.emptyTitle')} message={t('plan.emptyMessage')} />}
 

@@ -4,6 +4,7 @@ const { db } = require('../utils/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { route, id, badRequest, forbidden, notFound } = require('../utils/http');
 const { parsePdfText } = require('../services/planParser');
+const { parsePlanText } = require('../services/planText');
 const { readFile } = require('../services/storedFiles');
 const { loadLinks, saveLinks } = require('../services/exerciseLinks');
 
@@ -19,6 +20,12 @@ router.post('/admin/parse-pdf/:userId', admin, route(async (req, res) => {
     if (!pdf || (!pdf.file_key && !pdf.file_data)) throw notFound('No PDF found for this user');
     const { text } = await pdfParse(await readFile(pdf));
     res.json({ success: true, data: { days: parsePdfText(text) } });
+}));
+
+// POST /api/workout/admin/parse-text — proposes days/exercises from the plan written as text (nothing saved)
+// Body: { text }. Lines it can't read come back in errors (with their line number) instead of being guessed.
+router.post('/admin/parse-text', admin, route(async (req, res) => {
+    res.json({ success: true, data: parsePlanText(req.body && req.body.text) });
 }));
 
 // GET /api/workout/admin/plan/:userId
