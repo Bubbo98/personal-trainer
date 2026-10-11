@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiUpload } from 'react-icons/fi';
 import Button from '../../../components/ui/Button';
 import { SelectField, TextAreaField, TextField, inputClass } from '../../../components/ui/Field';
 import Modal from '../../../components/ui/Modal';
@@ -26,7 +25,7 @@ const MuscleGroupSelect = ({ value, onChange }: { value: string; onChange: (valu
   );
 };
 
-/** New video: upload the file to R2 first, then save its details. */
+/** New video: Save uploads the file to R2, then saves its details. */
 export const CreateVideoModal = ({ saving, onSubmit, onClose }: { saving: boolean; onSubmit: (input: CreateVideoInput) => void; onClose: () => void }) => {
   const { t } = useTranslation('admin');
   const errorMessage = useErrorMessage();
@@ -50,32 +49,39 @@ export const CreateVideoModal = ({ saving, onSubmit, onClose }: { saving: boolea
     if (seconds) set('duration', seconds);
   };
 
-  const upload = async () => {
-    if (!file || !form.category) return;
-    setError(null);
+  /** R2 path of the chosen file, uploading it unless a failed save already did. */
+  const upload = async (chosen: File) => {
+    if (form.filePath) return form.filePath;
     setProgress(0);
     try {
       const { uploadUrl, filePath } = await adminApi.post<{ uploadUrl: string; filePath: string }>('/admin/videos/upload-url', {
-        fileName: file.name,
-        fileType: file.type,
+        fileName: chosen.name,
+        fileType: chosen.type,
         category: form.category,
       });
-      await putFile(uploadUrl, file, file.type, setProgress);
+      await putFile(uploadUrl, chosen, chosen.type, setProgress);
       set('filePath', filePath);
-    } catch (err) {
-      setError(errorMessage(err, t('videos.form.uploadFailed')));
+      return filePath;
     } finally {
       setProgress(null);
     }
   };
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!form.filePath) {
-      setError(t('videos.form.uploadFirst'));
+    setError(null);
+    if (!file) {
+      setError(t('videos.form.fileRequired'));
       return;
     }
-    onSubmit({ ...form, title: form.title.trim(), description: form.description.trim() });
+    let filePath: string;
+    try {
+      filePath = await upload(file);
+    } catch (err) {
+      setError(errorMessage(err, t('videos.form.uploadFailed')));
+      return;
+    }
+    onSubmit({ ...form, filePath, title: form.title.trim(), description: form.description.trim() });
   };
 
   return (
@@ -103,22 +109,14 @@ export const CreateVideoModal = ({ saving, onSubmit, onClose }: { saving: boolea
           <label htmlFor="video-file" className="block text-sm font-medium text-gray-700">
             {t('videos.form.file')}
           </label>
-          <div className="flex items-center gap-2">
-            <input
-              id="video-file"
-              type="file"
-              accept="video/*"
-              disabled={uploading || !form.category}
-              onChange={(e) => choose(e.target.files?.[0])}
-              className="flex-1 min-w-0 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
-            />
-            {file && !form.filePath && (
-              <Button variant="secondary" size="sm" onClick={upload} loading={uploading} icon={<FiUpload className="w-4 h-4" aria-hidden />}>
-                {t('videos.form.upload')}
-              </Button>
-            )}
-          </div>
-          {!form.category && <p className="text-xs text-orange-600">{t('videos.form.chooseCategoryFirst')}</p>}
+          <input
+            id="video-file"
+            type="file"
+            accept="video/*"
+            disabled={uploading || saving}
+            onChange={(e) => choose(e.target.files?.[0])}
+            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+          />
           {file && <p className="text-sm text-gray-600">{t('videos.form.selectedFile', { name: file.name, size: formatFileSize(file.size) })}</p>}
           {uploading && (
             <div>
@@ -131,7 +129,6 @@ export const CreateVideoModal = ({ saving, onSubmit, onClose }: { saving: boolea
               </div>
             </div>
           )}
-          {form.filePath && <Alert kind="success">{t('videos.form.uploaded', { path: form.filePath })}</Alert>}
         </div>
 
         <div className="grid grid-cols-2 gap-4 items-start">
@@ -153,7 +150,7 @@ export const CreateVideoModal = ({ saving, onSubmit, onClose }: { saving: boolea
           <Button variant="secondary" fullWidth onClick={onClose} disabled={uploading || saving}>
             {t('actions.cancel')}
           </Button>
-          <Button type="submit" fullWidth loading={saving} disabled={uploading}>
+          <Button type="submit" fullWidth loading={uploading || saving}>
             {t('videos.form.create')}
           </Button>
         </div>
