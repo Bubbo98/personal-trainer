@@ -17,10 +17,9 @@ function parseWeightSlots(notes) {
   if (!match) return 1;
   const w = match[1].trim();
   const kgCount = (w.match(/\bkg\b/gi) || []).length;
-  // Several weights ("50 kg / 10 kg x lato", superset) win over "x lato"
+  // Several weights ("50 kg / 10 kg x lato", superset)
   if (kgCount > 1) return kgCount;
-  if (/\bx\s+(braccio|lato|gamba|mano)\b/i.test(w)) return 1;
-  // "12,5 kg" is one weight; "8 - 6 - 4 kg" (dropset) three
+  // "12,5 kg" is one weight; "8 - 6 - 4 kg" (dropset) three, also "10 - 7 kg x braccio"
   if (kgCount === 1) return Math.max(1, (w.match(/\d+(?:[.,]\d+)?/g) || []).length);
   return 1;
 }

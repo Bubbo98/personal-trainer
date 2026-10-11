@@ -45,6 +45,8 @@ describe('plan PDF parser', () => {
         assert.equal(parseWeightSlots('Peso consigliato: 50 kg / 10 kg x lato'), 2);
         assert.equal(parseWeightSlots(''), 1);
         assert.equal(parseWeightSlots('Peso consigliato: 7,5 kg'), 1);
+        assert.equal(parseWeightSlots('Peso consigliato: 10 - 7 kg x braccio'), 2);
+        assert.equal(parseWeightSlots('Peso consigliato: 12,5 kg x braccio'), 1);
     });
 
     it('reads ladder, "cedimento" and dash reps', () => {
