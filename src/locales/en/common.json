@@ -22,7 +22,8 @@
     "functionalTraining": "Functional Training Milan",
     "logoAlt": "Joshua Maurizio and Denise Bergamo logo",
     "partnerLogoAlt": "Allenamento Funzionale Milano logo",
-    "legalLinks": "Legal documents"
+    "legalLinks": "Legal documents",
+    "cookieSettings": "Cookie settings"
   },
   "common": {
     "cancel": "Cancel",
@@ -112,5 +113,23 @@
     "goTo": "Go to image {{number}} of {{total}}",
     "pause": "Pause",
     "play": "Play"
+  },
+  "cookies": {
+    "label": "Cookie preferences",
+    "title": "We use cookies",
+    "text": "We use technical cookies, needed for the site to work, and, only with your consent, statistics cookies to understand how the site is used and marketing cookies to measure our ads on Google, Instagram and Facebook.",
+    "policy": "Cookie Policy",
+    "reject": "Reject",
+    "customize": "Customise",
+    "acceptAll": "Accept all",
+    "save": "Save choices",
+    "close": "Close and reject optional cookies",
+    "necessary": "Technical",
+    "necessaryText": "Needed for the site to work (language, client area login, bookings). Always on.",
+    "analytics": "Statistics",
+    "analyticsText": "Google Analytics: visits and page views, aggregated.",
+    "marketing": "Marketing",
+    "marketingText": "Google Ads and Meta Pixel (Instagram, Facebook): measure the bookings coming from our ads.",
+    "alwaysOn": "Always on"
   }
 }

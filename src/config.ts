@@ -16,3 +16,18 @@ export const SOCIAL = {
   deniseInstagram: 'https://www.instagram.com/la_mandye',
   deniseInstagramHandle: '@la_mandye',
 } as const;
+
+/**
+ * Ad and statistics tags (public ids, see lib/tracking): an empty id keeps that tag off.
+ * They load only after the visitor accepts the matching cookies in the banner.
+ */
+export const TRACKING = {
+  /** Google Analytics 4, "G-XXXXXXX". */
+  ga4Id: '',
+  /** Google Ads, "AW-XXXXXXX". */
+  googleAdsId: '',
+  /** Label of the Google Ads "consultation booked" conversion (the part after "AW-…/"). */
+  googleAdsLeadLabel: '',
+  /** Meta (Facebook / Instagram) Pixel id. */
+  metaPixelId: '',
+} as const;

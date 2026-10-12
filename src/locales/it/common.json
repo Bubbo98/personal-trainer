@@ -22,7 +22,8 @@
     "functionalTraining": "Allenamento Funzionale Milano",
     "logoAlt": "Logo Joshua Maurizio e Denise Bergamo",
     "partnerLogoAlt": "Logo Allenamento Funzionale Milano",
-    "legalLinks": "Documenti legali"
+    "legalLinks": "Documenti legali",
+    "cookieSettings": "Preferenze cookie"
   },
   "common": {
     "cancel": "Annulla",
@@ -112,5 +113,23 @@
     "goTo": "Vai all’immagine {{number}} di {{total}}",
     "pause": "Metti in pausa",
     "play": "Riproduci"
+  },
+  "cookies": {
+    "label": "Preferenze sui cookie",
+    "title": "Usiamo i cookie",
+    "text": "Usiamo cookie tecnici, necessari al funzionamento del sito, e, solo con il tuo consenso, cookie statistici per capire come viene usato il sito e cookie di marketing per misurare le nostre pubblicità su Google, Instagram e Facebook.",
+    "policy": "Cookie Policy",
+    "reject": "Rifiuta",
+    "customize": "Personalizza",
+    "acceptAll": "Accetta tutti",
+    "save": "Salva le scelte",
+    "close": "Chiudi rifiutando i cookie facoltativi",
+    "necessary": "Tecnici",
+    "necessaryText": "Necessari al funzionamento del sito (lingua, accesso all'area clienti, prenotazioni). Sempre attivi.",
+    "analytics": "Statistiche",
+    "analyticsText": "Google Analytics: visite e pagine viste, in forma aggregata.",
+    "marketing": "Marketing",
+    "marketingText": "Google Ads e Meta Pixel (Instagram, Facebook): misurano le prenotazioni arrivate dalle nostre pubblicità.",
+    "alwaysOn": "Sempre attivi"
   }
 }

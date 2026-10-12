@@ -1,10 +1,12 @@
-import { lazy, Suspense, useEffect, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Analytics } from '@vercel/analytics/react';
 import Home from './pages/Home';
 import PageLoader from './components/ui/PageLoader';
 import ErrorBoundary from './components/ErrorBoundary';
+import CookieBanner from './components/CookieBanner';
+import { trackPageView } from './lib/tracking';
 import { ToastProvider } from './components/ui/Toast';
 import { ConfirmProvider } from './components/ui/ConfirmDialog';
 import { queryClient } from './lib/queryClient';
@@ -23,8 +25,12 @@ const NotFound = lazy(() => import('./pages/NotFound'));
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
+  const first = useRef(true);
   useEffect(() => {
     window.scrollTo(0, 0);
+    // The tags count the landing page themselves: report the later in-app navigations
+    if (first.current) first.current = false;
+    else trackPageView(pathname);
   }, [pathname]);
   return null;
 };
@@ -56,6 +62,7 @@ export const AppShell = ({ router: Router }: { router: (props: { children: React
               </Routes>
             </Suspense>
             </ErrorBoundary>
+            <CookieBanner />
           </Router>
           <Analytics />
         </ConfirmProvider>

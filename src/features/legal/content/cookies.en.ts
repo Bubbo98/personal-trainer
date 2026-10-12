@@ -6,7 +6,7 @@ import { OWNER } from './owner';
 const cookies: LegalDoc = {
   title: 'Cookie Policy',
   subtitle: 'How this website uses cookies and similar technologies',
-  updated: '2026-07-20',
+  updated: '2026-10-12',
   notice: ENGLISH_NOTICE,
   sections: [
     {
@@ -103,6 +103,31 @@ const cookies: LegalDoc = {
           box: [{ p: '**Note:** Vercel Analytics collects anonymous, aggregated data on site traffic. It uses no persistent cookies and respects user privacy with no personal tracking.' }],
           tone: 'green',
         },
+        { h3: '📊 Statistics Cookies (only with consent)' },
+        { p: 'Turned on only if you choose "Statistics" or "Accept all" in the banner. They tell us, in aggregate, how many people visit the site and which pages they view.' },
+        { h4: 'Google Analytics 4' },
+        {
+          table: {
+            head: ['Cookie', 'Purpose', 'Duration'],
+            rows: [
+              ['_ga', 'Tells visitors apart (random identifier)', '2 years'],
+              ['_ga_<ID>', 'Keeps the session state', '2 years'],
+            ],
+          },
+        },
+        { p: 'Google Privacy Policy: [https://policies.google.com/privacy](https://policies.google.com/privacy)', muted: true },
+        { h3: '📣 Marketing Cookies (only with consent)' },
+        { p: 'Turned on only if you choose "Marketing" or "Accept all" in the banner. They measure how many consultations come from our ads on Google, Instagram and Facebook and show our ads to people who already visited the site.' },
+        {
+          table: {
+            head: ['Service', 'Cookie', 'Purpose', 'Duration'],
+            rows: [
+              ['Google Ads', '_gcl_au, _gcl_aw', 'Measures conversions (booked consultations) from Google ads', '90 days'],
+              ['Meta Pixel (Facebook, Instagram)', '_fbp, _fbc', 'Measures conversions and audiences of Meta ads', '90 days'],
+            ],
+          },
+        },
+        { p: 'Meta Privacy Policy: [https://www.facebook.com/privacy/policy](https://www.facebook.com/privacy/policy)', muted: true },
         { h4: 'Google Maps (Interactive Maps)' },
         {
           table: {
@@ -129,9 +154,13 @@ const cookies: LegalDoc = {
               blocks: [{ p: '**Legal basis:** Legitimate interest (Art. 6(1)(f) GDPR)' }, { p: '**Reason:** essential for the site to work' }, { p: '**Consent:** not required' }],
             },
             {
-              title: 'Functional Cookies',
+              title: 'Statistics and Marketing Cookies',
               tone: 'blue',
-              blocks: [{ p: '**Legal basis:** Consent (Art. 6(1)(a) GDPR)' }, { p: '**Reason:** better user experience' }, { p: '**Consent:** requested through a banner' }],
+              blocks: [
+                { p: '**Legal basis:** Consent (Art. 6(1)(a) GDPR)' },
+                { p: '**Reason:** visit statistics and ad measurement' },
+                { p: '**Consent:** requested through the banner, per category; off until you allow them' },
+              ],
             },
           ],
         },
@@ -158,7 +187,7 @@ const cookies: LegalDoc = {
         { list: ['Accept all cookies', 'Reject non-essential cookies', 'Customise your preferences', 'Read this full Cookie Policy'] },
         { h3: '⚙️ Preference Centre' },
         { p: 'You can change your cookie preferences at any time through:' },
-        { list: ['The "Cookie Settings" link in the site footer', 'The "Preferences" section of your account (if registered)', 'Your web browser settings'] },
+        { list: ['The "Cookie settings" link at the bottom of every page', 'Your web browser settings'] },
         {
           box: [{ p: 'Your consent is valid when it is **freely given, specific, informed and unambiguous**. You can withdraw it at any time as easily as you gave it.' }],
           title: '✅ Valid Consent',
@@ -268,7 +297,7 @@ const cookies: LegalDoc = {
         {
           box: [
             { p: '**United States:**' },
-            { list: ['Cal.com - Booking system', 'Google (Maps) - Interactive maps', 'Vercel - Hosting and analytics'] },
+            { list: ['Cal.com - Booking system', 'Google (Maps, Analytics, Ads) - Maps, statistics and advertising', 'Meta (Facebook, Instagram) - Advertising', 'Vercel - Hosting and analytics'] },
             { p: '**Safeguards:** EU-US Data Privacy Framework, EU Standard Contractual Clauses' },
             { p: '**Rights:** you can always withdraw consent and ask for your data to be deleted' },
           ],

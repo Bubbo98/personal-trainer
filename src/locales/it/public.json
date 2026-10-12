@@ -106,7 +106,7 @@
   },
   "booking": {
     "title": "Prenota la tua consulenza",
-    "description": "Seleziona il giorno e l'orario che preferisci per la tua consulenza gratuita.",
+    "description": "Consulenza gratuita di 15 minuti: scegli il giorno e l'orario che preferisci.",
     "note": "Durante la chiamata conoscitiva, gestiremo insieme quando vederci per la prima volta in palestra.",
     "directContact": "Contattami direttamente al numero",
     "imageAlt": "Prenota la tua consulenza",

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { FiClock, FiFileText, FiMail, FiMapPin, FiPhone, FiUser } from 'react-icons/fi';
 import { CONTACT } from '../config';
+import { openCookieSettings } from '../lib/consent';
 import { OWNER } from '../features/legal/content/owner';
 
 const PARTNER_URL = 'https://www.allenamentofunzionalemilano.net';
@@ -96,6 +97,9 @@ const Footer = () => {
               <Link to="/cookie-policy" className="text-gray-400 hover:text-white transition-colors">
                 {t('footer.cookiePolicy')}
               </Link>
+              <button type="button" onClick={openCookieSettings} className="text-gray-400 hover:text-white transition-colors">
+                {t('footer.cookieSettings')}
+              </button>
             </nav>
           </div>
 

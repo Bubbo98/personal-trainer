@@ -5,7 +5,7 @@ import { OWNER } from './owner';
 const cookies: LegalDoc = {
   title: 'Cookie Policy',
   subtitle: "Informazioni sull'uso dei cookie e tecnologie simili su questo sito web",
-  updated: '2026-07-20',
+  updated: '2026-10-12',
   sections: [
     {
       title: '1. Cosa sono i Cookie',
@@ -105,6 +105,31 @@ const cookies: LegalDoc = {
           ],
           tone: 'green',
         },
+        { h3: '📊 Cookie Statistici (solo con consenso)' },
+        { p: 'Attivati solo se scegli "Statistiche" o "Accetta tutti" nel banner. Ci dicono, in forma aggregata, quante persone visitano il sito e quali pagine guardano.' },
+        { h4: 'Google Analytics 4' },
+        {
+          table: {
+            head: ['Cookie', 'Finalità', 'Durata'],
+            rows: [
+              ['_ga', 'Distingue i visitatori (identificativo casuale)', '2 anni'],
+              ['_ga_<ID>', 'Mantiene lo stato della sessione', '2 anni'],
+            ],
+          },
+        },
+        { p: 'Privacy Policy Google: [https://policies.google.com/privacy](https://policies.google.com/privacy)', muted: true },
+        { h3: '📣 Cookie di Marketing (solo con consenso)' },
+        { p: 'Attivati solo se scegli "Marketing" o "Accetta tutti" nel banner. Servono a misurare quante consulenze arrivano dalle nostre pubblicità su Google, Instagram e Facebook e a mostrare i nostri annunci a chi ha già visitato il sito.' },
+        {
+          table: {
+            head: ['Servizio', 'Cookie', 'Finalità', 'Durata'],
+            rows: [
+              ['Google Ads', '_gcl_au, _gcl_aw', 'Misura delle conversioni (consulenze prenotate) dagli annunci Google', '90 giorni'],
+              ['Meta Pixel (Facebook, Instagram)', '_fbp, _fbc', 'Misura delle conversioni e pubblico degli annunci Meta', '90 giorni'],
+            ],
+          },
+        },
+        { p: 'Privacy Policy Meta: [https://www.facebook.com/privacy/policy](https://www.facebook.com/privacy/policy)', muted: true },
         { h4: 'Google Maps (Mappe Interattive)' },
         {
           table: {
@@ -135,12 +160,12 @@ const cookies: LegalDoc = {
               ],
             },
             {
-              title: 'Cookie di Funzionalità',
+              title: 'Cookie Statistici e di Marketing',
               tone: 'blue',
               blocks: [
                 { p: '**Base giuridica:** Consenso (art. 6, par. 1, lett. a) GDPR' },
-                { p: '**Motivo:** Miglioramento esperienza utente' },
-                { p: '**Consenso:** Richiesto tramite banner' },
+                { p: '**Motivo:** Statistiche di visita e misura delle pubblicità' },
+                { p: '**Consenso:** Richiesto tramite banner, separato per categoria; senza consenso restano disattivati' },
               ],
             },
           ],
@@ -168,7 +193,7 @@ const cookies: LegalDoc = {
         { list: ['Accettare tutti i cookie', 'Rifiutare i cookie non essenziali', 'Personalizzare le tue preferenze', 'Leggere questa Cookie Policy completa'] },
         { h3: '⚙️ Centro Preferenze' },
         { p: 'Puoi modificare le tue preferenze sui cookie in qualsiasi momento attraverso:' },
-        { list: ['Link "Impostazioni Cookie" nel footer del sito', 'Sezione "Preferenze" nel tuo account (se registrato)', 'Impostazioni del browser web'] },
+        { list: ['Link "Preferenze cookie" in fondo a ogni pagina del sito', 'Impostazioni del browser web'] },
         {
           box: [
             {
@@ -288,7 +313,7 @@ const cookies: LegalDoc = {
         {
           box: [
             { p: '**Stati Uniti:**' },
-            { list: ['Cal.com - Sistema di prenotazione', 'Google (Maps) - Mappe interattive', 'Vercel - Hosting e analytics'] },
+            { list: ['Cal.com - Sistema di prenotazione', 'Google (Maps, Analytics, Ads) - Mappe, statistiche e pubblicità', 'Meta (Facebook, Instagram) - Pubblicità', 'Vercel - Hosting e analytics'] },
             { p: '**Protezioni:** Data Privacy Framework UE-USA, Clausole Contrattuali Standard UE' },
             { p: '**Diritti:** Puoi sempre revocare il consenso e richiedere la cancellazione dei tuoi dati' },
           ],

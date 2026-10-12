@@ -3,6 +3,9 @@ import { createRoot, hydrateRoot } from 'react-dom/client';
 import './index.css';
 import i18n from './i18n';
 import App from './App';
+import { initTracking } from './lib/tracking';
+
+initTracking();
 
 const container = document.getElementById('root')!;
 const app = (
