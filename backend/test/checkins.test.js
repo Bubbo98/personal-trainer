@@ -23,6 +23,10 @@ describe('check-in rule', () => {
     it('asks the first check one week after the plan', () => {
         assert.equal(checkinStatus({ pdf_updated_at: daysAgo(6, 23) }, now).reason, 'too_soon');
         assert.equal(checkinStatus({ pdf_updated_at: daysAgo(7, 1) }, now).shouldShow, true);
+        // Uploaded ahead of its unlock: the week counts from the unlock
+        const unlocked = new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000).toISOString();
+        assert.equal(checkinStatus({ pdf_updated_at: daysAgo(7, 1), pdf_visible_from: unlocked }, now).reason, 'too_soon');
+        assert.equal(checkinStatus({ pdf_updated_at: daysAgo(10), pdf_visible_from: daysAgo(8) }, now).shouldShow, true);
     });
 
     it('then every two weeks since the last check', () => {

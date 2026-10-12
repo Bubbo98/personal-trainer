@@ -5,7 +5,7 @@ const { db } = require('../utils/database');
  * Weekly check-in rule, shared by the client form (GET /api/feedback/should-show)
  * and the reminder emails (scripts/send-checkin-reminders.js):
  *   - exempt clients never get it;
- *   - first check 1 week after the plan (PDF) was uploaded/updated;
+ *   - first check 1 week after the plan (PDF) was uploaded/updated, or after its unlock date when that is later;
  *   - then every 2 weeks since the last check on that plan version.
  */
 
@@ -21,7 +21,7 @@ function parseDbDate(value) {
 }
 
 /**
- * @param {{ checkin_exempt, pdf_updated_at, last_feedback_at }} row
+ * @param {{ checkin_exempt, pdf_updated_at, pdf_visible_from?, last_feedback_at }} row
  * @returns {{ shouldShow: boolean, reason?: string, pdfUpdatedAt?: string, lastFeedbackAt?: string }}
  */
 function checkinStatus(row, now = new Date()) {
@@ -29,7 +29,10 @@ function checkinStatus(row, now = new Date()) {
     const pdfUpdatedAt = parseDbDate(row && row.pdf_updated_at);
     if (!pdfUpdatedAt) return { shouldShow: false, reason: 'no_pdf' };
 
-    if (now - pdfUpdatedAt < FIRST_CHECK_AFTER_DAYS * DAY_MS) {
+    // A plan uploaded ahead of its unlock date starts when the client can see it
+    const visibleFrom = parseDbDate(row.pdf_visible_from);
+    const planStart = visibleFrom && visibleFrom > pdfUpdatedAt ? visibleFrom : pdfUpdatedAt;
+    if (now - planStart < FIRST_CHECK_AFTER_DAYS * DAY_MS) {
         return { shouldShow: false, reason: 'too_soon', pdfUpdatedAt: pdfUpdatedAt.toISOString() };
     }
     const lastFeedbackAt = parseDbDate(row.last_feedback_at);
@@ -50,7 +53,7 @@ const STATUS_QUERY = `
            COALESCE(t.name, 'Joshua') AS trainer_name,
            COALESCE(u.email, (SELECT f.email FROM user_feedbacks f WHERE f.user_id = u.id AND f.email <> ''
                               ORDER BY f.created_at DESC LIMIT 1)) AS email,
-           upf.updated_at AS pdf_updated_at,
+           upf.updated_at AS pdf_updated_at, upf.visible_from AS pdf_visible_from,
            (SELECT MAX(f.created_at) FROM user_feedbacks f
             WHERE f.user_id = u.id AND f.pdf_change_date = upf.updated_at) AS last_feedback_at
     FROM users u
