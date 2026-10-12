@@ -81,9 +81,7 @@
   "services": {
     "title": "Discover my services",
     "selectService": "Click on a service to view details",
-    "bookSession": "Book a session",
-    "bookYour": "Book your",
-    "selectDateTime": "Select your preferred date and time",
+    "bookConsultation": "Book the free consultation",
     "personal": {
       "title": "1-to-1 Training",
       "description": "Personalized 1-to-1 training designed just for you: focus on goals, technique correction and constant motivation.\nAn exclusive journey to maximize results in safety and effectiveness."

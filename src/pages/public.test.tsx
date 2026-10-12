@@ -64,14 +64,17 @@ describe('Contact', () => {
 });
 
 describe('Services', () => {
-  it('opens a service and its booking calendar', async () => {
+  it('opens a service; its button leads to the free consultation, not to a session', async () => {
     const user = userEvent.setup();
     renderWithProviders(<Services />);
     const button = screen.getByRole('button', { name: 'Allenamento 1 to 1' });
     expect(button).toHaveAttribute('aria-expanded', 'false');
     await user.click(button);
     expect(button).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByTestId('cal')).toBeInTheDocument();
+    expect(screen.queryByTestId('cal')).not.toBeInTheDocument();
+    for (const link of screen.getAllByRole('link', { name: 'Prenota la consulenza gratuita' })) {
+      expect(link).toHaveAttribute('href', '/booking#booking-calendar');
+    }
     expect(screen.getAllByText(/Allenamenti personalizzati 1 to 1/).length).toBeGreaterThan(0);
   });
 });

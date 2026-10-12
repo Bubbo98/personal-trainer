@@ -81,9 +81,7 @@
   "services": {
     "title": "Scopri i miei servizi",
     "selectService": "Clicca su un servizio per visualizzare i dettagli",
-    "bookSession": "Prenota una sessione",
-    "bookYour": "Prenota il tuo",
-    "selectDateTime": "Seleziona il giorno e l'orario che preferisci",
+    "bookConsultation": "Prenota la consulenza gratuita",
     "personal": {
       "title": "Allenamento 1 to 1",
       "description": "Allenamenti personalizzati 1 to 1 pensati su misura per te: focus sugli obiettivi, correzione della tecnica e motivazione costante.\nUn percorso esclusivo per massimizzare i risultati in sicurezza ed efficacia."

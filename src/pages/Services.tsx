@@ -1,24 +1,24 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import Cal from '@calcom/embed-react';
+import { Link } from 'react-router-dom';
 import { FiCalendar } from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { usePageMeta } from '../lib/usePageMeta';
 
 const SERVICES = [
-  { id: '1to1', key: 'personal', image: '/Servizi/1to1.webp', calLink: 'joshua-maurizio-cproiv/allenamento-1-to-1' },
-  { id: 'calisthenics', key: 'calisthenics', image: '/Servizi/CalEFun.webp', calLink: 'joshua-maurizio-cproiv/calisthenics-funzionale' },
-  { id: 'bodybuilding', key: 'bodybuilding', image: '/Servizi/BodyEPer.webp', calLink: 'joshua-maurizio-cproiv/bodybuilding-e-performance' },
-  { id: 'groups', key: 'groupClasses', image: '/Servizi/CorsiGruppo.webp', calLink: 'joshua-maurizio-cproiv/corsi-di-gruppo' },
-  { id: 'online', key: 'onlineCoaching', image: '/Servizi/CoachingOnline.webp', calLink: 'joshua-maurizio-cproiv/coaching-online' },
+  { id: '1to1', key: 'personal', image: '/Servizi/1to1.webp' },
+  { id: 'calisthenics', key: 'calisthenics', image: '/Servizi/CalEFun.webp' },
+  { id: 'bodybuilding', key: 'bodybuilding', image: '/Servizi/BodyEPer.webp' },
+  { id: 'groups', key: 'groupClasses', image: '/Servizi/CorsiGruppo.webp' },
+  { id: 'online', key: 'onlineCoaching', image: '/Servizi/CoachingOnline.webp' },
 ] as const;
 
 type Service = (typeof SERVICES)[number];
 
 const bookingButton = 'flex items-center gap-3 bg-gray-900 text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-colors text-lg font-semibold';
 
-/** Image, description and booking button of a service. */
+/** Image, description and the button to the free consultation: every service starts from that call. */
 const ServiceDetails = ({ service, inline }: { service: Service; inline: boolean }) => {
   const { t } = useTranslation('public');
   return (
@@ -34,18 +34,10 @@ const ServiceDetails = ({ service, inline }: { service: Service; inline: boolean
           ))}
       </div>
       <div className="flex justify-center">
-        {inline ? (
-          // Phones get Cal.com's own page: the embedded calendar is too cramped
-          <a href={`https://cal.com/${service.calLink}`} target="_blank" rel="noopener noreferrer" className={bookingButton}>
-            <FiCalendar className="w-5 h-5" aria-hidden />
-            {t('services.bookSession')}
-          </a>
-        ) : (
-          <a href="#booking-section" className={bookingButton}>
-            <FiCalendar className="w-5 h-5" aria-hidden />
-            {t('services.bookSession')}
-          </a>
-        )}
+        <Link to="/booking#booking-calendar" className={bookingButton}>
+          <FiCalendar className="w-5 h-5" aria-hidden />
+          {t('services.bookConsultation')}
+        </Link>
       </div>
     </div>
   );
@@ -104,19 +96,6 @@ const Services = () => {
           </div>
         </div>
 
-        {selected && (
-          <section id="booking-section" className="hidden lg:block mt-16 max-w-4xl xl:max-w-6xl mx-auto scroll-mt-32" aria-labelledby="booking-title">
-            <div className="text-center mb-8">
-              <h2 id="booking-title" className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-                {t('services.bookYour')} {t(`services.${selected.key}.title`)}
-              </h2>
-              <p className="text-lg text-gray-600">{t('services.selectDateTime')}</p>
-            </div>
-            <div className="bg-white rounded-3xl p-8 shadow-lg">
-              <Cal key={selected.calLink} calLink={selected.calLink} style={{ width: '100%', height: '800px', overflow: 'scroll' }} config={{ layout: 'month_view', theme: 'light' }} />
-            </div>
-          </section>
-        )}
       </main>
       <Footer />
     </div>
