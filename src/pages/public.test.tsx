@@ -37,6 +37,7 @@ describe('Home', () => {
     expect(screen.getByRole('img', { name: '5,0 su 5, 5 recensioni su Google' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Leggi le recensioni su Google/ })).toHaveAttribute('href', 'https://maps.google.com/?cid=11057326487453307505');
     expect(document.getElementById('reviews-title')).toBeNull();
+    expect(screen.getByText('Cristian S.')).toBeInTheDocument();
   });
 
   it('shows featured reviews with paging', async () => {
