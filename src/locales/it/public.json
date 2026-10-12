@@ -157,6 +157,9 @@
   "reviews": {
     "title": "Cosa dicono i miei clienti",
     "subtitle": "Leggi le esperienze di chi ha scelto il mio percorso di allenamento personalizzato",
+    "googleRating": "{{rating}} su 5, {{count}} recensioni su Google",
+    "googleCount": "{{count}} recensioni su Google",
+    "readOnGoogle": "Leggi le recensioni su Google",
     "noReviews": "Nessuna recensione disponibile al momento.",
     "loading": "Caricamento recensioni...",
     "retry": "Riprova",

@@ -29,11 +29,14 @@ describe('Home', () => {
     expect(screen.getByRole('link', { name: /Servizio Calisthenics & Funzionale/ })).toHaveAttribute('href', '/services#calisthenics');
   });
 
-  it('hides the reviews section when there are none', async () => {
+  it('shows the Google rating; hides the site reviews section when there are none', async () => {
     const { calls } = mockApi({ 'GET /reviews/featured': { reviews: [] } });
     renderWithProviders(<Home />);
     await vi.waitFor(() => expect(calls).toHaveLength(1));
-    expect(screen.queryByRole('heading', { name: 'Cosa dicono i miei clienti' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { name: 'Cosa dicono i miei clienti' })).toHaveLength(1);
+    expect(screen.getByRole('img', { name: '5,0 su 5, 5 recensioni su Google' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Leggi le recensioni su Google/ })).toHaveAttribute('href', 'https://maps.google.com/?cid=11057326487453307505');
+    expect(document.getElementById('reviews-title')).toBeNull();
   });
 
   it('shows featured reviews with paging', async () => {

@@ -157,6 +157,9 @@
   "reviews": {
     "title": "What my clients say",
     "subtitle": "Read the experiences of those who chose my personalized training journey",
+    "googleRating": "{{rating}} out of 5, {{count}} Google reviews",
+    "googleCount": "{{count}} Google reviews",
+    "readOnGoogle": "Read the reviews on Google",
     "noReviews": "No reviews available at the moment.",
     "loading": "Loading reviews...",
     "retry": "Try again",
