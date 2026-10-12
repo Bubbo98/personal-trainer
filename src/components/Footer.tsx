@@ -42,10 +42,10 @@ const Footer = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             <Column title={t('footer.personalTrainer')}>
               <Row icon={<FiUser className={icon} aria-hidden />}>{OWNER.people}</Row>
+              {/* Where clients train: the same address as Contatti, the map and the data for Google */}
               <Row icon={<FiMapPin className={icon} aria-hidden />}>
-                Via Piero Bottoni 10
-                <br />
-                20141 Milano (MI)
+                <p className="text-gray-400 text-sm">{t('footer.gym')}</p>
+                <p>{t('footer.gymAddress')}</p>
               </Row>
             </Column>
 
@@ -72,6 +72,9 @@ const Footer = () => {
 
             <Column title={t('footer.fiscalData')}>
               <Row icon={<FiFileText className={icon} aria-hidden />}>
+                <p className="text-sm">
+                  <span className="text-gray-400">{t('footer.registeredOffice')}:</span> {OWNER.address}
+                </p>
                 <p className="text-sm">
                   <span className="text-gray-400">CF:</span> {OWNER.taxCode}
                 </p>
