@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, type ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Analytics } from '@vercel/analytics/react';
@@ -29,11 +29,12 @@ const ScrollToTop = () => {
   return null;
 };
 
-const App = () => (
+/** Providers and routes; the router comes from outside (BrowserRouter here, StaticRouter when prerendering). */
+export const AppShell = ({ router: Router }: { router: (props: { children: ReactNode }) => ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
         <ConfirmProvider>
-          <BrowserRouter>
+          <Router>
             <ScrollToTop />
             <ErrorBoundary>
             <Suspense fallback={<PageLoader />}>
@@ -55,11 +56,13 @@ const App = () => (
               </Routes>
             </Suspense>
             </ErrorBoundary>
-          </BrowserRouter>
+          </Router>
           <Analytics />
         </ConfirmProvider>
       </ToastProvider>
     </QueryClientProvider>
 );
+
+const App = () => <AppShell router={BrowserRouter} />;
 
 export default App;

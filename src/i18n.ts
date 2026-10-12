@@ -31,9 +31,12 @@ i18n
     interpolation: { escapeValue: false }, // React already escapes
   });
 
-const syncHtmlLang = (lng: string) => document.documentElement.setAttribute('lang', lng.slice(0, 2));
-syncHtmlLang(i18n.resolvedLanguage || 'it');
-i18n.on('languageChanged', syncHtmlLang);
+// No document when the public pages are prerendered at build time (scripts/prerender-pages.mjs)
+if (typeof document !== 'undefined') {
+  const syncHtmlLang = (lng: string) => document.documentElement.setAttribute('lang', lng.slice(0, 2));
+  syncHtmlLang(i18n.resolvedLanguage || 'it');
+  i18n.on('languageChanged', syncHtmlLang);
+}
 
 /** Adds a namespace bundled with a lazily loaded page. */
 export function registerTranslations(ns: string, bundles: Record<Language, object>) {
