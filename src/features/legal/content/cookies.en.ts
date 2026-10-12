@@ -49,52 +49,33 @@ const cookies: LegalDoc = {
     {
       title: '3. Types of Cookies Used',
       blocks: [
-        { p: 'Our website uses several types of cookies for different purposes:' },
-        { h3: '🔧 Technical Cookies (Necessary)' },
-        { p: 'These cookies are essential for the website to work and cannot be disabled. Under current rules they do not require consent.' },
+        { p: 'The site sets no cookies of its own. To work, it keeps some information in your browser’s storage (local storage and session storage); the third-party services listed below may set their own cookies.' },
+        { h3: '🔧 Technical Storage (Necessary)' },
+        { p: 'Essential for the site to work: under current rules it needs no consent.' },
         {
           table: {
-            head: ['Cookie', 'Purpose', 'Duration'],
+            head: ['Name', 'Purpose', 'Duration'],
             rows: [
-              ['admin_auth_token', 'Administrator authentication', 'Session'],
-              ['dashboard_auth_token', 'Dashboard user authentication', '30 days'],
-              ['react_app_session', 'React application operation', 'Session'],
-              ['i18nextLng', 'Selected language preference', '1 year'],
-            ],
-          },
-        },
-        { h3: '⚙️ Functional Cookies' },
-        { p: 'These cookies improve the site’s functionality and user experience by remembering preferences.' },
-        {
-          table: {
-            head: ['Cookie', 'Purpose', 'Duration'],
-            rows: [
-              ['video_player_settings', 'Video player preferences (volume, quality)', '30 days'],
-              ['user_preferences', 'User interface preferences', '90 days'],
-              ['theme_preference', 'Light/dark mode (if implemented)', '1 year'],
+              ['i18nextLng', 'Chosen language (Italian or English)', 'Until deleted from the browser'],
+              ['cookie-consent', 'Your cookie choices and when you made them', 'Until you change or delete them'],
+              ['dashboard_auth_token', 'Client area login (clients only)', 'Until you log out'],
+              ['admin_auth_token', 'Admin area login (the trainer only)', 'Until logout'],
+              ['attribution', 'Parameters of the ad you came from (utm_source, utm_campaign…), passed on to the booking', 'Until the tab is closed'],
+              ['chunk-reload', 'One reload of the page after a site update', 'Until the tab is closed'],
             ],
           },
         },
         { h3: '🔗 Third-Party Cookies' },
         { p: 'These cookies are set by third-party services built into our site.' },
         { h4: 'Cal.com (Booking System)' },
-        {
-          table: {
-            head: ['Cookie', 'Purpose', 'Duration'],
-            rows: [
-              ['cal-session', 'Booking calendar operation', 'Session'],
-              ['cal-booking-data', 'Temporary booking data', '1 hour'],
-            ],
-          },
-        },
+        { p: 'The calendar on the "Book" page is provided by Cal.com, which may set technical cookies needed for the calendar and the booking (e.g. time zone, session).' },
         { p: 'Cal.com Privacy Policy: [https://cal.com/privacy](https://cal.com/privacy)', muted: true },
         { h4: 'Vercel Analytics (Traffic Analysis)' },
         {
           table: {
             head: ['Cookie/Technology', 'Purpose', 'Duration'],
             rows: [
-              ['Vercel Analytics', 'Anonymous analysis of web traffic, pages visited, devices', 'Session'],
-              ['__vercel_live_token', 'Performance optimisation', 'Session'],
+              ['Vercel Analytics', 'Anonymous analysis of web traffic, pages visited, devices (no cookies)', '-'],
             ],
           },
         },
@@ -140,7 +121,7 @@ const cookies: LegalDoc = {
           },
         },
         { p: 'Google Privacy Policy: [https://policies.google.com/privacy](https://policies.google.com/privacy)', muted: true },
-        { p: '**Where it is used:** the interactive map on the Contact page showing the gym’s location.', muted: true },
+        { p: '**Where it is used:** the map on the Contact page. The map (and its cookies) loads only if you press "Show the map".', muted: true },
       ],
     },
     {
@@ -241,7 +222,7 @@ const cookies: LegalDoc = {
             {
               title: 'Cal.com (Bookings)',
               blocks: [
-                { p: 'Appointment booking system on the Services and Booking pages.', muted: true },
+                { p: 'Consultation booking system on the "Book" page.', muted: true },
                 { list: ['Cookies for the calendar', 'Time-zone preferences', 'Temporary booking data'] },
                 { p: '[Privacy Policy →](https://cal.com/privacy) · Opt-out available' },
               ],
@@ -249,7 +230,7 @@ const cookies: LegalDoc = {
             {
               title: 'Google Maps (Maps)',
               blocks: [
-                { p: 'Interactive map on the Contact page showing the gym’s location.', muted: true },
+                { p: 'Map on the Contact page, loaded only if you press "Show the map".', muted: true },
                 { list: ['Cookies for the map', 'Display preferences', 'Usage statistics'] },
                 { p: '[Privacy Policy →](https://policies.google.com/privacy) · Manageable in the browser' },
               ],
@@ -284,7 +265,7 @@ const cookies: LegalDoc = {
         { p: 'Besides cookies, we use other local storage technologies to improve the site’s functionality:' },
         { h3: '💾 Local Storage' },
         { p: '**What it stores:**' },
-        { list: ['Authentication tokens for the client dashboard', 'User interface preferences', 'Video player settings', 'Temporary application data'] },
+        { list: ['Chosen language', 'Cookie choices', 'Client area login (clients only)'] },
         { p: '**How to delete it:** Browser settings → Clear browsing data → Local storage' },
         { h3: '🔄 Session Storage' },
         { p: 'Temporary data deleted automatically when the browser closes. Used for the React application and navigation between pages.' },

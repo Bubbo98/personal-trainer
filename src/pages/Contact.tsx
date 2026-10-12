@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { FiGlobe, FiMail, FiMapPin, FiPhone } from 'react-icons/fi';
@@ -12,6 +12,25 @@ import { usePageMeta } from '../lib/usePageMeta';
 const PHOTOS = ['/Contatti/1.webp', '/Contatti/2.webp'];
 const GYM_SITE = 'https://www.allenamentofunzionalemilano.net';
 const MAP_URL = `https://www.google.com/maps?q=${encodeURIComponent(CONTACT.gymAddress)}&output=embed`;
+const MAPS_LINK = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(CONTACT.gymAddress)}`;
+
+/** Google Maps sets its own cookies: the map loads only when the visitor asks for it. */
+const GymMap = () => {
+  const { t } = useTranslation('public');
+  const [shown, setShown] = useState(false);
+  if (shown) return <iframe src={MAP_URL} title={t('contact.mapTitle')} referrerPolicy="no-referrer-when-downgrade" className="w-full h-64 rounded-2xl border-0" />;
+  return (
+    <div className="w-full h-64 rounded-2xl bg-gray-100 flex flex-col items-center justify-center gap-3 p-6 text-center">
+      <button type="button" onClick={() => setShown(true)} className="bg-gray-900 text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-800 transition-colors">
+        {t('contact.showMap')}
+      </button>
+      <p className="text-sm text-gray-600">{t('contact.mapNotice')}</p>
+      <a href={MAPS_LINK} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-gray-900 underline">
+        {t('contact.openInMaps')} <span className="sr-only">{t('contact.opensInNewTab')}</span>
+      </a>
+    </div>
+  );
+};
 
 const Item = ({ icon, href, external, children }: { icon: ReactNode; href?: string; external?: boolean; children: ReactNode }) => {
   const { t } = useTranslation('public');
@@ -74,7 +93,7 @@ const Contact = () => {
             </Item>
             <div className="space-y-4">
               <Item icon={<FiMapPin className={icon} aria-hidden />}>{t('contact.gymAddress')}</Item>
-              <iframe src={MAP_URL} title={t('contact.mapTitle')} loading="lazy" referrerPolicy="no-referrer-when-downgrade" className="w-full h-64 rounded-2xl border-0" />
+              <GymMap />
             </div>
           </address>
 

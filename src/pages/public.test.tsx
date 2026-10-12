@@ -53,12 +53,15 @@ describe('Home', () => {
 });
 
 describe('Contact', () => {
-  it('lists the contacts with working links', () => {
+  it('lists the contacts with working links', async () => {
     renderWithProviders(<Contact />);
     const address = document.querySelector('address')!;
     expect(within(address as HTMLElement).getByRole('link', { name: /328 206 2823/ })).toHaveAttribute('href', 'tel:+393282062823');
     expect(within(address as HTMLElement).getByRole('link', { name: /@mauriziojoshuapt/ })).toHaveAttribute('rel', 'noopener noreferrer');
     expect(within(address as HTMLElement).getByRole('link', { name: /@joshua\.maurizio/ })).toHaveAttribute('href', 'https://www.tiktok.com/@joshua.maurizio');
+    // Google Maps (and its cookies) only on request
+    expect(screen.queryByTitle('Mappa di Allenamento Funzionale Milano')).not.toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Mostra la mappa' }));
     expect(screen.getByTitle('Mappa di Allenamento Funzionale Milano')).toHaveAttribute('src', expect.stringContaining('output=embed'));
   });
 });

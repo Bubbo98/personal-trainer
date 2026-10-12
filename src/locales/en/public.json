@@ -123,6 +123,9 @@
     "photoAlt2": "Personal training",
     "gymAddress": "Via Cortina d'Ampezzo 14, Milano 20139",
     "mapTitle": "Map of Allenamento Funzionale Milano",
+    "showMap": "Show the map",
+    "mapNotice": "The map is provided by Google and uses its cookies.",
+    "openInMaps": "Open in Google Maps",
     "opensInNewTab": "(opens in a new tab)"
   },
   "reviews": {

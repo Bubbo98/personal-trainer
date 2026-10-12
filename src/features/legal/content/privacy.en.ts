@@ -5,7 +5,7 @@ import { ENGLISH_NOTICE } from './notice';
 const privacy: LegalDoc = {
   title: 'Privacy Policy',
   subtitle: 'Information on the processing of personal data under Art. 13 of EU Regulation 2016/679 (GDPR)',
-  updated: '2026-07-20',
+  updated: '2026-10-12',
   notice: ENGLISH_NOTICE,
   sections: [
     {
@@ -52,6 +52,8 @@ const privacy: LegalDoc = {
               ['Invoicing and tax obligations', 'Legal obligation (Art. 6(1)(c) GDPR)'],
               ['Direct marketing and promotional communications', 'Explicit consent (Art. 6(1)(a) GDPR)'],
               ['Improving services and statistical analysis', 'Legitimate interest (Art. 6(1)(f) GDPR)'],
+              ['Booking the free consultation (name, email, phone, through Cal.com)', 'Pre-contractual steps at your request (Art. 6(1)(b) GDPR)'],
+              ['Visit statistics (Google Analytics) and ad measurement (Google Ads, Meta Pixel)', 'Consent (Art. 6(1)(a) GDPR), given and withdrawn through the cookie banner'],
             ],
           },
         },
@@ -145,6 +147,15 @@ const privacy: LegalDoc = {
           title: 'Aggregated Statistics',
           tone: 'blue',
         },
+        {
+          box: [
+            {
+              p: 'Only if you accept it in the cookie banner, Google (Analytics, Ads) and Meta (Facebook, Instagram) receive browsing data and the "consultation booked" event, to measure which ads work and show our ads to people who already visited the site. We receive no data identifying you from them, and you can withdraw consent at any time through the "Cookie settings" link at the bottom of the page.',
+            },
+          ],
+          title: 'Advertising and Ad Measurement',
+          tone: 'blue',
+        },
       ],
     },
     {
@@ -156,6 +167,7 @@ const privacy: LegalDoc = {
             '**EU/EEA countries:** transfers within the European Economic Area',
             '**Countries with an adequacy decision:** only to countries recognised as adequate by the European Commission',
             '**Standard Contractual Clauses:** with appropriate safeguards through the EU Standard Contractual Clauses',
+            '**United States (EU-US Data Privacy Framework):** Google (Analytics, Ads, Maps), Meta (Facebook, Instagram), Cal.com (bookings), Vercel (hosting)',
           ],
         },
       ],

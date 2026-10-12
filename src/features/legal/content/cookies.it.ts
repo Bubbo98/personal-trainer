@@ -47,52 +47,33 @@ const cookies: LegalDoc = {
     {
       title: '3. Tipi di Cookie Utilizzati',
       blocks: [
-        { p: 'Il nostro sito web utilizza diversi tipi di cookie per diverse finalità:' },
-        { h3: '🔧 Cookie Tecnici (Necessari)' },
-        { p: 'Questi cookie sono essenziali per il funzionamento del sito web e non possono essere disabilitati. Non richiedono consenso secondo la normativa vigente.' },
+        { p: 'Il sito non crea cookie propri. Per funzionare salva alcune informazioni nella memoria del tuo browser (local storage e session storage); i servizi di terze parti elencati più sotto possono impostare cookie propri.' },
+        { h3: '🔧 Strumenti Tecnici (Necessari)' },
+        { p: 'Indispensabili al funzionamento del sito: non richiedono consenso secondo la normativa vigente.' },
         {
           table: {
-            head: ['Cookie', 'Finalità', 'Durata'],
+            head: ['Nome', 'Finalità', 'Durata'],
             rows: [
-              ['admin_auth_token', 'Autenticazione amministratore', 'Sessione'],
-              ['dashboard_auth_token', 'Autenticazione utente dashboard', '30 giorni'],
-              ['react_app_session', 'Funzionamento applicazione React', 'Sessione'],
-              ['i18nextLng', 'Preferenza lingua selezionata', '1 anno'],
-            ],
-          },
-        },
-        { h3: '⚙️ Cookie di Funzionalità' },
-        { p: "Questi cookie migliorano la funzionalità del sito e l'esperienza utente, memorizzando le preferenze." },
-        {
-          table: {
-            head: ['Cookie', 'Finalità', 'Durata'],
-            rows: [
-              ['video_player_settings', 'Preferenze lettore video (volume, qualità)', '30 giorni'],
-              ['user_preferences', 'Preferenze interface utente', '90 giorni'],
-              ['theme_preference', 'Modalità chiara/scura (se implementata)', '1 anno'],
+              ['i18nextLng', 'Lingua scelta (italiano o inglese)', 'Fino alla cancellazione dal browser'],
+              ['cookie-consent', 'Le tue scelte sui cookie e la data in cui le hai fatte', 'Fino a quando le cambi o le cancelli dal browser'],
+              ['dashboard_auth_token', "Accesso all'area clienti (solo per i clienti)", "Fino all'uscita dall'area clienti"],
+              ['admin_auth_token', "Accesso all'area di amministrazione (solo per il personal trainer)", "Fino all'uscita"],
+              ['attribution', "Parametri dell'annuncio da cui sei arrivato (utm_source, utm_campaign…), passati alla prenotazione", 'Fino alla chiusura della scheda'],
+              ['chunk-reload', 'Ricarica unica della pagina dopo un aggiornamento del sito', 'Fino alla chiusura della scheda'],
             ],
           },
         },
         { h3: '🔗 Cookie di Terze Parti' },
         { p: 'Questi cookie sono impostati da servizi di terze parti integrati nel nostro sito.' },
         { h4: 'Cal.com (Sistema di Prenotazione)' },
-        {
-          table: {
-            head: ['Cookie', 'Finalità', 'Durata'],
-            rows: [
-              ['cal-session', 'Funzionamento calendario prenotazioni', 'Sessione'],
-              ['cal-booking-data', 'Dati temporanei prenotazione', '1 ora'],
-            ],
-          },
-        },
+        { p: 'Il calendario della pagina "Prenota" è fornito da Cal.com, che può impostare cookie tecnici necessari al funzionamento del calendario e alla prenotazione (es. fuso orario, sessione).' },
         { p: 'Privacy Policy Cal.com: [https://cal.com/privacy](https://cal.com/privacy)', muted: true },
         { h4: 'Vercel Analytics (Analisi Traffico)' },
         {
           table: {
             head: ['Cookie/Tecnologia', 'Finalità', 'Durata'],
             rows: [
-              ['Vercel Analytics', 'Analisi anonima del traffico web, pagine visitate, dispositivi', 'Sessione'],
-              ['__vercel_live_token', 'Ottimizzazione performance', 'Sessione'],
+              ['Vercel Analytics', 'Analisi anonima del traffico web, pagine visitate, dispositivi (senza cookie)', '-'],
             ],
           },
         },
@@ -142,7 +123,7 @@ const cookies: LegalDoc = {
           },
         },
         { p: 'Privacy Policy Google: [https://policies.google.com/privacy](https://policies.google.com/privacy)', muted: true },
-        { p: '**Dove utilizzato:** Mappa interattiva nella pagina Contatti per mostrare la posizione della palestra.', muted: true },
+        { p: '**Dove utilizzato:** mappa nella pagina Contatti. La mappa (e i suoi cookie) si carica solo se premi "Mostra la mappa".', muted: true },
       ],
     },
     {
@@ -257,7 +238,7 @@ const cookies: LegalDoc = {
             {
               title: 'Cal.com (Prenotazioni)',
               blocks: [
-                { p: 'Sistema di prenotazione appuntamenti integrato nelle pagine Servizi e Booking.', muted: true },
+                { p: 'Sistema di prenotazione della consulenza nella pagina "Prenota".', muted: true },
                 { list: ['Cookie per funzionamento calendario', 'Preferenze fuso orario', 'Dati temporanei prenotazione'] },
                 { p: '[Privacy Policy →](https://cal.com/privacy) · Opt-out disponibile' },
               ],
@@ -265,7 +246,7 @@ const cookies: LegalDoc = {
             {
               title: 'Google Maps (Mappe)',
               blocks: [
-                { p: 'Mappa interattiva nella pagina Contatti per mostrare la posizione della palestra.', muted: true },
+                { p: 'Mappa nella pagina Contatti, caricata solo se premi "Mostra la mappa".', muted: true },
                 { list: ['Cookie per funzionamento mappa', 'Preferenze visualizzazione', 'Statistiche utilizzo'] },
                 { p: '[Privacy Policy →](https://policies.google.com/privacy) · Gestibile da browser' },
               ],
@@ -300,7 +281,7 @@ const cookies: LegalDoc = {
         { p: 'Oltre ai cookie, utilizziamo altre tecnologie di archiviazione locale per migliorare la funzionalità del sito:' },
         { h3: '💾 Local Storage' },
         { p: '**Cosa memorizza:**' },
-        { list: ['Token di autenticazione per dashboard utenti', 'Preferenze interfaccia utente', 'Impostazioni video player', 'Dati temporanei applicazione'] },
+        { list: ['Lingua scelta', 'Scelte sui cookie', "Accesso all'area clienti (solo per i clienti)"] },
         { p: '**Come eliminare:** Impostazioni browser → Cancella dati di navigazione → Archiviazione locale' },
         { h3: '🔄 Session Storage' },
         { p: "Dati temporanei che vengono eliminati automaticamente alla chiusura del browser. Utilizzato per il funzionamento dell'applicazione React e la navigazione tra le pagine." },

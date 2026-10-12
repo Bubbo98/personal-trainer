@@ -4,7 +4,7 @@ import { OWNER } from './owner';
 const privacy: LegalDoc = {
   title: 'Privacy Policy',
   subtitle: "Informativa sul trattamento dei dati personali ai sensi dell'art. 13 del Regolamento UE 2016/679 (GDPR)",
-  updated: '2026-07-20',
+  updated: '2026-10-12',
   sections: [
     {
       title: '1. Titolare del Trattamento',
@@ -54,6 +54,8 @@ const privacy: LegalDoc = {
               ['Fatturazione e adempimenti fiscali', 'Obbligo di legge (art. 6, par. 1, lett. c) GDPR'],
               ['Marketing diretto e comunicazioni promozionali', 'Consenso esplicito (art. 6, par. 1, lett. a) GDPR'],
               ['Miglioramento servizi e analisi statistiche', 'Legittimo interesse (art. 6, par. 1, lett. f) GDPR'],
+              ['Prenotazione della consulenza gratuita (nome, email, telefono, tramite Cal.com)', 'Misure precontrattuali su tua richiesta (art. 6, par. 1, lett. b) GDPR'],
+              ['Statistiche di visita (Google Analytics) e misura delle pubblicità (Google Ads, Meta Pixel)', 'Consenso (art. 6, par. 1, lett. a) GDPR), dato e revocabile dal banner cookie'],
             ],
           },
         },
@@ -152,6 +154,15 @@ const privacy: LegalDoc = {
           title: 'Analisi Statistiche Aggregate',
           tone: 'blue',
         },
+        {
+          box: [
+            {
+              p: `Solo se lo accetti nel banner cookie, Google (Analytics, Ads) e Meta (Facebook, Instagram) ricevono i dati di navigazione e l'evento "consulenza prenotata", per misurare quali annunci funzionano e mostrare i nostri annunci a chi ha già visitato il sito. Non riceviamo da loro dati che ti identificano e puoi revocare il consenso in ogni momento dal link "Preferenze cookie" in fondo alla pagina.`,
+            },
+          ],
+          title: 'Pubblicità e Misura degli Annunci',
+          tone: 'blue',
+        },
       ],
     },
     {
@@ -163,6 +174,7 @@ const privacy: LegalDoc = {
             "**Paesi UE/SEE:** trasferimenti all'interno dello Spazio Economico Europeo",
             '**Paesi con Decisione di Adeguatezza:** solo verso paesi riconosciuti dalla Commissione Europea come adeguati',
             '**Clausole Contrattuali Standard:** con garanzie appropriate mediante Clausole Contrattuali Standard UE',
+            '**Stati Uniti (EU-US Data Privacy Framework):** Google (Analytics, Ads, Maps), Meta (Facebook, Instagram), Cal.com (prenotazioni), Vercel (hosting)',
           ],
         },
       ],
