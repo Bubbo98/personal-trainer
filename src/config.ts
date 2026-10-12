@@ -23,7 +23,7 @@ export const SOCIAL = {
  */
 export const TRACKING = {
   /** Google Analytics 4, "G-XXXXXXX". */
-  ga4Id: '',
+  ga4Id: 'G-W1MY4HWDYF',
   /** Google Ads, "AW-XXXXXXX". */
   googleAdsId: '',
   /** Label of the Google Ads "consultation booked" conversion (the part after "AW-…/"). */

@@ -13,14 +13,20 @@ const review = (id: number) => ({ id, rating: 5, title: `Titolo ${id}`, comment:
 describe('Home', () => {
   afterEach(() => i18n.changeLanguage('it'));
 
-  it('loads a single hero image and sets the page meta', () => {
+  it('loads a single hero image up front and sets the page meta', () => {
     mockApi({ 'GET /reviews/featured': { reviews: [] } });
     renderWithProviders(<Home />);
-    expect(document.querySelectorAll('main img')).toHaveLength(1);
+    // The hero is the only image not lazy-loaded
+    expect(document.querySelectorAll('main img:not([loading="lazy"])')).toHaveLength(1);
     expect(document.querySelectorAll('main picture source')).toHaveLength(3);
     expect(document.title).toBe('Personal Trainer Joshua - Allenamenti Personalizzati Milano');
     expect(document.querySelector('meta[name="robots"]')).toHaveAttribute('content', 'index, follow');
-    expect(screen.getByRole('link', { name: 'Prenota la tua consulenza' })).toHaveAttribute('href', '/booking#booking-calendar');
+    for (const link of screen.getAllByRole('link', { name: 'Prenota la consulenza gratuita' })) {
+      expect(link).toHaveAttribute('href', '/booking#booking-calendar');
+    }
+    expect(screen.getByText('Personal trainer a Milano · Prima consulenza gratuita di 15 minuti')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Come funziona' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Servizio Calisthenics & Funzionale/ })).toHaveAttribute('href', '/services#calisthenics');
   });
 
   it('hides the reviews section when there are none', async () => {
@@ -67,17 +73,14 @@ describe('Contact', () => {
 });
 
 describe('Services', () => {
-  it('opens a service; its button leads to the free consultation, not to a session', async () => {
-    const user = userEvent.setup();
+  it('shows every service with its description; every button books the free consultation', () => {
     renderWithProviders(<Services />);
-    const button = screen.getByRole('button', { name: 'Allenamento 1 to 1' });
-    expect(button).toHaveAttribute('aria-expanded', 'false');
-    await user.click(button);
-    expect(button).toHaveAttribute('aria-expanded', 'true');
+    expect(within(screen.getByRole('main')).getAllByRole('heading', { level: 2 })).toHaveLength(5);
+    expect(screen.getByText(/Allenamenti personalizzati 1 to 1/)).toBeInTheDocument();
+    expect(screen.getByText(/Coaching online su misura/)).toBeInTheDocument();
     expect(screen.queryByTestId('cal')).not.toBeInTheDocument();
-    for (const link of screen.getAllByRole('link', { name: 'Prenota la consulenza gratuita' })) {
-      expect(link).toHaveAttribute('href', '/booking#booking-calendar');
-    }
-    expect(screen.getAllByText(/Allenamenti personalizzati 1 to 1/).length).toBeGreaterThan(0);
+    const links = screen.getAllByRole('link', { name: 'Prenota la consulenza gratuita' });
+    expect(links).toHaveLength(5);
+    for (const link of links) expect(link).toHaveAttribute('href', '/booking#booking-calendar');
   });
 });

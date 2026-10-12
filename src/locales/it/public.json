@@ -2,9 +2,36 @@
   "hero": {
     "title": "Hai voglia di cambiamento?",
     "subtitle": "È arrivato il momento",
-    "consultation": "Prenota la tua consulenza",
+    "tagline": "Personal trainer a Milano · Prima consulenza gratuita di 15 minuti",
+    "consultation": "Prenota la consulenza gratuita",
     "discover": "Scopri i miei servizi",
     "imageAlt": "Joshua Maurizio, personal trainer"
+  },
+  "home": {
+    "how": {
+      "title": "Come funziona",
+      "call": {
+        "title": "Consulenza gratuita",
+        "text": "15 minuti al telefono per conoscerci: i tuoi obiettivi, il tuo livello di partenza e il tempo che hai a disposizione."
+      },
+      "gym": {
+        "title": "Primo incontro in palestra",
+        "text": "Ci vediamo in palestra a Milano per valutare insieme da dove partire."
+      },
+      "plan": {
+        "title": "Il tuo programma",
+        "text": "Una scheda su misura, i video degli esercizi nella tua area clienti e check periodici per seguire i progressi."
+      }
+    },
+    "services": {
+      "title": "Cosa posso fare per te",
+      "more": "Scopri di più"
+    },
+    "cta": {
+      "title": "Il primo passo è gratuito",
+      "text": "Prenota 15 minuti per raccontarmi i tuoi obiettivi: ti dico come possiamo raggiungerli, senza impegno."
+    },
+    "stickyCta": "Consulenza gratuita"
   },
   "about": {
     "title": "CONOSCI JOSHUA",
@@ -80,7 +107,7 @@
   },
   "services": {
     "title": "Scopri i miei servizi",
-    "selectService": "Clicca su un servizio per visualizzare i dettagli",
+    "intro": "Ogni percorso parte da una consulenza gratuita di 15 minuti: scegliamo insieme quello giusto per te.",
     "bookConsultation": "Prenota la consulenza gratuita",
     "personal": {
       "title": "Allenamento 1 to 1",
@@ -101,8 +128,7 @@
     "onlineCoaching": {
       "title": "Servizio Coaching Online",
       "description": "Coaching online su misura, con programmi personalizzati e supporto costante ovunque tu sia.\nAllenati con flessibilità e raggiungi i tuoi obiettivi con la guida di un professionista."
-    },
-    "placeholderLabel": "Nessun servizio selezionato"
+    }
   },
   "booking": {
     "title": "Prenota la tua consulenza",

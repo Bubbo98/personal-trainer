@@ -2,9 +2,36 @@
   "hero": {
     "title": "Ready for a change?",
     "subtitle": "The time has come",
-    "consultation": "Book your consultation",
+    "tagline": "Personal trainer in Milan · Free 15-minute first consultation",
+    "consultation": "Book the free consultation",
     "discover": "Discover my services",
     "imageAlt": "Joshua Maurizio, personal trainer"
+  },
+  "home": {
+    "how": {
+      "title": "How it works",
+      "call": {
+        "title": "Free consultation",
+        "text": "15 minutes on the phone to get to know each other: your goals, your starting level and the time you have."
+      },
+      "gym": {
+        "title": "First meeting at the gym",
+        "text": "We meet at the gym in Milan to work out together where to start."
+      },
+      "plan": {
+        "title": "Your programme",
+        "text": "A plan made for you, exercise videos in your client area and regular check-ins to follow your progress."
+      }
+    },
+    "services": {
+      "title": "What I can do for you",
+      "more": "Find out more"
+    },
+    "cta": {
+      "title": "The first step is free",
+      "text": "Book 15 minutes to tell me your goals: I will tell you how we can reach them, with no obligation."
+    },
+    "stickyCta": "Free consultation"
   },
   "about": {
     "title": "MEET JOSHUA",
@@ -80,7 +107,7 @@
   },
   "services": {
     "title": "Discover my services",
-    "selectService": "Click on a service to view details",
+    "intro": "Every path starts with a free 15-minute consultation: we choose the right one for you together.",
     "bookConsultation": "Book the free consultation",
     "personal": {
       "title": "1-to-1 Training",
@@ -101,8 +128,7 @@
     "onlineCoaching": {
       "title": "Online Coaching Service",
       "description": "Tailored online coaching with personalized programs and constant support wherever you are.\nTrain with flexibility and achieve your goals with the guidance of a professional."
-    },
-    "placeholderLabel": "No service selected"
+    }
   },
   "booking": {
     "title": "Book your consultation",

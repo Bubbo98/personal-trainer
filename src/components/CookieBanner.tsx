@@ -67,7 +67,7 @@ const CookieBanner = () => {
     setReopened(false);
     setCustomizing(false);
   };
-  const button = 'flex-1 px-4 py-3 rounded-xl font-semibold transition-colors text-sm sm:text-base';
+  const button = 'px-2 sm:px-4 py-2.5 sm:py-3 rounded-xl font-semibold transition-colors text-sm sm:text-base leading-tight';
 
   return (
     <section
@@ -76,7 +76,7 @@ const CookieBanner = () => {
       aria-labelledby={titleId}
       className="fixed inset-x-0 bottom-0 z-[60] p-3 sm:p-6 pointer-events-none"
     >
-      <div className="pointer-events-auto mx-auto max-w-3xl bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 sm:p-6 relative">
+      <div className="pointer-events-auto mx-auto max-w-3xl max-h-[85vh] overflow-y-auto bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 sm:p-6 relative">
         <button
           type="button"
           onClick={() => choose({ analytics: false, marketing: false })}
@@ -86,10 +86,10 @@ const CookieBanner = () => {
         >
           <FiX className="w-5 h-5" aria-hidden />
         </button>
-        <h2 id={titleId} className="text-lg font-bold text-gray-900 pr-10 mb-2">
+        <h2 id={titleId} className="text-base sm:text-lg font-bold text-gray-900 pr-10 mb-1 sm:mb-2">
           {t('cookies.title')}
         </h2>
-        <p className="text-sm text-gray-700 mb-4">
+        <p className="text-xs sm:text-sm text-gray-700 mb-3 sm:mb-4">
           {t('cookies.text')}{' '}
           <Link to="/cookie-policy" className="underline font-medium text-gray-900">
             {t('cookies.policy')}
@@ -104,7 +104,7 @@ const CookieBanner = () => {
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <button type="button" onClick={() => choose({ analytics: false, marketing: false })} className={`${button} bg-gray-100 text-gray-900 hover:bg-gray-200`}>
             {t('cookies.reject')}
           </button>

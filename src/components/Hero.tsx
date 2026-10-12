@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 
 /**
  * Home hero. <picture> picks one image per screen size (the old version
- * downloaded all four); breakpoints match tailwind's custom screens.
+ * downloaded all four); breakpoints match tailwind's custom screens. On phones the crop
+ * leans right, where Joshua stands in the portrait photo.
  */
 const Hero = () => {
   const { t } = useTranslation('public');
@@ -19,7 +20,7 @@ const Hero = () => {
           alt={t('hero.imageAlt')}
           fetchPriority="high"
           decoding="async"
-          className="absolute inset-0 w-full h-full object-cover object-center"
+          className="absolute inset-0 w-full h-full object-cover object-[70%_50%] custom:object-center"
         />
       </picture>
       <div className="absolute inset-0 bg-black/20" aria-hidden="true" />
@@ -30,7 +31,8 @@ const Hero = () => {
           <br />
           {t('hero.subtitle')}
         </h1>
-        <div className="flex flex-col custom:flex-row gap-4 custom:gap-12 justify-start mt-12 w-full xs:w-2/3 pr-12">
+        <p className="text-lg custom:text-2xl font-medium w-full xs:w-2/3 pr-12 drop-shadow">{t('hero.tagline')}</p>
+        <div className="flex flex-col custom:flex-row gap-4 custom:gap-12 justify-start mt-8 custom:mt-12 w-full xs:w-2/3 pr-12">
           <Link
             to="/booking#booking-calendar"
             className="bg-gray-900 text-white text-center px-8 py-4 font-medium hover:bg-gray-800 transition-colors rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"

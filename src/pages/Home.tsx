@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
 import Hero from '../components/Hero';
 import Reviews from '../components/Reviews';
+import { FinalCta, HowItWorks, ServicesPreview } from '../components/HomeSections';
 import Footer from '../components/Footer';
 import { usePageMeta } from '../lib/usePageMeta';
 
@@ -14,7 +15,10 @@ const Home = () => {
       <Header />
       <main>
         <Hero />
+        <HowItWorks />
+        <ServicesPreview />
         <Reviews />
+        <FinalCta />
       </main>
       <Footer />
     </div>

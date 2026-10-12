@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import PageLoader from './components/ui/PageLoader';
 import ErrorBoundary from './components/ErrorBoundary';
 import CookieBanner from './components/CookieBanner';
+import StickyBookingBar from './components/StickyBookingBar';
 import { trackPageView } from './lib/tracking';
 import { ToastProvider } from './components/ui/Toast';
 import { ConfirmProvider } from './components/ui/ConfirmDialog';
@@ -62,6 +63,7 @@ export const AppShell = ({ router: Router }: { router: (props: { children: React
               </Routes>
             </Suspense>
             </ErrorBoundary>
+            <StickyBookingBar />
             <CookieBanner />
           </Router>
           <Analytics />
