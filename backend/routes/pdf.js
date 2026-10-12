@@ -4,6 +4,7 @@ const { db } = require('../utils/database');
 const { authenticateToken, requireAdmin, isAdmin } = require('../middleware/auth');
 const { route, id, badRequest, forbidden, notFound, attachment } = require('../utils/http');
 const { storeFileFor, readFile, deleteFiles } = require('../services/storedFiles');
+const { isLocked } = require('../services/planLock');
 
 // The client's training plan PDF (one per user; the file is on R2, see services/storedFiles)
 const router = express.Router();
@@ -29,8 +30,8 @@ function int(value, name, fallback = 0) {
 /** "+N months" / "-N days" modifier for SQLite datetime(). */
 const modifier = (n, unit) => `${n >= 0 ? '+' : '-'}${Math.abs(n)} ${unit}`;
 
-/** True while the plan is scheduled to appear later. */
-const isLocked = (pdf) => !!pdf.visible_from && new Date(pdf.visible_from) > new Date();
+/** Where the plan's duration starts: its unlock date when that is in the future, otherwise now. */
+const durationStart = (visibleFrom) => (visibleFrom && new Date(visibleFrom) > new Date() ? visibleFrom : 'now');
 
 // ─── Admin ───────────────────────────────────────────────────────────────────
 
@@ -41,6 +42,7 @@ router.post('/admin/upload/:userId', admin, upload.single('pdf'), route(async (r
     if (!req.file) throw badRequest('No PDF file uploaded');
     const months = int(req.body.durationMonths, 'durationMonths', 2);
     const days = int(req.body.durationDays, 'durationDays', 0);
+    const visibleFrom = req.body.visibleFrom || null;
 
     if (!(await db.get('SELECT id FROM users WHERE id = ?', [userId]))) throw notFound('User not found');
 
@@ -50,7 +52,7 @@ router.post('/admin/upload/:userId', admin, upload.single('pdf'), route(async (r
     const { changes } = await storeFileFor('plan', userId, req.file, (fileKey) => db.run(
         `INSERT INTO user_pdf_files (user_id, original_name, file_key, file_data, file_size, mime_type, uploaded_by,
                                      duration_months, duration_days, expiration_date, visible_from)
-         VALUES (?, ?, ?, '', ?, ?, ?, ?, ?, datetime('now', ?, ?), ?)
+         VALUES (?, ?, ?, '', ?, ?, ?, ?, ?, datetime(?, ?, ?), ?)
          ON CONFLICT(user_id) DO UPDATE SET
             original_name = excluded.original_name, file_key = excluded.file_key, file_data = '', file_size = excluded.file_size,
             mime_type = excluded.mime_type, uploaded_by = excluded.uploaded_by,
@@ -58,7 +60,7 @@ router.post('/admin/upload/:userId', admin, upload.single('pdf'), route(async (r
             expiration_date = excluded.expiration_date, visible_from = excluded.visible_from,
             updated_at = CURRENT_TIMESTAMP`,
         [userId, req.file.originalname, fileKey, req.file.size, req.file.mimetype,
-            req.user.username, months, days, modifier(months, 'months'), modifier(days, 'days'), req.body.visibleFrom || null]
+            req.user.username, months, days, durationStart(visibleFrom), modifier(months, 'months'), modifier(days, 'days'), visibleFrom]
     ));
     if (changes === 0) throw new Error('PDF not saved');
     if (previous) await deleteFiles([previous.file_key]);
@@ -146,13 +148,24 @@ router.put('/admin/extend/:userId', admin, route(async (req, res) => {
 }));
 
 // PUT /api/pdf/admin/visible-from/:userId — Body: { visibleFrom: date | null } (null unlocks)
+// The duration counts from the unlock: moving the unlock of a plan not yet visible (or locking it again)
+// restarts the expiry from the new unlock date, or from now when it is unlocked right away.
 router.put('/admin/visible-from/:userId', admin, route(async (req, res) => {
+    const userId = id(req.params.userId, 'user ID');
     const visibleFrom = req.body.visibleFrom || null;
-    const { changes } = await db.run(
-        'UPDATE user_pdf_files SET visible_from = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
-        [visibleFrom, id(req.params.userId, 'user ID')]
+    const pdf = await db.get('SELECT visible_from, duration_months, duration_days FROM user_pdf_files WHERE user_id = ?', [userId]);
+    if (!pdf) throw notFound('No PDF found for this user');
+
+    const restart = isLocked(pdf) || isLocked({ visible_from: visibleFrom });
+    await db.run(
+        restart
+            ? `UPDATE user_pdf_files SET visible_from = ?, expiration_date = datetime(?, ?, ?), updated_at = CURRENT_TIMESTAMP
+               WHERE user_id = ?`
+            : 'UPDATE user_pdf_files SET visible_from = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
+        restart
+            ? [visibleFrom, durationStart(visibleFrom), modifier(pdf.duration_months, 'months'), modifier(pdf.duration_days, 'days'), userId]
+            : [visibleFrom, userId]
     );
-    if (changes === 0) throw notFound('No PDF found for this user');
     res.json({
         success: true,
         message: visibleFrom ? `Scheda bloccata fino al ${visibleFrom}` : 'Scheda sbloccata',

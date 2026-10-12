@@ -138,6 +138,8 @@ const Dashboard = ({ user, initialSection, onLogout }: { user: SessionUser; init
 
   // Reminder dots: expired plan = alert, expiring within a week = warn, weights not logged this week = warn
   const daysLeft = plan.data && !plan.data.locked ? daysUntil(plan.data.expirationDate) : null;
+  // A plan that unlocks later hides its days and videos too: the training section only says when it arrives
+  const planLocked = plan.data?.locked === true;
   const planBadge: Badge = daysLeft === null ? null : daysLeft < 0 ? 'alert' : daysLeft < 7 ? 'warn' : null;
   const weightsBadge: Badge = exercises.data && logs.data && weightsPending(exercises.data, logs.data, weekStart()) ? 'warn' : null;
   const navBadge = (id: Section): Badge =>
@@ -201,7 +203,7 @@ const Dashboard = ({ user, initialSection, onLogout }: { user: SessionUser; init
         })}
       </nav>
 
-      {section === 'training' && (
+      {section === 'training' && !planLocked && (
         <SubTabs
           label={t('training.tabs.label')}
           active={trainingView}
@@ -239,7 +241,7 @@ const Dashboard = ({ user, initialSection, onLogout }: { user: SessionUser; init
         {section === 'more' && <MoreSection hasPlan={Boolean(plan.data)} trainerId={user.trainerId} />}
         {section === 'progress' && (progressView === 'weights' ? <WeightHistory /> : <BodyComposition />)}
         {section === 'training' &&
-          (trainingView === 'plan' ? (
+          (planLocked || trainingView === 'plan' ? (
             <PlanCard />
           ) : trainingView === 'videos' ? (
             <VideosView onPlay={setPlaying} />

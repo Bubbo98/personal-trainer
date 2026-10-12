@@ -4,13 +4,15 @@ const { authenticateToken, verifyActiveUser } = require('../middleware/auth');
 const { signedUrlOrNull } = require('../utils/r2');
 const { route, id, notFound } = require('../utils/http');
 const { loadDaysWithVideos } = require('../services/trainingDays');
+const { isPlanLocked } = require('../services/planLock');
 
 // Client video library
 const router = express.Router();
 router.use(authenticateToken, verifyActiveUser);
 
-/** Videos the user may watch (active permission, not expired), newest first. */
+/** Videos the user may watch (active permission, not expired), newest first; none while the plan is locked. */
 async function permittedVideos(userId, { videoId, category } = {}) {
+    if (await isPlanLocked(userId)) return [];
     const rows = await db.query(
         `SELECT v.id, v.title, v.description, v.file_path, v.duration, v.thumbnail_key,
                 v.category, v.created_at, uvp.granted_at, uvp.expires_at
@@ -46,7 +48,7 @@ router.get('/', route(async (req, res) => {
 
 // GET /api/videos/categories
 router.get('/categories', route(async (req, res) => {
-    const rows = await db.query(
+    const rows = await isPlanLocked(req.user.userId) ? [] : await db.query(
         `SELECT v.category, COUNT(*) AS video_count
          FROM videos v
          JOIN user_video_permissions uvp ON uvp.video_id = v.id
@@ -62,7 +64,7 @@ router.get('/categories', route(async (req, res) => {
 
 // GET /api/videos/training-days — the user's days with their videos (signed) and techniques
 router.get('/training-days', route(async (req, res) => {
-    const trainingDays = await loadDaysWithVideos(req.user.userId, { signed: true });
+    const trainingDays = await isPlanLocked(req.user.userId) ? [] : await loadDaysWithVideos(req.user.userId, { signed: true });
     res.json({ success: true, data: { trainingDays, totalDays: trainingDays.length } });
 }));
 

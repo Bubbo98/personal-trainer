@@ -5,7 +5,7 @@ import { CLIENT_TOKEN_KEY } from '../../lib/api';
 import { weekStart } from '../../lib/format';
 import { errorResponse, mockApi, renderWithProviders } from '../../test/render';
 import DashboardPage from './DashboardPage';
-import type { CheckinStatus, Exercise, ExerciseLog, TrainingDay, Video } from './types';
+import type { CheckinStatus, Exercise, ExerciseLog, PlanInfo, TrainingDay, Video } from './types';
 
 const user = { id: 165, username: 'bubbo', email: null, firstName: 'Test', lastName: 'User', trainerId: 1 };
 
@@ -32,9 +32,10 @@ interface Setup {
   logs?: ExerciseLog[];
   days?: TrainingDay[];
   videos?: Video[];
+  plan?: PlanInfo | null;
 }
 
-function setup({ checkin = { shouldShow: false, reason: 'exempt' }, exercises: ex = exercises, logs = [], days = [], videos = [] }: Setup = {}) {
+function setup({ checkin = { shouldShow: false, reason: 'exempt' }, exercises: ex = exercises, logs = [], days = [], videos = [], plan = null }: Setup = {}) {
   return mockApi({
     'POST /auth/login-link': { token: 'session-token', user },
     'GET /auth/verify': { user },
@@ -43,7 +44,7 @@ function setup({ checkin = { shouldShow: false, reason: 'exempt' }, exercises: e
     'GET /feedback/trainer-seen-notification': { notifications: [] },
     'POST /feedback/dismiss-trainer-seen': null,
     'POST /feedback': null,
-    'GET /pdf/my-pdf': null,
+    'GET /pdf/my-pdf': plan,
     'GET /workout/plan': { exercises: ex },
     'GET /workout/logs': { logs },
     'POST /workout/logs': null,
@@ -103,6 +104,18 @@ describe('DashboardPage — access', () => {
     await u.click(await screen.findByRole('button', { name: 'Esci' }));
     expect(await screen.findByText('home')).toBeInTheDocument();
     expect(localStorage.getItem(CLIENT_TOKEN_KEY)).toBeNull();
+  });
+});
+
+describe('DashboardPage — plan not yet unlocked', () => {
+  it('shows only the unlock date in the training section', async () => {
+    localStorage.setItem(CLIENT_TOKEN_KEY, 'stored');
+    setup({ plan: { locked: true, visibleFrom: '2026-10-14T22:00:00.000Z' }, exercises: [] });
+    renderPage();
+
+    expect(await screen.findByText('La tua scheda è pronta')).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: "Sezioni dell'allenamento" })).not.toBeInTheDocument();
+    expect(screen.queryByText('Leg press')).not.toBeInTheDocument();
   });
 });
 

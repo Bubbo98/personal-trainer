@@ -367,8 +367,20 @@ describe('admin PDF', () => {
         const after = (await api('GET', `/api/pdf/admin/user/${user}`, { token: token() })).body.data.expirationDate;
         assert.ok(new Date(after) > new Date(before));
 
+        // The duration counts from the unlock date
         assert.equal((await api('PUT', `/api/pdf/admin/visible-from/${user}`, { token: token(), body: { visibleFrom: '2030-01-01' } })).status, 200);
-        assert.equal((await api('GET', `/api/pdf/admin/user/${user}`, { token: token() })).body.data.visibleFrom, '2030-01-01');
+        const scheduled = (await api('GET', `/api/pdf/admin/user/${user}`, { token: token() })).body.data;
+        assert.equal(scheduled.visibleFrom, '2030-01-01');
+        const expected = new Date('2030-01-01T00:00:00Z');
+        expected.setUTCMonth(expected.getUTCMonth() + scheduled.durationMonths);
+        expected.setUTCDate(expected.getUTCDate() + scheduled.durationDays);
+        assert.equal(new Date(`${scheduled.expirationDate.replace(' ', 'T')}Z`).getTime(), expected.getTime());
+
+        // Unlocked right away: it counts from now
+        assert.equal((await api('PUT', `/api/pdf/admin/visible-from/${user}`, { token: token(), body: { visibleFrom: null } })).status, 200);
+        const unlocked = (await api('GET', `/api/pdf/admin/user/${user}`, { token: token() })).body.data;
+        assert.equal(unlocked.visibleFrom, null);
+        assert.ok(new Date(`${unlocked.expirationDate.replace(' ', 'T')}Z`) < new Date('2030-01-01'));
     });
 
     it('the admin can download any plan', async () => {
@@ -386,6 +398,15 @@ describe('admin PDF', () => {
         const info = (await api('GET', `/api/pdf/admin/user/${user}`, { token: token() })).body.data;
         assert.equal(info.originalName, 'Nuova scheda.pdf');
         assert.equal(info.durationMonths, 1);
+
+        // Uploaded with a future unlock date: the month starts from the unlock
+        const later = new FormData();
+        later.append('pdf', new Blob([fakePdf()], { type: 'application/pdf' }), 'Scheda futura.pdf');
+        later.append('durationMonths', '1');
+        later.append('visibleFrom', '2030-03-14T23:00:00.000Z');
+        assert.equal((await api('POST', `/api/pdf/admin/upload/${user}`, { token: token(), body: later })).status, 200);
+        const future = (await api('GET', `/api/pdf/admin/user/${user}`, { token: token() })).body.data;
+        assert.equal(future.expirationDate, '2030-04-14 23:00:00');
 
         assert.equal((await api('DELETE', `/api/pdf/admin/delete/${user}`, { token: token() })).status, 200);
         assert.equal((await api('GET', `/api/pdf/admin/user/${user}`, { token: token() })).body.data, null);

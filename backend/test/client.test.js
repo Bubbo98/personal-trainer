@@ -117,12 +117,23 @@ describe('client PDF', () => {
         assert.equal(res.body.subarray(0, 4).toString(), '%PDF');
     });
 
-    it('a plan visible in the future is locked', async () => {
+    it('a plan visible in the future is locked, with its exercises and videos', async () => {
+        const exerciseId = (await api('GET', '/api/workout/plan', { token: token() })).body.data.exercises[0].id;
         await db().execute({ sql: "UPDATE user_pdf_files SET visible_from = datetime('now', '+3 days') WHERE user_id = ?", args: [TEST_USER.id] });
-        const res = await api('GET', '/api/pdf/my-pdf', { token: token() });
-        assert.equal(res.body.data.locked, true);
-        assert.equal((await api('GET', '/api/pdf/download', { token: token() })).status, 403);
-        await db().execute({ sql: 'UPDATE user_pdf_files SET visible_from = NULL WHERE user_id = ?', args: [TEST_USER.id] });
+        try {
+            const res = await api('GET', '/api/pdf/my-pdf', { token: token() });
+            assert.equal(res.body.data.locked, true);
+            assert.equal((await api('GET', '/api/pdf/download', { token: token() })).status, 403);
+            assert.deepEqual((await api('GET', '/api/workout/plan', { token: token() })).body.data.exercises, []);
+            assert.deepEqual((await api('GET', '/api/videos', { token: token() })).body.data.videos, []);
+            assert.deepEqual((await api('GET', '/api/videos/categories', { token: token() })).body.data.categories, []);
+            assert.deepEqual((await api('GET', '/api/videos/training-days', { token: token() })).body.data.trainingDays, []);
+            const log = await api('POST', '/api/workout/logs', { token: token(), body: { exerciseId, weekStart: '2026-10-12', weight: '10' } });
+            assert.equal(log.status, 403);
+        } finally {
+            await db().execute({ sql: 'UPDATE user_pdf_files SET visible_from = NULL WHERE user_id = ?', args: [TEST_USER.id] });
+        }
+        assert.ok((await api('GET', '/api/workout/plan', { token: token() })).body.data.exercises.length > 0);
     });
 });
 

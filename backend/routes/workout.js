@@ -7,6 +7,7 @@ const { parsePdfText } = require('../services/planParser');
 const { parsePlanText } = require('../services/planText');
 const { readFile } = require('../services/storedFiles');
 const { loadLinks, saveLinks } = require('../services/exerciseLinks');
+const { isPlanLocked } = require('../services/planLock');
 
 // Training plan (exercises), weekly weight logs, exercise ↔ video links
 const router = express.Router();
@@ -138,9 +139,9 @@ router.put('/admin/links/:userId', admin, route(async (req, res) => {
 
 // ─── Client ──────────────────────────────────────────────────────────────────
 
-// GET /api/workout/plan
+// GET /api/workout/plan — empty while the plan is locked
 router.get('/plan', authenticateToken, route(async (req, res) => {
-    const exercises = await db.query(
+    const exercises = await isPlanLocked(req.user.userId) ? [] : await db.query(
         'SELECT * FROM training_exercises WHERE user_id = ? ORDER BY day_number, order_index',
         [req.user.userId]
     );
@@ -162,6 +163,7 @@ router.post('/logs', authenticateToken, route(async (req, res) => {
     const userId = req.user.userId;
     const { exerciseId, weekStart, weight, setsDone, repsDone, notes } = req.body;
     if (!exerciseId || !weekStart) throw badRequest('exerciseId and weekStart are required');
+    if (await isPlanLocked(userId)) throw forbidden('Training plan not yet available');
 
     const exercise = await db.get(
         'SELECT id, name, day_number, day_name FROM training_exercises WHERE id = ? AND user_id = ?',
