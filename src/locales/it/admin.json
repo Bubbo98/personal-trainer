@@ -467,6 +467,8 @@
       "onlyVideos": "Scegli un file video.",
       "selectedFile": "File scelto: {{name}} ({{size}})",
       "uploading": "Caricamento…",
+      "compressing": "Compressione del video…",
+      "compressingHint": "Lo rendiamo più leggero per chi lo guarda dal telefono. Non chiudere la pagina.",
       "fileRequired": "Scegli il file del video.",
       "uploadFailed": "Caricamento del file non riuscito.",
       "duration": "Durata (secondi)",

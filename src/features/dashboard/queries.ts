@@ -31,10 +31,10 @@ export const keys = {
   review: ['client', 'review'] as const,
 };
 
-// Signed video URLs last one hour: refresh the lists before they expire
+// Signed video URLs last 3 hours (backend/utils/r2.js): refresh the lists well before they expire
 const SIGNED_URL_OPTIONS = {
   staleTime: 30 * 60_000,
-  refetchInterval: 45 * 60_000,
+  refetchInterval: 2 * 60 * 60_000,
   refetchOnWindowFocus: true,
 } as const;
 

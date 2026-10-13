@@ -50,32 +50,33 @@ const Header = () => {
   return (
     <header className={`fixed top-0 w-full z-50 p-2 sm:p-4 md:p-6 transition-colors duration-300 ${solid ? 'bg-gray-900/95 backdrop-blur-sm' : 'bg-transparent'}`}>
       <div className="flex justify-between items-center gap-2 custom:px-16">
-        <Link to="/" className="flex items-center gap-3 sm:gap-4 text-white hover:text-gray-300 transition-colors" aria-label={t('header.home')}>
+        {/* Two lines that never wrap up to wide screens (iPhones are narrower than most Androids); no subtitle on phones */}
+        <Link to="/" className="flex items-center gap-2 sm:gap-4 min-w-0 text-white hover:text-gray-300 transition-colors" aria-label={t('header.home')}>
           <span className="flex gap-1 flex-shrink-0">
-            <img src="/Logo/logo1-small.webp" alt="" width={56} height={56} className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 object-contain" />
-            <img src="/Logo/logo2-small.webp" alt="" width={56} height={56} className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 object-contain" />
+            <img src="/Logo/logo1-small.webp" alt="" width={56} height={56} className="w-9 h-9 sm:w-12 sm:h-12 md:w-14 md:h-14 object-contain" />
+            <img src="/Logo/logo2-small.webp" alt="" width={56} height={56} className="hidden xs:block w-9 h-9 sm:w-12 sm:h-12 md:w-14 md:h-14 object-contain" />
           </span>
-          <span>
-            <span className="block text-sm xs:text-lg sm:text-2xl font-bold tracking-wider leading-tight sm:leading-normal">
-              <span className="block sm:inline">JOSHUA MAURIZIO</span>
-              <span className="block sm:inline"> E DENISE BERGAMO</span>
+          <span className="min-w-0">
+            <span className="block text-[11px] min-[360px]:text-xs xs:text-sm sm:text-base md:text-xl xl:text-2xl font-bold tracking-wide sm:tracking-wider leading-tight xl:leading-normal whitespace-nowrap">
+              <span className="block xl:inline">JOSHUA MAURIZIO</span>
+              <span className="block xl:inline"> E DENISE BERGAMO</span>
             </span>
-            <span className="block text-sm font-light tracking-widest">PERSONAL TRAINER</span>
+            <span className="hidden sm:block text-xs md:text-sm font-light tracking-widest">PERSONAL TRAINER</span>
           </span>
         </Link>
 
-        <div className="flex items-center gap-3 xs:gap-4 sm:gap-8">
-          <nav aria-label={t('header.nav')} className="flex gap-3 xs:gap-4 sm:gap-8">
+        <div className="flex items-center gap-2 xs:gap-4 sm:gap-5 md:gap-8 flex-shrink-0">
+          <nav aria-label={t('header.nav')} className="flex gap-2.5 xs:gap-4 sm:gap-5 md:gap-8">
             {NAV.map(({ to, label, icon: Icon }) => (
               <NavLink
                 key={to}
                 to={to}
                 aria-label={t(label)}
                 className={({ isActive }) =>
-                  `text-white hover:text-gray-300 transition-colors font-medium text-base sm:text-lg flex items-center ${isActive ? 'underline underline-offset-8 decoration-2' : ''}`
+                  `text-white hover:text-gray-300 transition-colors font-medium text-base md:text-lg flex items-center ${isActive ? 'underline underline-offset-8 decoration-2' : ''}`
                 }
               >
-                <Icon className="w-6 h-6 sm:hidden" aria-hidden />
+                <Icon className="w-5 h-5 xs:w-6 xs:h-6 sm:hidden" aria-hidden />
                 <span className="hidden sm:inline">{t(label)}</span>
               </NavLink>
             ))}

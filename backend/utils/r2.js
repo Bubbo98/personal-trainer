@@ -25,8 +25,11 @@ function getSignedVideoUrl(key, expiresIn = 3600) {
     return getSignedUrl(r2Client, new GetObjectCommand({ Bucket, Key: key }), { expiresIn });
 }
 
+// Video URLs outlast a training session: a client opens the plan, locks the phone between sets, comes back later
+const VIDEO_URL_TTL = 3 * 3600;
+
 /** Signed URL, or null when signing fails (the video is still listed, just not playable). */
-async function signedUrlOrNull(key, expiresIn = 3600) {
+async function signedUrlOrNull(key, expiresIn = VIDEO_URL_TTL) {
     if (!key) return null;
     try {
         return await getSignedVideoUrl(key, expiresIn);

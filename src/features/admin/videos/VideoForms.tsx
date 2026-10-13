@@ -9,6 +9,7 @@ import { useErrorMessage } from '../../../lib/errors';
 import { formatDuration, formatFileSize } from '../../../lib/format';
 import { MUSCLE_GROUPS, VIDEO_CATEGORIES, type AdminVideo, type CreateVideoInput, type VideoInput } from '../types';
 import ThumbnailUploader from './ThumbnailUploader';
+import { compressVideo } from './compress';
 import { putFile, videoDuration } from './upload';
 
 const MuscleGroupSelect = ({ value, onChange }: { value: string; onChange: (value: string) => void }) => {
@@ -32,6 +33,7 @@ export const CreateVideoModal = ({ saving, onSubmit, onClose }: { saving: boolea
   const [form, setForm] = useState<CreateVideoInput>({ title: '', description: '', filePath: '', duration: 0, category: '', muscleGroup: '' });
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
+  const [compressing, setCompressing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const set = <K extends keyof CreateVideoInput>(key: K, value: CreateVideoInput[K]) => setForm((f) => ({ ...f, [key]: value }));
   const uploading = progress !== null;
@@ -49,20 +51,25 @@ export const CreateVideoModal = ({ saving, onSubmit, onClose }: { saving: boolea
     if (seconds) set('duration', seconds);
   };
 
-  /** R2 path of the chosen file, uploading it unless a failed save already did. */
+  /** R2 path of the chosen file, compressed then uploaded unless a failed save already did. */
   const upload = async (chosen: File) => {
     if (form.filePath) return form.filePath;
     setProgress(0);
+    setCompressing(true);
     try {
+      const video = (await compressVideo(chosen, setProgress)) ?? chosen;
+      setCompressing(false);
+      setProgress(0);
       const { uploadUrl, filePath } = await adminApi.post<{ uploadUrl: string; filePath: string }>('/admin/videos/upload-url', {
-        fileName: chosen.name,
-        fileType: chosen.type,
+        fileName: video.name,
+        fileType: video.type,
         category: form.category,
       });
-      await putFile(uploadUrl, chosen, chosen.type, setProgress);
+      await putFile(uploadUrl, video, video.type, setProgress);
       set('filePath', filePath);
       return filePath;
     } finally {
+      setCompressing(false);
       setProgress(null);
     }
   };
@@ -121,9 +128,10 @@ export const CreateVideoModal = ({ saving, onSubmit, onClose }: { saving: boolea
           {uploading && (
             <div>
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-600">{t('videos.form.uploading')}</span>
+                <span className="text-gray-600">{t(compressing ? 'videos.form.compressing' : 'videos.form.uploading')}</span>
                 <span className="font-semibold text-blue-600">{progress}%</span>
               </div>
+              {compressing && <p className="text-xs text-gray-500 mb-1">{t('videos.form.compressingHint')}</p>}
               <div className="w-full bg-gray-200 rounded-full h-2.5" role="progressbar" aria-valuenow={progress ?? 0} aria-valuemin={0} aria-valuemax={100}>
                 <div className="bg-blue-600 h-2.5 rounded-full transition-all" style={{ width: `${progress}%` }} />
               </div>
