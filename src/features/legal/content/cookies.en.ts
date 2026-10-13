@@ -59,6 +59,7 @@ const cookies: LegalDoc = {
               ['i18nextLng', 'Chosen language (Italian or English)', 'Until deleted from the browser'],
               ['cookie-consent', 'Your cookie choices and when you made them', 'Until you change or delete them'],
               ['dashboard_auth_token', 'Client area login (clients only)', 'Until you log out'],
+              ['dashboard_link', 'Your personal client area link, to get back in without opening it again (clients only)', 'Until you log out'],
               ['admin_auth_token', 'Admin area login (the trainer only)', 'Until logout'],
               ['attribution', 'Parameters of the ad you came from (utm_source, utm_campaign…), passed on to the booking', 'Until the tab is closed'],
               ['chunk-reload', 'One reload of the page after a site update', 'Until the tab is closed'],

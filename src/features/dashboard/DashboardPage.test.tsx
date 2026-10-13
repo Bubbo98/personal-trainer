@@ -5,6 +5,7 @@ import { CLIENT_TOKEN_KEY } from '../../lib/api';
 import { weekStart } from '../../lib/format';
 import { errorResponse, mockApi, renderWithProviders } from '../../test/render';
 import DashboardPage from './DashboardPage';
+import { CLIENT_LINK_KEY } from './useSession';
 import type { CheckinStatus, Exercise, ExerciseLog, PlanInfo, TrainingDay, Video } from './types';
 
 const user = { id: 165, username: 'bubbo', email: null, firstName: 'Test', lastName: 'User', trainerId: 1 };
@@ -33,9 +34,11 @@ interface Setup {
   days?: TrainingDay[];
   videos?: Video[];
   plan?: PlanInfo | null;
+  /** Extra or replaced API routes */
+  api?: Parameters<typeof mockApi>[0];
 }
 
-function setup({ checkin = { shouldShow: false, reason: 'exempt' }, exercises: ex = exercises, logs = [], days = [], videos = [], plan = null }: Setup = {}) {
+function setup({ checkin = { shouldShow: false, reason: 'exempt' }, exercises: ex = exercises, logs = [], days = [], videos = [], plan = null, api = {} }: Setup = {}) {
   return mockApi({
     'POST /auth/login-link': { token: 'session-token', user },
     'GET /auth/verify': { user },
@@ -52,6 +55,7 @@ function setup({ checkin = { shouldShow: false, reason: 'exempt' }, exercises: e
     'GET /videos': { videos },
     'GET /reviews/my': { review: null },
     'GET /integration/products': { categories: [] },
+    ...api,
   });
 }
 
@@ -72,7 +76,33 @@ describe('DashboardPage — access', () => {
     expect(await screen.findByRole('heading', { name: 'Benvenuto, Test!' })).toBeInTheDocument();
     expect(calls.find((c) => c.path === '/auth/login-link')?.body).toEqual({ token: 'link-token' });
     expect(localStorage.getItem(CLIENT_TOKEN_KEY)).toBe('session-token');
+    expect(localStorage.getItem(CLIENT_LINK_KEY)).toBe('link-token');
   });
+
+  it('renews an expired session with the stored link instead of denying access', async () => {
+    localStorage.setItem(CLIENT_TOKEN_KEY, 'expired');
+    localStorage.setItem(CLIENT_LINK_KEY, 'link-token');
+    const { calls } = setup({ api: { 'GET /auth/verify': () => errorResponse(401, 'Invalid token') } });
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: 'Benvenuto, Test!' })).toBeInTheDocument();
+    expect(calls.find((c) => c.path === '/auth/login-link')?.body).toEqual({ token: 'link-token' });
+    expect(localStorage.getItem(CLIENT_TOKEN_KEY)).toBe('session-token');
+  });
+
+  it('offers a retry, not "access denied", when the server has a hiccup', async () => {
+    localStorage.setItem(CLIENT_TOKEN_KEY, 'stored');
+    let down = true;
+    setup({ api: { 'GET /auth/verify': () => (down ? errorResponse(500, 'Database error') : { user }) } });
+    const u = userEvent.setup();
+    renderPage();
+
+    const retry = await screen.findByRole('button', { name: /riprova/i }, { timeout: 8000 });
+    expect(screen.queryByRole('heading', { name: 'Accesso negato' })).not.toBeInTheDocument();
+    down = false;
+    await u.click(retry);
+    expect(await screen.findByRole('heading', { name: 'Benvenuto, Test!' })).toBeInTheDocument();
+  }, 15000);
 
   it('reuses a stored session', async () => {
     localStorage.setItem(CLIENT_TOKEN_KEY, 'stored');
@@ -98,12 +128,14 @@ describe('DashboardPage — access', () => {
 
   it('logs out', async () => {
     localStorage.setItem(CLIENT_TOKEN_KEY, 'stored');
+    localStorage.setItem(CLIENT_LINK_KEY, 'link-token');
     setup();
     const u = userEvent.setup();
     renderPage();
     await u.click(await screen.findByRole('button', { name: 'Esci' }));
     expect(await screen.findByText('home')).toBeInTheDocument();
     expect(localStorage.getItem(CLIENT_TOKEN_KEY)).toBeNull();
+    expect(localStorage.getItem(CLIENT_LINK_KEY)).toBeNull();
   });
 });
 

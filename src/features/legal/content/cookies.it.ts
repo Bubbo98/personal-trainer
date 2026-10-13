@@ -57,6 +57,7 @@ const cookies: LegalDoc = {
               ['i18nextLng', 'Lingua scelta (italiano o inglese)', 'Fino alla cancellazione dal browser'],
               ['cookie-consent', 'Le tue scelte sui cookie e la data in cui le hai fatte', 'Fino a quando le cambi o le cancelli dal browser'],
               ['dashboard_auth_token', "Accesso all'area clienti (solo per i clienti)", "Fino all'uscita dall'area clienti"],
+              ['dashboard_link', "Il tuo link personale all'area clienti, per rientrare senza riaprirlo (solo per i clienti)", "Fino all'uscita dall'area clienti"],
               ['admin_auth_token', "Accesso all'area di amministrazione (solo per il personal trainer)", "Fino all'uscita"],
               ['attribution', "Parametri dell'annuncio da cui sei arrivato (utm_source, utm_campaign…), passati alla prenotazione", 'Fino alla chiusura della scheda'],
               ['chunk-reload', 'Ricarica unica della pagina dopo un aggiornamento del sito', 'Fino alla chiusura della scheda'],

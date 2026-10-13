@@ -307,8 +307,9 @@ const DashboardPage = () => {
 
   if (session.isError) {
     const expired = session.error instanceof ApiError && session.error.code === 'PLAN_EXPIRED';
-    const network = session.error instanceof ApiError && session.error.code === 'NETWORK';
-    if (network) {
+    // Only a refused link or session means "access denied"; lost signal or a server hiccup can be retried
+    const denied = session.error instanceof ApiError && session.error.status >= 400 && session.error.status < 500;
+    if (!denied) {
       return (
         <Shell>
           <ErrorState message={errorMessage(session.error)} onRetry={() => session.refetch()} />
