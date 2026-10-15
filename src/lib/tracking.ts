@@ -118,6 +118,18 @@ export function initTracking() {
   captureAttribution();
   apply(getConsent());
   onConsentChange(() => apply(getConsent()));
+  // Every tel: link on the site, wherever it is: a call is a contact too
+  document.addEventListener('click', (e) => {
+    if ((e.target as Element | null)?.closest?.('a[href^="tel:"]')) trackPhoneClick();
+  });
+}
+
+/** A tap on the phone number: a contact, counted apart from the booked consultations. */
+export function trackPhoneClick() {
+  const consent = getConsent();
+  if (!consent) return;
+  if (googleLoaded && consent.analytics && TRACKING.ga4Id) gtag('event', 'contact', { method: 'phone' });
+  if (metaLoaded && consent.marketing) window.fbq?.('track', 'Contact');
 }
 
 /** Single-page navigation: GA4 and the Pixel only see the first page by themselves. */

@@ -11,6 +11,20 @@ async function load(search = '') {
   return { ...(await import('./tracking')), ...(await import('./consent')) };
 }
 
+// Each fresh copy adds its own click listener on document: removed after the test
+const listeners: [string, EventListenerOrEventListenerObject][] = [];
+const addListener = document.addEventListener.bind(document);
+beforeEach(() => {
+  vi.spyOn(document, 'addEventListener').mockImplementation((type: string, fn: EventListenerOrEventListenerObject, opts?: boolean | AddEventListenerOptions) => {
+    listeners.push([type, fn]);
+    addListener(type, fn, opts);
+  });
+});
+afterEach(() => {
+  listeners.splice(0).forEach(([type, fn]) => document.removeEventListener(type, fn));
+  vi.restoreAllMocks();
+});
+
 beforeEach(() => {
   localStorage.clear();
   sessionStorage.clear();
@@ -54,6 +68,39 @@ describe('tracking', () => {
     expect(events).toContainEqual(['event', 'conversion', { send_to: 'AW-1/lead', transaction_id: 'booking-uid' }]);
     expect(fbq).toHaveBeenCalledWith('track', 'Lead', {}, { eventID: 'booking-uid' });
     expect(scripts()).toContain('https://connect.facebook.net/en_US/fbevents.js');
+  });
+
+  it('a tap on a phone link is a contact for GA4 and Meta, not an Ads conversion', async () => {
+    const { initTracking, saveConsent } = await load();
+    initTracking();
+    saveConsent({ analytics: true, marketing: true });
+    const fbq = vi.fn();
+    window.fbq!.callMethod = fbq;
+    const link = document.createElement('a');
+    link.href = 'tel:+390000000000';
+    link.innerHTML = '<span>328</span>';
+    link.addEventListener('click', (e) => e.preventDefault());
+    document.body.appendChild(link);
+
+    link.querySelector('span')!.click();
+    link.remove();
+
+    const events = window.dataLayer!.map((args) => [...(args as unknown[])]).filter((a) => a[0] === 'event');
+    expect(events).toContainEqual(['event', 'contact', { method: 'phone' }]);
+    expect(events.some((a) => a[1] === 'conversion')).toBe(false);
+    expect(fbq).toHaveBeenCalledWith('track', 'Contact');
+  });
+
+  it('a phone tap before consent sends nothing', async () => {
+    const { initTracking } = await load();
+    initTracking();
+    const link = document.createElement('a');
+    link.href = 'tel:+390000000000';
+    link.addEventListener('click', (e) => e.preventDefault());
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    expect(window.dataLayer).toBeUndefined();
   });
 
   it('keeps the ad utm_* of the landing page for the booking', async () => {
