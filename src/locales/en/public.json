@@ -2,7 +2,7 @@
   "hero": {
     "title": "Ready for a change?",
     "subtitle": "The time has come",
-    "tagline": "Personal trainer in Milan · Free 15-minute first consultation",
+    "tagline": "Online coaching and personal training in Milan · Free 15-minute first consultation",
     "consultation": "Book the free consultation",
     "discover": "Discover my services",
     "imageAlt": "Joshua Maurizio, personal trainer"
@@ -15,8 +15,8 @@
         "text": "15 minutes on the phone to get to know each other: your goals, your starting level and the time you have."
       },
       "gym": {
-        "title": "First meeting at the gym",
-        "text": "We meet at the gym in Milan to work out together where to start."
+        "title": "First meeting",
+        "text": "At the gym in Milan to work out together where to start; with online coaching we go straight to your program."
       },
       "plan": {
         "title": "Your programme",
@@ -127,13 +127,145 @@
     },
     "onlineCoaching": {
       "title": "Online Coaching Service",
-      "description": "Tailored online coaching with personalized programs and constant support wherever you are.\nTrain with flexibility and achieve your goals with the guidance of a professional."
+      "description": "Tailored online coaching with personalized programs and constant support wherever you are.\nTrain with flexibility and achieve your goals with the guidance of a professional.",
+      "more": "See how online coaching works"
+    }
+  },
+  "coaching": {
+    "title": "Online coaching: your personal trainer, wherever you are",
+    "lead": "A training program built around you, to follow at the gym, at home or in the park: I coach you remotely through your personal area, exercise videos and regular check-ins. And if you're in Milan, we can also train together at the gym.",
+    "highlights": [
+      "Personalized program",
+      "A video for every exercise",
+      "Regular check-ins with your PT"
+    ],
+    "cta": "Book the free consultation",
+    "ctaNote": "15 minutes on the phone, no strings attached",
+    "imageAlt": "Online coaching with Joshua Maurizio",
+    "paths": {
+      "title": "Two ways to train with me",
+      "online": {
+        "title": "Online coaching",
+        "text": "A tailored program, exercise videos and regular check-ins: train where and when you want, I coach you remotely wherever you are.",
+        "link": "How it works"
+      },
+      "gym": {
+        "title": "At the gym in Milan",
+        "text": "In-person 1-to-1 sessions, with the right technique exercise by exercise.",
+        "link": "Learn more"
+      }
+    },
+    "how": {
+      "title": "How it works",
+      "steps": [
+        {
+          "title": "Free consultation",
+          "text": "15 minutes on the phone: tell me your goals, your starting level, the days you have and where you train."
+        },
+        {
+          "title": "Your program",
+          "text": "I put together a plan made for you, built on the time and equipment you actually have."
+        },
+        {
+          "title": "Train with your personal area",
+          "text": "Open your area from the link I send you: your training days, a video for every exercise, and you log your weights as you train."
+        },
+        {
+          "title": "Check-ins and updates",
+          "text": "After the first week and then every two weeks you fill in a short check-in: I read it and adapt the program to your progress."
+        }
+      ]
+    },
+    "includes": {
+      "title": "What you get",
+      "items": [
+        {
+          "title": "Personalized plan",
+          "text": "Your program day by day, to read online or download as a PDF."
+        },
+        {
+          "title": "Exercise videos",
+          "text": "The technique of every exercise explained on video, so you train well even on your own."
+        },
+        {
+          "title": "Weight log",
+          "text": "Log loads and reps as you train and see your history week after week."
+        },
+        {
+          "title": "Regular check-ins",
+          "text": "Energy, sleep, workouts, any discomfort and weight: two minutes to tell me how it is going."
+        },
+        {
+          "title": "A program that evolves",
+          "text": "The plan is updated with your results and your schedule: it doesn't stay the same for months."
+        },
+        {
+          "title": "No app to install",
+          "text": "Your personal area opens in the browser, on phone and computer."
+        }
+      ]
+    },
+    "forWho": {
+      "title": "Who it's for",
+      "items": [
+        "People who train at the gym and want a method instead of improvised plans",
+        "People who train at home or in the park, with bodyweight or little equipment",
+        "People who want to lose weight, tone up or build muscle",
+        "People whose schedule keeps changing or who don't live in Milan"
+      ]
+    },
+    "why": {
+      "title": "Who coaches you",
+      "text": "I'm Joshua Maurizio, a personal trainer for over 10 years. Certified AIPT (ASI-CONI) and Burningate, I specialize in natural bodybuilding, calisthenics, weight loss and posture.",
+      "more": "About me",
+      "portraitAlt": "Joshua Maurizio, personal trainer"
+    },
+    "gym": {
+      "title": "Prefer to train in person?",
+      "text": "If you're in Milan we can train together at the gym: I coach you in person, correct your technique on the spot and build the program step by step.",
+      "items": [
+        "1-to-1 sessions with me",
+        "Calisthenics and functional training",
+        "Bodybuilding and performance",
+        "Group classes"
+      ],
+      "more": "See all services",
+      "imageAlt": "1-to-1 training at the gym in Milan"
+    },
+    "faq": {
+      "title": "Frequently asked questions",
+      "items": [
+        {
+          "q": "Do I have to train at a gym?",
+          "a": "No. The program is built around where you train: gym, home or park, with the equipment you have."
+        },
+        {
+          "q": "I'm a beginner: is that OK?",
+          "a": "Yes. We start from your level: the videos show you the technique of every exercise and the check-ins tell me how you are doing."
+        },
+        {
+          "q": "How much does it cost?",
+          "a": "It depends on the length of the program and your goals: we talk about it in the free consultation, no strings attached."
+        },
+        {
+          "q": "How does the free consultation work?",
+          "a": "Pick a day and time from the calendar below: a 15-minute call to see together whether online coaching is right for you."
+        },
+        {
+          "q": "I live in Milan: can we also train at the gym?",
+          "a": "Yes: besides online coaching I run 1-to-1 sessions at a gym in Milan. We can talk about it in the consultation."
+        }
+      ]
+    },
+    "booking": {
+      "title": "Book the free consultation",
+      "text": "Pick the day and time that suit you for a 15-minute call."
     }
   },
   "booking": {
     "title": "Book your consultation",
     "description": "Free 15-minute consultation: pick the day and time that suit you.",
-    "note": "During the introductory call, we'll arrange when to meet for the first time at the gym.",
+    "note": "During the call we choose the right path together: at the gym in Milan or with online coaching.",
     "directContact": "Contact me directly at",
     "imageAlt": "Book your consultation",
     "calendarLabel": "Booking calendar"

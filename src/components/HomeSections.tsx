@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { FiArrowRight, FiCalendar, FiMapPin, FiPhoneCall, FiTrendingUp } from 'react-icons/fi';
-import { BOOKING_PATH, SERVICES } from '../lib/services';
+import { BOOKING_PATH, SERVICES, servicePath } from '../lib/services';
 
 const STEPS = [
   { key: 'call', icon: FiPhoneCall },
@@ -57,7 +57,7 @@ export const ServicesPreview = () => {
         <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {SERVICES.map((service) => (
             <li key={service.id}>
-              <Link to={`/services#${service.id}`} className="group block h-full bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow overflow-hidden">
+              <Link to={servicePath(service)} className="group block h-full bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow overflow-hidden">
                 <img src={service.image} alt="" loading="lazy" decoding="async" width={900} height={600} className="w-full aspect-[3/2] object-cover bg-gray-200" />
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-gray-900 mb-2">{t(`services.${service.key}.title`)}</h3>

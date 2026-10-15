@@ -1,5 +1,6 @@
 {
   "nav": {
+    "coaching": "Coaching online",
     "about": "Chi sono",
     "services": "Servizi",
     "contact": "Contatti"
@@ -84,6 +85,10 @@
     "services": {
       "title": "Servizi | Personal Trainer Joshua",
       "description": "Scopri i servizi di Personal Training a Milano: allenamenti 1-to-1, calisthenics, bodybuilding, corsi di gruppo e coaching online. Prenota ora!"
+    },
+    "coaching": {
+      "title": "Personal Trainer Online e a Milano | Joshua Maurizio",
+      "description": "Coaching online con un personal trainer certificato: programma personalizzato, video degli esercizi e check periodici. Oppure 1 to 1 in palestra a Milano. Consulenza gratuita!"
     },
     "contact": {
       "title": "Contatti | Personal Trainer Joshua",

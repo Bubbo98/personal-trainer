@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { FiCalendar } from 'react-icons/fi';
+import { FiArrowRight, FiCalendar } from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { usePageMeta } from '../lib/usePageMeta';
@@ -57,6 +57,11 @@ const Services = () => {
                         {paragraph}
                       </p>
                     ))}
+                  {'page' in service && (
+                    <Link to={service.page} className="self-start inline-flex items-center gap-2 font-semibold text-gray-900 hover:gap-3 transition-all">
+                      {t(`services.${service.key}.more`)} <FiArrowRight aria-hidden />
+                    </Link>
+                  )}
                   <Link
                     to={BOOKING_PATH}
                     className="mt-auto self-start inline-flex items-center gap-3 bg-gray-900 text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-colors text-lg font-semibold"

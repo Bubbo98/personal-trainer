@@ -5,8 +5,9 @@ import { mockApi, renderWithProviders } from '../test/render';
 import Home from './Home';
 import Contact from './Contact';
 import Services from './Services';
+import CoachingOnline from './CoachingOnline';
 
-vi.mock('@calcom/embed-react', () => ({ default: () => <div data-testid="cal" /> }));
+vi.mock('@calcom/embed-react', () => ({ default: () => <div data-testid="cal" />, getCalApi: () => Promise.resolve(vi.fn()) }));
 
 const review = (id: number) => ({ id, rating: 5, title: `Titolo ${id}`, comment: `Bellissimo ${id}`, createdAt: '2026-09-01 10:00:00', author: { displayName: `Cliente ${id}` } });
 
@@ -24,9 +25,10 @@ describe('Home', () => {
     for (const link of screen.getAllByRole('link', { name: 'Prenota la consulenza gratuita' })) {
       expect(link).toHaveAttribute('href', '/booking#booking-calendar');
     }
-    expect(screen.getByText('Personal trainer a Milano · Prima consulenza gratuita di 15 minuti')).toBeInTheDocument();
+    expect(screen.getByText('Coaching online e personal training a Milano · Prima consulenza gratuita di 15 minuti')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Come funziona' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Servizio Calisthenics & Funzionale/ })).toHaveAttribute('href', '/services#calisthenics');
+    expect(screen.getByRole('link', { name: /Servizio Coaching Online/ })).toHaveAttribute('href', '/coaching-online');
   });
 
   it('shows the Google rating; hides the site reviews section when there are none', async () => {
@@ -86,5 +88,24 @@ describe('Services', () => {
     const links = screen.getAllByRole('link', { name: 'Prenota la consulenza gratuita' });
     expect(links).toHaveLength(5);
     for (const link of links) expect(link).toHaveAttribute('href', '/booking#booking-calendar');
+    expect(screen.getByRole('link', { name: /Scopri come funziona il coaching online/ })).toHaveAttribute('href', '/coaching-online');
+  });
+});
+
+describe('CoachingOnline', () => {
+  it('explains the service and books on its own calendar', () => {
+    renderWithProviders(<CoachingOnline />);
+    expect(document.title).toBe('Personal Trainer Online e a Milano | Joshua Maurizio');
+    expect(document.querySelector('link[rel="canonical"]')).toHaveAttribute('href', 'https://www.esercizifacili.com/coaching-online');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Coaching online');
+    for (const heading of ['Due modi per allenarti con me', 'Come funziona', 'Cosa ricevi', 'Per chi è', 'Preferisci allenarti dal vivo?', 'Domande frequenti']) {
+      expect(screen.getByRole('heading', { name: heading })).toBeInTheDocument();
+    }
+    // Every booking button scrolls to the calendar on this page: the visitor from the ad never leaves it
+    const links = screen.getAllByRole('link', { name: 'Prenota la consulenza gratuita' });
+    expect(links.length).toBeGreaterThanOrEqual(2);
+    for (const link of links) expect(link).toHaveAttribute('href', '#booking-calendar');
+    expect(screen.getByTestId('cal')).toBeInTheDocument();
+    expect(screen.getByText('Quanto costa?')).toBeInTheDocument();
   });
 });

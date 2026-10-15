@@ -2,7 +2,7 @@
   "hero": {
     "title": "Hai voglia di cambiamento?",
     "subtitle": "È arrivato il momento",
-    "tagline": "Personal trainer a Milano · Prima consulenza gratuita di 15 minuti",
+    "tagline": "Coaching online e personal training a Milano · Prima consulenza gratuita di 15 minuti",
     "consultation": "Prenota la consulenza gratuita",
     "discover": "Scopri i miei servizi",
     "imageAlt": "Joshua Maurizio, personal trainer"
@@ -15,8 +15,8 @@
         "text": "15 minuti al telefono per conoscerci: i tuoi obiettivi, il tuo livello di partenza e il tempo che hai a disposizione."
       },
       "gym": {
-        "title": "Primo incontro in palestra",
-        "text": "Ci vediamo in palestra a Milano per valutare insieme da dove partire."
+        "title": "Primo incontro",
+        "text": "In palestra a Milano per valutare insieme da dove partire; con il coaching online partiamo subito dal tuo programma."
       },
       "plan": {
         "title": "Il tuo programma",
@@ -127,13 +127,145 @@
     },
     "onlineCoaching": {
       "title": "Servizio Coaching Online",
-      "description": "Coaching online su misura, con programmi personalizzati e supporto costante ovunque tu sia.\nAllenati con flessibilità e raggiungi i tuoi obiettivi con la guida di un professionista."
+      "description": "Coaching online su misura, con programmi personalizzati e supporto costante ovunque tu sia.\nAllenati con flessibilità e raggiungi i tuoi obiettivi con la guida di un professionista.",
+      "more": "Scopri come funziona il coaching online"
+    }
+  },
+  "coaching": {
+    "title": "Coaching online: il tuo personal trainer, ovunque tu sia",
+    "lead": "Un programma di allenamento costruito su di te, da seguire in palestra, a casa o al parco: ti seguo a distanza con la tua area personale, i video degli esercizi e check regolari. E se sei a Milano, ci alleniamo anche dal vivo in palestra.",
+    "highlights": [
+      "Programma personalizzato",
+      "Video di ogni esercizio",
+      "Check periodici con il tuo PT"
+    ],
+    "cta": "Prenota la consulenza gratuita",
+    "ctaNote": "15 minuti al telefono, senza impegno",
+    "imageAlt": "Coaching online con Joshua Maurizio",
+    "paths": {
+      "title": "Due modi per allenarti con me",
+      "online": {
+        "title": "Coaching online",
+        "text": "Programma su misura, video degli esercizi e check periodici: ti alleni dove e quando vuoi, ti seguo a distanza ovunque tu sia.",
+        "link": "Come funziona"
+      },
+      "gym": {
+        "title": "In palestra a Milano",
+        "text": "Allenamenti 1 to 1 dal vivo, con la tecnica corretta esercizio per esercizio.",
+        "link": "Scopri di più"
+      }
+    },
+    "how": {
+      "title": "Come funziona",
+      "steps": [
+        {
+          "title": "Consulenza gratuita",
+          "text": "15 minuti al telefono: mi racconti obiettivi, livello di partenza, giorni a disposizione e dove ti alleni."
+        },
+        {
+          "title": "Il tuo programma",
+          "text": "Preparo una scheda su misura, costruita sul tempo e sull'attrezzatura che hai davvero."
+        },
+        {
+          "title": "Ti alleni con l'area personale",
+          "text": "Apri la tua area dal link che ti invio: trovi i giorni di allenamento, il video di ogni esercizio e segni i pesi mentre ti alleni."
+        },
+        {
+          "title": "Check e aggiornamenti",
+          "text": "Dopo la prima settimana e poi ogni due settimane compili un breve check: lo leggo e adatto il programma ai tuoi progressi."
+        }
+      ]
+    },
+    "includes": {
+      "title": "Cosa ricevi",
+      "items": [
+        {
+          "title": "Scheda personalizzata",
+          "text": "Il tuo programma giorno per giorno, da consultare online o scaricare in PDF."
+        },
+        {
+          "title": "Video degli esercizi",
+          "text": "La tecnica di ogni esercizio spiegata in video, per allenarti bene anche quando sei da solo."
+        },
+        {
+          "title": "Registro dei pesi",
+          "text": "Segni carichi e ripetizioni mentre ti alleni e ritrovi lo storico settimana dopo settimana."
+        },
+        {
+          "title": "Check periodici",
+          "text": "Energia, sonno, allenamenti, eventuali fastidi e peso: due minuti per dirmi come stai andando."
+        },
+        {
+          "title": "Un programma che evolve",
+          "text": "La scheda si aggiorna in base ai tuoi risultati e ai tuoi impegni, non resta la stessa per mesi."
+        },
+        {
+          "title": "Nessuna app da installare",
+          "text": "L'area personale si apre dal browser, su telefono e computer."
+        }
+      ]
+    },
+    "forWho": {
+      "title": "Per chi è",
+      "items": [
+        "Chi si allena in palestra e vuole un metodo invece di schede improvvisate",
+        "Chi si allena a casa o al parco, a corpo libero o con poca attrezzatura",
+        "Chi vuole dimagrire, tonificarsi o aumentare la massa muscolare",
+        "Chi ha orari che cambiano spesso o non abita a Milano"
+      ]
+    },
+    "why": {
+      "title": "Chi ti segue",
+      "text": "Sono Joshua Maurizio, personal trainer da oltre 10 anni. Certificato AIPT (ASI-CONI) e Burningate, sono specializzato in bodybuilding natural, calisthenics, dimagrimento e posturale.",
+      "more": "Scopri chi sono",
+      "portraitAlt": "Joshua Maurizio, personal trainer"
+    },
+    "gym": {
+      "title": "Preferisci allenarti dal vivo?",
+      "text": "Se sei a Milano possiamo allenarci insieme in palestra: ti seguo di persona, correggo la tecnica sul momento e costruiamo il programma passo dopo passo.",
+      "items": [
+        "Allenamenti 1 to 1 con me",
+        "Calisthenics e funzionale",
+        "Bodybuilding e performance",
+        "Corsi di gruppo"
+      ],
+      "more": "Scopri tutti i servizi",
+      "imageAlt": "Allenamento 1 to 1 in palestra a Milano"
+    },
+    "faq": {
+      "title": "Domande frequenti",
+      "items": [
+        {
+          "q": "Devo per forza allenarmi in palestra?",
+          "a": "No. Il programma si costruisce su dove ti alleni: palestra, casa o parco, con l'attrezzatura che hai."
+        },
+        {
+          "q": "Sono principiante: va bene lo stesso?",
+          "a": "Sì. Si parte dal tuo livello: i video ti mostrano la tecnica di ogni esercizio e i check mi dicono come stai andando."
+        },
+        {
+          "q": "Quanto costa?",
+          "a": "Dipende dalla durata del percorso e dai tuoi obiettivi: ne parliamo nella consulenza gratuita, senza impegno."
+        },
+        {
+          "q": "Come funziona la consulenza gratuita?",
+          "a": "Scegli giorno e orario dal calendario qui sotto: è una chiamata di 15 minuti per capire insieme se il coaching online fa per te."
+        },
+        {
+          "q": "Abito a Milano: possiamo anche allenarci in palestra?",
+          "a": "Sì: oltre al coaching online seguo allenamenti 1 to 1 in palestra a Milano. Ne parliamo nella consulenza."
+        }
+      ]
+    },
+    "booking": {
+      "title": "Prenota la consulenza gratuita",
+      "text": "Scegli il giorno e l'orario che preferisci per una chiamata di 15 minuti."
     }
   },
   "booking": {
     "title": "Prenota la tua consulenza",
     "description": "Consulenza gratuita di 15 minuti: scegli il giorno e l'orario che preferisci.",
-    "note": "Durante la chiamata conoscitiva, gestiremo insieme quando vederci per la prima volta in palestra.",
+    "note": "Durante la chiamata scegliamo insieme il percorso giusto: in palestra a Milano o con il coaching online.",
     "directContact": "Contattami direttamente al numero",
     "imageAlt": "Prenota la tua consulenza",
     "calendarLabel": "Calendario delle prenotazioni"

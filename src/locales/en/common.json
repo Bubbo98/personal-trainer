@@ -1,5 +1,6 @@
 {
   "nav": {
+    "coaching": "Online coaching",
     "about": "About",
     "services": "Services",
     "contact": "Contact"
@@ -84,6 +85,10 @@
     "services": {
       "title": "Services | Personal Trainer Joshua",
       "description": "Personal training services in Milan: 1-to-1 sessions, calisthenics, bodybuilding, group classes and online coaching. Book now!"
+    },
+    "coaching": {
+      "title": "Online Personal Trainer and in Milan | Joshua Maurizio",
+      "description": "Online coaching with a certified personal trainer: personalized program, exercise videos and regular check-ins. Or 1-to-1 at the gym in Milan. Free consultation!"
     },
     "contact": {
       "title": "Contact | Personal Trainer Joshua",

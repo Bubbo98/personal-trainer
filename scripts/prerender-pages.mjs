@@ -19,6 +19,7 @@ const PAGES = [
   ['/', meta.home],
   ['/about', meta.about],
   ['/services', meta.services],
+  ['/coaching-online', meta.coaching],
   ['/contact', meta.contact],
   ['/booking', meta.booking],
   ['/privacy-policy', meta.privacy],

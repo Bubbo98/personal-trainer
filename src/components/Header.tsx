@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { FiGrid, FiMail, FiUser } from 'react-icons/fi';
+import { FiGrid, FiMail, FiMonitor, FiUser } from 'react-icons/fi';
 import type { IconType } from 'react-icons';
 
-const NAV: { to: string; label: 'nav.about' | 'nav.services' | 'nav.contact'; icon: IconType }[] = [
+const NAV: { to: string; label: 'nav.coaching' | 'nav.about' | 'nav.services' | 'nav.contact'; icon: IconType }[] = [
+  { to: '/coaching-online', label: 'nav.coaching', icon: FiMonitor },
   { to: '/about', label: 'nav.about', icon: FiUser },
   { to: '/services', label: 'nav.services', icon: FiGrid },
   { to: '/contact', label: 'nav.contact', icon: FiMail },
