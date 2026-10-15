@@ -133,11 +133,11 @@
   },
   "coaching": {
     "title": "Coaching online: il tuo personal trainer, ovunque tu sia",
-    "lead": "Un programma di allenamento costruito su di te, da seguire in palestra, a casa o al parco: ti seguo a distanza con la tua area personale, i video degli esercizi e check regolari. E se sei a Milano, ci alleniamo anche dal vivo in palestra.",
+    "lead": "Un programma di allenamento costruito su di te, da seguire in palestra, a casa o al parco: ti seguo a distanza con la tua area personale, i video degli esercizi, check regolari e un contatto diretto con me per tutto il percorso. E se sei a Milano, ci alleniamo anche dal vivo in palestra.",
     "highlights": [
       "Programma personalizzato",
       "Video di ogni esercizio",
-      "Check periodici con il tuo PT"
+      "Sempre in contatto con il tuo PT"
     ],
     "cta": "Prenota la consulenza gratuita",
     "ctaNote": "15 minuti al telefono, senza impegno",
@@ -146,7 +146,7 @@
       "title": "Due modi per allenarti con me",
       "online": {
         "title": "Coaching online",
-        "text": "Programma su misura, video degli esercizi e check periodici: ti alleni dove e quando vuoi, ti seguo a distanza ovunque tu sia.",
+        "text": "Programma su misura, video degli esercizi e check periodici: ti alleni dove e quando vuoi, e ci sentiamo per tutto il percorso.",
         "link": "Come funziona"
       },
       "gym": {
@@ -171,8 +171,8 @@
           "text": "Apri la tua area dal link che ti invio: trovi i giorni di allenamento, il video di ogni esercizio e segni i pesi mentre ti alleni."
         },
         {
-          "title": "Check e nuove schede",
-          "text": "Dopo la prima settimana e poi ogni due settimane compili un breve check, così seguo i tuoi progressi. Quando è il momento di cambiare, preparo una nuova scheda e la trovi nella tua area."
+          "title": "Ti seguo per tutto il percorso",
+          "text": "Non ti lascio da solo con la scheda: ci sentiamo per dubbi sugli esercizi, sui carichi o sugli imprevisti della settimana. Dopo la prima settimana e poi ogni due settimane compili un breve check sui progressi e, quando è il momento, preparo la nuova scheda."
         }
       ]
     },
@@ -196,8 +196,8 @@
           "text": "Energia, sonno, allenamenti, eventuali fastidi e peso: due minuti per dirmi come stai andando."
         },
         {
-          "title": "Nuove schede nel tempo",
-          "text": "Quando preparo la tua nuova scheda la trovi subito nella tua area personale, con i video di ogni esercizio."
+          "title": "Sempre in contatto",
+          "text": "Hai un dubbio su un esercizio o sui carichi? Mi scrivi e ci sentiamo: non sei mai da solo. E quando è il momento, la nuova scheda la trovi subito nella tua area."
         },
         {
           "title": "Nessuna app da installare",
@@ -241,7 +241,7 @@
         },
         {
           "q": "Sono principiante: va bene lo stesso?",
-          "a": "Sì. Si parte dal tuo livello: i video ti mostrano la tecnica di ogni esercizio e i check mi dicono come stai andando."
+          "a": "Sì. Si parte dal tuo livello: i video ti mostrano la tecnica di ogni esercizio, i check mi dicono come stai andando e per ogni dubbio ci sentiamo."
         },
         {
           "q": "Quanto costa?",

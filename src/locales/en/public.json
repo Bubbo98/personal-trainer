@@ -133,11 +133,11 @@
   },
   "coaching": {
     "title": "Online coaching: your personal trainer, wherever you are",
-    "lead": "A training program built around you, to follow at the gym, at home or in the park: I coach you remotely through your personal area, exercise videos and regular check-ins. And if you're in Milan, we can also train together at the gym.",
+    "lead": "A training program built around you, to follow at the gym, at home or in the park: I coach you remotely through your personal area, exercise videos, regular check-ins and direct contact with me throughout. And if you're in Milan, we can also train together at the gym.",
     "highlights": [
       "Personalized program",
       "A video for every exercise",
-      "Regular check-ins with your PT"
+      "Always in touch with your PT"
     ],
     "cta": "Book the free consultation",
     "ctaNote": "15 minutes on the phone, no strings attached",
@@ -146,7 +146,7 @@
       "title": "Two ways to train with me",
       "online": {
         "title": "Online coaching",
-        "text": "A tailored program, exercise videos and regular check-ins: train where and when you want, I coach you remotely wherever you are.",
+        "text": "A tailored program, exercise videos and regular check-ins: train where and when you want, and we stay in touch all the way.",
         "link": "How it works"
       },
       "gym": {
@@ -171,8 +171,8 @@
           "text": "Open your area from the link I send you: your training days, a video for every exercise, and you log your weights as you train."
         },
         {
-          "title": "Check-ins and new plans",
-          "text": "After the first week and then every two weeks you fill in a short check-in, so I can follow your progress. When it's time for a change, I prepare a new plan and you find it in your area."
+          "title": "I follow you all the way",
+          "text": "I don't just hand you a plan: we talk about doubts on exercises, loads or the week's setbacks. After the first week and then every two weeks you fill in a short check-in on your progress and, when it's time, I prepare your new plan."
         }
       ]
     },
@@ -196,8 +196,8 @@
           "text": "Energy, sleep, workouts, any discomfort and weight: two minutes to tell me how it is going."
         },
         {
-          "title": "New plans over time",
-          "text": "When I prepare your new plan you find it right away in your personal area, with the video of every exercise."
+          "title": "Always in touch",
+          "text": "A doubt about an exercise or the loads? Message me and we talk: you're never on your own. And when it's time, your new plan is right there in your area."
         },
         {
           "title": "No app to install",
@@ -241,7 +241,7 @@
         },
         {
           "q": "I'm a beginner: is that OK?",
-          "a": "Yes. We start from your level: the videos show you the technique of every exercise and the check-ins tell me how you are doing."
+          "a": "Yes. We start from your level: the videos show you the technique of every exercise, the check-ins tell me how you are doing and we talk whenever you have a doubt."
         },
         {
           "q": "How much does it cost?",
