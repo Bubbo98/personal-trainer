@@ -110,6 +110,8 @@
       "usernameHint": "Solo per identificarlo: i clienti accedono con il link personale.",
       "email": "Email",
       "emailHint": "Serve per i promemoria e le notifiche del check.",
+      "phone": "Telefono",
+      "phoneInvalid": "Numero di telefono non valido",
       "trainer": "Personal trainer",
       "paying": "Utente pagante",
       "checkinExempt": "Esente dal check settimanale obbligatorio",

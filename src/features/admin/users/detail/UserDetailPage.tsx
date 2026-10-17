@@ -86,7 +86,7 @@ const UserDetailPage = () => {
         {back}
         <div className="min-w-0">
           <h2 className="text-2xl font-bold text-gray-900">{name}</h2>
-          <p className="text-sm text-gray-600 break-all">{[user.username, user.email].filter(Boolean).join(' • ')}</p>
+          <p className="text-sm text-gray-600 break-all">{[user.username, user.email, user.phone].filter(Boolean).join(' • ')}</p>
         </div>
       </div>
 

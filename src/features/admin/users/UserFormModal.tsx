@@ -18,6 +18,7 @@ const UserFormModal = (props: Props) => {
     firstName: editing?.firstName ?? '',
     lastName: editing?.lastName ?? '',
     email: editing?.email ?? '',
+    phone: editing?.phone ?? '',
     isPaying: editing ? Boolean(editing.isPaying) : true,
     checkinExempt: Boolean(editing?.checkinExempt),
     trainerId: editing?.trainerId ?? (props.mode === 'create' ? props.defaultTrainerId : 1),
@@ -30,6 +31,7 @@ const UserFormModal = (props: Props) => {
       firstName: form.firstName.trim(),
       lastName: form.lastName.trim(),
       email: form.email.trim(),
+      phone: form.phone.trim(),
       isPaying: form.isPaying,
       trainerId: form.trainerId,
     };
@@ -72,6 +74,17 @@ const UserFormModal = (props: Props) => {
           value={form.email}
           onChange={(e) => set('email', e.target.value)}
           placeholder="email@example.com"
+        />
+
+        <TextField
+          label={t('users.form.phone')}
+          type="tel"
+          autoComplete="off"
+          value={form.phone}
+          onChange={(e) => set('phone', e.target.value)}
+          pattern="\+?[\d\s\(\)\.\-\/]{6,20}"
+          title={t('users.form.phoneInvalid')}
+          placeholder="+39 333 123 4567"
         />
 
         <SelectField label={t('users.form.trainer')} value={form.trainerId} onChange={(e) => set('trainerId', Number(e.target.value))}>

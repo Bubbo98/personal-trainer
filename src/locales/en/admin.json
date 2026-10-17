@@ -110,6 +110,8 @@
       "usernameHint": "Only to identify them: clients sign in with their personal link.",
       "email": "Email",
       "emailHint": "Used for reminders and check-in notifications.",
+      "phone": "Phone",
+      "phoneInvalid": "Invalid phone number",
       "trainer": "Personal trainer",
       "paying": "Paying user",
       "checkinExempt": "Exempt from the mandatory weekly check-in",

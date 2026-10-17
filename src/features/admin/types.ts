@@ -19,6 +19,7 @@ export interface AdminUser {
   email: string | null;
   firstName: string | null;
   lastName: string | null;
+  phone: string | null;
   isActive: boolean;
   isPaying: boolean;
   checkinExempt: boolean;
@@ -34,6 +35,7 @@ export interface UserInput {
   firstName: string;
   lastName: string;
   email: string;
+  phone: string;
   isPaying: boolean;
   trainerId: number;
 }

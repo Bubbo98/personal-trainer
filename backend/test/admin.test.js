@@ -58,6 +58,22 @@ describe('admin users', () => {
         assert.equal((await api('PUT', `/api/admin/users/${createdId}`, { token: token(), body: {} })).status, 400);
     });
 
+    it('a phone number is saved on create, changed and cleared on update, rejected when invalid', async () => {
+        const created = await api('POST', '/api/admin/users', { token: token(), body: { username: 'test.phone', phone: ' +39 333 123 4567 ' } });
+        assert.equal(created.status, 201);
+        assert.equal(created.body.data.user.phone, '+39 333 123 4567');
+        const userId = created.body.data.user.id;
+
+        const changed = await api('PUT', `/api/admin/users/${userId}`, { token: token(), body: { phone: '02 1234567' } });
+        assert.equal(changed.body.data.user.phone, '02 1234567');
+        const listed = (await api('GET', '/api/admin/users', { token: token() })).body.data.users.find((u) => u.id === userId);
+        assert.equal(listed.phone, '02 1234567');
+
+        assert.equal((await api('PUT', `/api/admin/users/${userId}`, { token: token(), body: { phone: 'non un numero' } })).status, 400);
+        const cleared = await api('PUT', `/api/admin/users/${userId}`, { token: token(), body: { phone: '' } });
+        assert.equal(cleared.body.data.user.phone, null);
+    });
+
     it('POST /api/admin/users/:id/generate-link returns a working login link', async () => {
         const res = await api('POST', `/api/admin/users/${createdId}/generate-link`, { token: token() });
         assert.equal(res.status, 200);

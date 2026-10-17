@@ -9,7 +9,7 @@ const router = express.Router();
 
 const DEFAULT_TRAINER_ID = 1; // Joshua
 
-const USER_COLUMNS = `u.id, u.username, u.email, u.first_name, u.last_name, u.is_paying, u.checkin_exempt,
+const USER_COLUMNS = `u.id, u.username, u.email, u.first_name, u.last_name, u.phone, u.is_paying, u.checkin_exempt,
     u.is_active, u.trainer_id, u.created_at, u.updated_at, t.name AS trainer_name`;
 
 const findUser = (userId) => db.get(
@@ -23,6 +23,7 @@ const toUser = (u) => ({
     email: u.email,
     firstName: u.first_name,
     lastName: u.last_name,
+    phone: u.phone,
     isPaying: Number(u.is_paying) === 1,
     checkinExempt: Number(u.checkin_exempt) === 1,
     isActive: Number(u.is_active) === 1,
@@ -31,6 +32,16 @@ const toUser = (u) => ({
     createdAt: u.created_at,
     updatedAt: u.updated_at,
 });
+
+const PHONE = /^\+?[\d\s().\-\/]{6,20}$/;
+
+/** Trimmed phone number, '' or missing → null; anything that isn't a phone number is a 400. */
+function phoneValue(value) {
+    const phone = typeof value === 'string' ? value.trim() : value;
+    if (phone === undefined || phone === null || phone === '') return null;
+    if (typeof phone !== 'string' || !PHONE.test(phone)) throw badRequest('Invalid phone number');
+    return phone;
+}
 
 /** A UNIQUE failure on users means a duplicate username or email. */
 function duplicateError(err) {
@@ -49,7 +60,7 @@ router.get('/trainers', route(async (req, res) => {
 // GET /api/admin/users — active users with their plan, soonest expiry first
 router.get('/users', route(async (req, res) => {
     const users = await db.query(`
-        SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.is_active, u.is_paying, u.checkin_exempt,
+        SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.phone, u.is_active, u.is_paying, u.checkin_exempt,
                u.trainer_id, t.name AS trainer_name, u.created_at, u.last_login,
                (SELECT COUNT(*) FROM user_video_permissions uvp WHERE uvp.user_id = u.id AND uvp.is_active = 1) AS video_count,
                upf.id AS pdf_id, upf.original_name AS pdf_original_name, upf.file_size AS pdf_file_size,
@@ -72,6 +83,7 @@ router.get('/users', route(async (req, res) => {
                 email: u.email,
                 firstName: u.first_name,
                 lastName: u.last_name,
+                phone: u.phone,
                 isActive: Number(u.is_active) === 1,
                 isPaying: Number(u.is_paying) === 1,
                 checkinExempt: Number(u.checkin_exempt) === 1,
@@ -100,13 +112,13 @@ router.get('/users', route(async (req, res) => {
 }));
 
 // POST /api/admin/users — creates a user, or reactivates a deactivated one with the same username
-// Body: { username, email?, password?, firstName?, lastName?, isPaying? (default true), trainerId? }
+// Body: { username, email?, password?, firstName?, lastName?, phone?, isPaying? (default true), trainerId? }
 router.post('/users', route(async (req, res) => {
-    const { username, email, password, firstName, lastName, isPaying, trainerId } = req.body;
+    const { username, email, password, firstName, lastName, phone, isPaying, trainerId } = req.body;
     if (!username) throw badRequest('Username is required');
 
     const passwordHash = password ? await bcrypt.hash(password, 10) : null;
-    const fields = [email || null, firstName, lastName, isPaying === undefined || isPaying ? 1 : 0, trainerId || DEFAULT_TRAINER_ID];
+    const fields = [email || null, firstName, lastName, phoneValue(phone), isPaying === undefined || isPaying ? 1 : 0, trainerId || DEFAULT_TRAINER_ID];
 
     let userId;
     let reactivated = false;
@@ -115,7 +127,7 @@ router.post('/users', route(async (req, res) => {
         if (inactive) {
             await db.batch([
                 {
-                    sql: `UPDATE users SET email = ?, first_name = ?, last_name = ?, is_paying = ?, trainer_id = ?,
+                    sql: `UPDATE users SET email = ?, first_name = ?, last_name = ?, phone = ?, is_paying = ?, trainer_id = ?,
                             password_hash = COALESCE(?, password_hash), is_active = 1, updated_at = CURRENT_TIMESTAMP
                           WHERE id = ?`,
                     params: [...fields, passwordHash, inactive.id],
@@ -126,8 +138,8 @@ router.post('/users', route(async (req, res) => {
             reactivated = true;
         } else {
             userId = (await db.run(
-                `INSERT INTO users (email, first_name, last_name, is_paying, trainer_id, username, password_hash)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                `INSERT INTO users (email, first_name, last_name, phone, is_paying, trainer_id, username, password_hash)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                 [...fields, username, passwordHash]
             )).lastId;
         }
@@ -146,13 +158,14 @@ router.post('/users', route(async (req, res) => {
 }));
 
 // PUT /api/admin/users/:id — partial update
-// Body: any of { firstName, lastName, email ('' clears it), isPaying, checkinExempt, trainerId }
+// Body: any of { firstName, lastName, email ('' clears it), phone ('' clears it), isPaying, checkinExempt, trainerId }
 router.put('/users/:id', route(async (req, res) => {
     const userId = id(req.params.id, 'user ID');
     const columns = {
         firstName: ['first_name', (v) => v],
         lastName: ['last_name', (v) => v],
         email: ['email', (v) => (v === '' ? null : v)],
+        phone: ['phone', phoneValue],
         isPaying: ['is_paying', (v) => (v ? 1 : 0)],
         checkinExempt: ['checkin_exempt', (v) => (v ? 1 : 0)],
         trainerId: ['trainer_id', (v) => v],

@@ -14,6 +14,7 @@ const user = (over: Partial<AdminUser>): AdminUser => ({
   email: 'mario@example.com',
   firstName: 'Mario',
   lastName: 'Rossi',
+  phone: null,
   isActive: true,
   isPaying: true,
   checkinExempt: false,

@@ -89,7 +89,7 @@ const UsersTable = ({ users, actions, emptyText }: { users: AdminUser[]; actions
                   <Link to={`/admin/users/${user.id}`} onClick={(e) => e.stopPropagation()} className="text-sm font-medium text-gray-900 hover:underline">
                     {displayName(user)}
                   </Link>
-                  <div className="text-sm text-gray-500">{[user.username, user.email].filter(Boolean).join(' • ')}</div>
+                  <div className="text-sm text-gray-500">{[user.username, user.email, user.phone].filter(Boolean).join(' • ')}</div>
                   <div className="text-xs text-gray-400">{t('users.createdOn', { date: formatDateTime(user.createdAt) })}</div>
                 </td>
                 <td className="px-6 py-4">
@@ -124,6 +124,7 @@ const UsersTable = ({ users, actions, emptyText }: { users: AdminUser[]; actions
                 <p className="text-base font-semibold text-gray-900">{displayName(user)}</p>
                 <p className="text-sm text-gray-500 mt-1">{user.username}</p>
                 {user.email && <p className="text-xs text-gray-400 mt-0.5 break-all">{user.email}</p>}
+                {user.phone && <p className="text-xs text-gray-400 mt-0.5">{user.phone}</p>}
               </div>
               <ActionButtons user={user} actions={actions} large />
             </div>
