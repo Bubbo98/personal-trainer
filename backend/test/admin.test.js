@@ -588,6 +588,77 @@ describe('cron', () => {
         assert.equal(Number(testUser.rows[0].n), 1);
     });
 
+    it('cleanup-users records expired plans once and each deletion with the client\'s details', async () => {
+        const cron = () => api('GET', '/api/cron/cleanup-users', { headers: { Authorization: 'Bearer cron-test-secret' } });
+        const created = await api('POST', '/api/admin/users', { token: token(), body: { username: 'to.expire', firstName: 'Scaduto', lastName: 'Da Poco', phone: '333 1112222' } });
+        const expiringId = created.body.data.user.id;
+        await db().execute({
+            sql: `INSERT INTO user_pdf_files (user_id, original_name, file_data, file_size, expiration_date)
+                  VALUES (?, 'scheda.pdf', '', 0, datetime('now', '-5 days'))`,
+            args: [expiringId],
+        });
+        const gone = await api('POST', '/api/admin/users', { token: token(), body: { username: 'to.log.delete', firstName: 'Via', lastName: 'Andato', email: 'via@example.com', phone: '+39 02 555' } });
+        const goneId = gone.body.data.user.id;
+        await api('DELETE', `/api/admin/users/${goneId}`, { token: token() });
+
+        const first = await cron();
+        assert.equal(first.status, 200);
+        assert.ok(first.body.expiredRecorded >= 1);
+        assert.equal((await cron()).body.expiredRecorded, 0, 'an expiry is recorded only once');
+
+        const res = await api('GET', '/api/admin/retention-log', { token: token() });
+        assert.equal(res.status, 200);
+        const { entries } = res.body.data;
+        const expired = entries.filter((e) => e.event === 'plan_expired' && e.userId === expiringId);
+        assert.equal(expired.length, 1);
+        assert.equal(expired[0].phone, '333 1112222');
+        assert.equal(expired[0].trainerName, 'Joshua');
+        assert.ok(!entries.some((e) => e.event === 'user_deleted' && e.userId === expiringId), 'expired 5 days ago: not deleted yet');
+        const deleted = entries.find((e) => e.event === 'user_deleted' && e.userId === goneId);
+        assert.equal(deleted.reason, 'deactivated');
+        assert.equal(deleted.lastName, 'Andato');
+        assert.equal(deleted.email, 'via@example.com');
+        assert.equal(deleted.phone, '+39 02 555');
+        assert.ok(!entries.some((e) => e.userId === TEST_USER.id), 'the Test User is never recorded');
+
+        const month = expired[0].occurredAt.slice(0, 7);
+        const inMonth = (await api('GET', `/api/admin/retention-log?month=${month}`, { token: token() })).body.data.entries;
+        assert.ok(inMonth.length > 0 && inMonth.every((e) => e.occurredAt.startsWith(month)));
+        assert.equal((await api('GET', '/api/admin/retention-log?month=2026-13', { token: token() })).status, 400);
+        assert.equal((await api('GET', '/api/admin/retention-log')).status, 401);
+    });
+
+    it('the retention log shows one row per phone number and hides the clients who are back', async () => {
+        const cron = () => api('GET', '/api/cron/cleanup-users', { headers: { Authorization: 'Bearer cron-test-secret' } });
+        const log = async () => (await api('GET', '/api/admin/retention-log', { token: token() })).body.data;
+        const phoneRows = (entries, event, digits) => entries.filter((e) => e.event === event && e.phone && e.phone.replace(/\D/g, '').endsWith(digits));
+
+        // Two clients with the same number (written differently), both deleted: one row
+        for (const [username, phone] of [['dup.one', '347 9998888'], ['dup.two', '+39 347-999-8888']]) {
+            const created = await api('POST', '/api/admin/users', { token: token(), body: { username, phone } });
+            await api('DELETE', `/api/admin/users/${created.body.data.user.id}`, { token: token() });
+        }
+        await cron();
+        let data = await log();
+        assert.equal(phoneRows(data.entries, 'user_deleted', '3479998888').length, 1);
+        assert.equal(phoneRows(data.entries, 'user_deleted', '3479998888')[0].username, 'dup.two', 'the newest row is kept');
+        assert.ok(data.hidden.duplicates >= 1);
+
+        // A client whose plan expired comes back as a new user with the same number: their rows are hidden
+        assert.equal(phoneRows(data.entries, 'plan_expired', '3331112222').length, 1);
+        const back = await api('POST', '/api/admin/users', { token: token(), body: { username: 'came.back', phone: '+39 333 111 2222' } });
+        data = await log();
+        assert.equal(phoneRows(data.entries, 'plan_expired', '3331112222').length, 0);
+        assert.equal(phoneRows(data.entries, 'user_deleted', '3479998888').length, 1, 'other clients are unaffected');
+        assert.ok(data.hidden.returned >= 1);
+        const stored = await db().execute("SELECT count(*) n FROM retention_log WHERE phone = '333 1112222'");
+        assert.equal(Number(stored.rows[0].n), 1, 'the row stays in the log');
+
+        // The new user leaves again: the old rows show up again
+        await api('DELETE', `/api/admin/users/${back.body.data.user.id}`, { token: token() });
+        assert.equal(phoneRows((await log()).entries, 'plan_expired', '3331112222').length, 1);
+    });
+
     it('client emails open the client\'s own dashboard', async () => {
         const { loginLink } = require('../services/loginLinks');
         const { renderCheckInReminder, renderTrainerSeen } = require('../services/emailService');

@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import { FiAlertCircle, FiLock, FiLogOut, FiShoppingBag, FiStar, FiUser, FiUsers, FiVideo } from 'react-icons/fi';
+import { FiAlertCircle, FiFileText, FiLock, FiLogOut, FiShoppingBag, FiStar, FiUser, FiUsers, FiVideo } from 'react-icons/fi';
 import Header from '../../components/Header';
 import Button from '../../components/ui/Button';
 import { inputClass } from '../../components/ui/Field';
@@ -15,6 +15,7 @@ import UserDetailPage from './users/detail/UserDetailPage';
 import VideosPage from './videos/VideosPage';
 import ReviewsPage from './reviews/ReviewsPage';
 import SupplementsPage from './supplements/SupplementsPage';
+import RetentionLogPage from './retention/RetentionLogPage';
 
 type Session = 'checking' | 'in' | 'out';
 
@@ -185,6 +186,7 @@ const NAV = [
   { to: '/admin/videos', icon: FiVideo, label: 'nav.videos' },
   { to: '/admin/reviews', icon: FiStar, label: 'nav.reviews' },
   { to: '/admin/supplements', icon: FiShoppingBag, label: 'nav.supplements' },
+  { to: '/admin/log', icon: FiFileText, label: 'nav.retention' },
 ] as const;
 
 /** /admin/* — the admin area. */
@@ -243,6 +245,7 @@ const AdminPage = () => {
             <Route path="videos" element={<VideosPage />} />
             <Route path="reviews" element={<ReviewsPage />} />
             <Route path="supplements" element={<SupplementsPage />} />
+            <Route path="log" element={<RetentionLogPage />} />
             <Route path="*" element={<Navigate to="/admin/users" replace />} />
           </Routes>
         </div>

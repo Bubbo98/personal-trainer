@@ -8,5 +8,6 @@ router.use(authenticateToken, requireAdmin);
 router.use(require('./admin/users'));
 router.use(require('./admin/videos'));
 router.use(require('./admin/reviews'));
+router.use(require('./admin/retentionLog'));
 
 module.exports = router;

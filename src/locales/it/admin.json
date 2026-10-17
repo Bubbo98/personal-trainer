@@ -9,7 +9,8 @@
     "users": "Utenti",
     "videos": "Video",
     "reviews": "Recensioni",
-    "supplements": "Integrazione"
+    "supplements": "Integrazione",
+    "retention": "Registro"
   },
   "login": {
     "badge": "Area amministratore",
@@ -564,5 +565,47 @@
     "productUrl": "Link prodotto (acquisto)",
     "invalidUrl": "Link non valido: usa un indirizzo che inizia con https://",
     "missingFields": "Ogni categoria e ogni prodotto devono avere un nome e un link valido."
+  },
+  "retention": {
+    "title": "Registro",
+    "subtitle": "Le schede scadute e gli utenti eliminati dalla pulizia notturna, annotati ogni notte.",
+    "month": "Mese",
+    "allTime": "Tutto il periodo",
+    "download": "Scarica PDF",
+    "expired": {
+      "title": "Schede scadute",
+      "empty": "Nessuna scheda scaduta in questo periodo."
+    },
+    "deleted": {
+      "title": "Utenti eliminati",
+      "empty": "Nessun utente eliminato in questo periodo."
+    },
+    "columns": {
+      "expiredOn": "Scaduta il",
+      "deletedOn": "Eliminato il",
+      "client": "Cliente",
+      "email": "Email",
+      "phone": "Telefono",
+      "trainer": "Trainer",
+      "reason": "Motivo",
+      "planExpiry": "Scadenza scheda"
+    },
+    "reasons": {
+      "plan_expired": "Scheda scaduta da più di 21 giorni",
+      "deactivated": "Eliminato dall'admin"
+    },
+    "pdf": {
+      "title": "Registro schede scadute e utenti eliminati",
+      "generated": "generato il {{date}}",
+      "fileName": "registro",
+      "allTimeFile": "completo"
+    },
+    "hidden": {
+      "note": "Non mostrate: {{parts}}.",
+      "returned_one": "{{count}} riga di un cliente tornato (il suo telefono è di un utente attivo)",
+      "returned_other": "{{count}} righe di clienti tornati (il loro telefono è di un utente attivo)",
+      "duplicates_one": "{{count}} riga con un telefono già in elenco",
+      "duplicates_other": "{{count}} righe con un telefono già in elenco"
+    }
   }
 }

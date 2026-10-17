@@ -10,6 +10,7 @@ import type {
   CheckinPage,
   CheckinUserSummary,
   PlanPdf,
+  RetentionLog,
   ServerExercise,
   Trainer,
   TrainingDay,
@@ -39,6 +40,7 @@ export const adminKeys = {
   days: (userId: number) => ['admin', 'user', userId, 'days'] as const,
   bodyReports: (userId: number) => ['admin', 'user', userId, 'body-reports'] as const,
   reviews: ['admin', 'reviews'] as const,
+  retentionLog: (month: string) => ['admin', 'retention-log', month] as const,
   catalog: ['admin', 'catalog'] as const,
 };
 
@@ -187,4 +189,12 @@ export const useReviews = () =>
   useQuery({
     queryKey: adminKeys.reviews,
     queryFn: ({ signal }) => adminApi.get<{ reviews: AdminReview[] }>('/admin/reviews', signal).then((d) => d.reviews),
+  });
+
+/** Expired plans and deleted clients of a month ('YYYY-MM'), or of all time when month is ''. */
+export const useRetentionLog = (month: string) =>
+  useQuery({
+    queryKey: adminKeys.retentionLog(month),
+    queryFn: ({ signal }) => adminApi.get<RetentionLog>(`/admin/retention-log${query({ month })}`, signal),
+    placeholderData: keepPreviousData,
   });

@@ -48,6 +48,31 @@ export interface UpdateUserInput extends UserInput {
   checkinExempt: boolean;
 }
 
+/** A row of the retention log: a plan that expired or a client the nightly cleanup deleted. */
+export interface RetentionLogEntry {
+  id: number;
+  event: 'plan_expired' | 'user_deleted';
+  /** user_deleted only */
+  reason: 'plan_expired' | 'deactivated' | null;
+  /** plan_expired: the expiration date; user_deleted: when the client was deleted */
+  occurredAt: string;
+  userId: number;
+  username: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  phone: string | null;
+  trainerName: string | null;
+  expirationDate: string | null;
+  recordedAt: string;
+}
+
+/** The log as listed: clients who are back and repeated phone numbers are left out, these are the counts. */
+export interface RetentionLog {
+  entries: RetentionLogEntry[];
+  hidden: { returned: number; duplicates: number };
+}
+
 export const VIDEO_CATEGORIES = ['palestra', 'corpoLibero'] as const;
 export type VideoCategory = (typeof VIDEO_CATEGORIES)[number];
 

@@ -5,6 +5,9 @@
  * Deactivated clients are deleted too. Uploading a new plan moves the
  * expiration date forward, which restores access automatically.
  *
+ * Every expired plan and every deletion is recorded in retention_log, with a copy
+ * of the client's details (name, email, phone, trainer), so the record outlives the user.
+ *
  * Never touched: the admin account (ADMIN_USERNAME) and the user ids listed in
  * RETENTION_PROTECTED_USER_IDS (comma separated, default "165" = Test User).
  */
@@ -43,8 +46,30 @@ async function findUsersToDelete() {
     return rows.filter((u) => !config.retentionProtectedUserIds.includes(u.id));
 }
 
-/** Deletes a user and every row that belongs to them (one transaction, children first), then their files on R2. */
-async function deleteUserCompletely(userId) {
+/** The client's details as retention_log columns, for INSERT … SELECT … FROM users u. */
+const LOG_COLUMNS = 'user_id, username, first_name, last_name, email, phone, trainer_name, expiration_date';
+const LOG_VALUES = `u.id, u.username, u.first_name, u.last_name, u.email, u.phone,
+    (SELECT name FROM trainers WHERE id = u.trainer_id), p.expiration_date`;
+
+/** Records the plans that have expired and aren't in the log yet (once per expiration date). Returns how many. */
+async function recordExpiredPlans() {
+    const protectedIds = config.retentionProtectedUserIds;
+    const { changes } = await db.run(
+        `INSERT OR IGNORE INTO retention_log (event, occurred_at, ${LOG_COLUMNS})
+         SELECT 'plan_expired', p.expiration_date, ${LOG_VALUES}
+         FROM user_pdf_files p JOIN users u ON u.id = p.user_id
+         WHERE u.is_active = 1 AND u.username <> ? AND p.expiration_date IS NOT NULL AND p.expiration_date < datetime('now')
+           ${protectedIds.length ? `AND u.id NOT IN (${protectedIds.map(() => '?').join(', ')})` : ''}`,
+        [config.adminUsername, ...protectedIds]
+    );
+    return changes;
+}
+
+/**
+ * Deletes a user and every row that belongs to them (one transaction, children first), then their files on R2.
+ * The same transaction records the deletion in retention_log, with reason 'plan_expired' or 'deactivated'.
+ */
+async function deleteUserCompletely(userId, reason) {
     const files = await db.query(
         `SELECT file_key FROM user_pdf_files WHERE user_id = ? AND file_key IS NOT NULL
          UNION ALL
@@ -57,6 +82,13 @@ async function deleteUserCompletely(userId) {
         'user_feedbacks', 'body_composition_reports', 'reviews', 'access_logs',
     ];
     await db.batch([
+        {
+            sql: `INSERT INTO retention_log (event, reason, occurred_at, ${LOG_COLUMNS})
+                  SELECT 'user_deleted', ?, CURRENT_TIMESTAMP, ${LOG_VALUES}
+                  FROM users u LEFT JOIN user_pdf_files p ON p.user_id = u.id
+                  WHERE u.id = ?`,
+            params: [reason, userId],
+        },
         {
             sql: `DELETE FROM training_day_video_techniques
                   WHERE training_day_video_id IN (SELECT id FROM training_day_videos WHERE training_day_id IN (${dayIds}))`,
@@ -75,5 +107,6 @@ module.exports = {
     PLAN_EXPIRED_MESSAGE,
     isAccessExpired,
     findUsersToDelete,
+    recordExpiredPlans,
     deleteUserCompletely,
 };

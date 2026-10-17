@@ -9,7 +9,8 @@
     "users": "Users",
     "videos": "Videos",
     "reviews": "Reviews",
-    "supplements": "Supplements"
+    "supplements": "Supplements",
+    "retention": "Log"
   },
   "login": {
     "badge": "Admin area",
@@ -564,5 +565,47 @@
     "productUrl": "Product link (purchase)",
     "invalidUrl": "Invalid link: use an address starting with https://",
     "missingFields": "Every category and product needs a name and a valid link."
+  },
+  "retention": {
+    "title": "Log",
+    "subtitle": "Expired plans and clients deleted by the nightly cleanup, recorded every night.",
+    "month": "Month",
+    "allTime": "All time",
+    "download": "Download PDF",
+    "expired": {
+      "title": "Expired plans",
+      "empty": "No plan expired in this period."
+    },
+    "deleted": {
+      "title": "Deleted users",
+      "empty": "No user deleted in this period."
+    },
+    "columns": {
+      "expiredOn": "Expired on",
+      "deletedOn": "Deleted on",
+      "client": "Client",
+      "email": "Email",
+      "phone": "Phone",
+      "trainer": "Trainer",
+      "reason": "Reason",
+      "planExpiry": "Plan expiry"
+    },
+    "reasons": {
+      "plan_expired": "Plan expired more than 21 days ago",
+      "deactivated": "Deleted by the admin"
+    },
+    "pdf": {
+      "title": "Log of expired plans and deleted users",
+      "generated": "generated on {{date}}",
+      "fileName": "log",
+      "allTimeFile": "all"
+    },
+    "hidden": {
+      "note": "Not shown: {{parts}}.",
+      "returned_one": "{{count}} row of a client who is back (their phone belongs to an active user)",
+      "returned_other": "{{count}} rows of clients who are back (their phone belongs to an active user)",
+      "duplicates_one": "{{count}} row with a phone already listed",
+      "duplicates_other": "{{count}} rows with a phone already listed"
+    }
   }
 }

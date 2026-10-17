@@ -3,7 +3,7 @@ const express = require('express');
 const config = require('../config');
 const { route, unauthorized } = require('../utils/http');
 const { run: sendReminders } = require('../scripts/send-checkin-reminders');
-const { findUsersToDelete, deleteUserCompletely } = require('../utils/userRetention');
+const { findUsersToDelete, recordExpiredPlans, deleteUserCompletely } = require('../utils/userRetention');
 
 // Jobs called by Vercel Cron with "Authorization: Bearer <CRON_SECRET>"
 const router = express.Router();
@@ -26,10 +26,12 @@ router.get('/send-reminders', requireCronSecret, route(async (req, res) => {
     res.json({ success: true, sent, failed, timestamp: new Date().toISOString() });
 }));
 
-// GET /api/cron/cleanup-users[?dryRun=1] — daily: permanently deletes deactivated clients and
-// clients whose plan expired long ago (see utils/userRetention). dryRun only lists them.
+// GET /api/cron/cleanup-users[?dryRun=1] — daily: records the plans that expired, then permanently
+// deletes deactivated clients and clients whose plan expired long ago, recording each deletion
+// (see utils/userRetention). dryRun only lists who would be deleted and records nothing.
 router.get('/cleanup-users', requireCronSecret, route(async (req, res) => {
     const dryRun = req.query.dryRun === '1';
+    const expiredRecorded = dryRun ? 0 : await recordExpiredPlans();
     const deleted = [];
     const failed = [];
 
@@ -40,7 +42,7 @@ router.get('/cleanup-users', requireCronSecret, route(async (req, res) => {
             continue;
         }
         try {
-            await deleteUserCompletely(user.id);
+            await deleteUserCompletely(user.id, Number(user.is_active) ? 'plan_expired' : 'deactivated');
             deleted.push(label);
             console.log(`Deleted user ${user.id} (${user.username})`);
         } catch (err) {
@@ -48,7 +50,7 @@ router.get('/cleanup-users', requireCronSecret, route(async (req, res) => {
             failed.push({ ...label, error: err.message });
         }
     }
-    res.json({ success: true, dryRun, deletedCount: deleted.length, deleted, failed });
+    res.json({ success: true, dryRun, expiredRecorded, deletedCount: deleted.length, deleted, failed });
 }));
 
 module.exports = router;

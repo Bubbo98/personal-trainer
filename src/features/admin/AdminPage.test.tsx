@@ -217,3 +217,59 @@ describe('AdminPage — check-ins', () => {
     await waitFor(() => expect(calls.some((c) => c.path === '/feedback/admin/7/mark-seen')).toBe(true));
   });
 });
+
+describe('AdminPage — retention log', () => {
+  const entry = (over: object) => ({
+    id: 1,
+    event: 'plan_expired',
+    reason: null,
+    occurredAt: '2026-10-05 08:00:00',
+    userId: 9,
+    username: 'lverdi',
+    firstName: 'Luca',
+    lastName: 'Verdi',
+    email: 'luca@example.com',
+    phone: '333 1234567',
+    trainerName: 'Joshua',
+    expirationDate: '2026-10-05 08:00:00',
+    recordedAt: '2026-10-06 03:00:00',
+    ...over,
+  });
+
+  it('lists expired plans and deleted users of the month and downloads them as a PDF', async () => {
+    localStorage.setItem(ADMIN_TOKEN_KEY, 'admin-token');
+    const { calls } = mockApi({
+      'GET /admin/trainers': trainers,
+      'GET /admin/retention-log': {
+        hidden: { returned: 1, duplicates: 2 },
+        entries: [
+          entry({}),
+          entry({ id: 2, event: 'user_deleted', reason: 'deactivated', userId: 10, firstName: 'Anna', lastName: 'Neri', email: null, phone: '+39 02 555', occurredAt: '2026-10-03 03:00:00', expirationDate: null }),
+        ],
+      },
+    });
+    const createObjectURL = vi.fn(() => 'blob:log');
+    Object.assign(URL, { createObjectURL, revokeObjectURL: vi.fn() });
+    // jsdom can't follow the download link
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    const u = userEvent.setup();
+    renderAdmin('/admin/log');
+
+    const expired = (await screen.findByRole('heading', { name: /Schede scadute/ })).closest('section')!;
+    expect(within(expired).getByText('Luca Verdi')).toBeInTheDocument();
+    expect(within(expired).getByText('333 1234567')).toBeInTheDocument();
+    const deleted = screen.getByRole('heading', { name: /Utenti eliminati/ }).closest('section')!;
+    expect(within(deleted).getByText('Anna Neri')).toBeInTheDocument();
+    expect(within(deleted).getByText("Eliminato dall'admin")).toBeInTheDocument();
+    expect(screen.getByText(/Non mostrate: 1 riga di un cliente tornato .*, 2 righe con un telefono già in elenco\./)).toBeInTheDocument();
+    const month = calls.find((c) => c.path === '/admin/retention-log')!.url.searchParams.get('month');
+    expect(month).toMatch(/^\d{4}-\d{2}$/);
+
+    await u.click(screen.getByRole('button', { name: 'Scarica PDF' }));
+    await waitFor(() => expect(createObjectURL).toHaveBeenCalled());
+    const blob = (createObjectURL.mock.calls[0] as unknown as [Blob])[0];
+    expect(blob.type).toBe('application/pdf');
+    expect(click).toHaveBeenCalled();
+    click.mockRestore();
+  });
+});
