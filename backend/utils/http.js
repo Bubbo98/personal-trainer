@@ -53,7 +53,9 @@ function errorHandler(err, req, res, next) {
     if (status >= 500) console.error(`${req.method} ${req.originalUrl}:`, err);
 
     const message = status >= 500 && config.isProduction ? 'Internal Server Error' : err.message;
-    res.status(status).json({ success: false, error: message, ...(err.code && status < 500 ? { code: err.code } : {}) });
+    // Our own HttpError codes are meant for the client even on a 5xx (e.g. 503 TRIAL_UNAVAILABLE); library codes are not
+    const code = err.code && (status < 500 || err instanceof HttpError) ? err.code : undefined;
+    res.status(status).json({ success: false, error: message, ...(code ? { code } : {}) });
 }
 
 module.exports = { HttpError, badRequest, unauthorized, forbidden, notFound, conflict, route, id, attachment, isUniqueViolation, errorHandler };

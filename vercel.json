@@ -90,7 +90,7 @@
       }
     },
     {
-      "src": "/(about|services|coaching-online|contact|booking|privacy-policy|terms-of-service|cookie-policy)",
+      "src": "/(about|services|coaching-online|prova-gratuita|contact|booking|privacy-policy|terms-of-service|cookie-policy)",
       "dest": "/$1/index.html"
     },
     {

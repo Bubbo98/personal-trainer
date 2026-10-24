@@ -46,6 +46,10 @@ const config = {
         from: env.FROM_EMAIL || 'EserciziFacili <noreply@esercizifacili.com>',
     },
 
+    // Online trial signup (see services/signupGuard): Cloudflare Turnstile is on when the secret is set
+    turnstile: { secretKey: env.TURNSTILE_SECRET_KEY || '' },
+    trials: { maxDailySignups: Number(env.TRIAL_MAX_DAILY_SIGNUPS) || 50 },
+
     // Never deleted by the nightly cleanup (default: Test User)
     retentionProtectedUserIds: list(env.RETENTION_PROTECTED_USER_IDS, '165').map(Number).filter(Number.isInteger),
 };

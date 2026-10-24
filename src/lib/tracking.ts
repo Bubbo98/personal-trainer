@@ -152,3 +152,11 @@ export function trackLead(id?: string) {
   }
   if (metaLoaded && consent.marketing) window.fbq?.('track', 'Lead', {}, { eventID: eventId });
 }
+
+/** A signup for the free online trial: a registration, counted apart from the booked consultations. */
+export function trackTrialSignup() {
+  const consent = getConsent();
+  if (!consent) return;
+  if (googleLoaded && consent.analytics && TRACKING.ga4Id) gtag('event', 'sign_up', { method: 'free_trial' });
+  if (metaLoaded && consent.marketing) window.fbq?.('track', 'CompleteRegistration', { content_name: 'free_trial' });
+}

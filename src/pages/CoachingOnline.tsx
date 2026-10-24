@@ -92,6 +92,10 @@ const CoachingOnline = () => {
               </ul>
               <BookLink />
               <p className="mt-3 text-gray-600">{t('coaching.ctaNote')}</p>
+              <Link to="/prova-gratuita" className="mt-5 inline-flex items-center gap-2 font-semibold text-gray-900 underline underline-offset-4 hover:gap-3 transition-all">
+                {t('coaching.trialLink')}
+                <FiArrowRight aria-hidden />
+              </Link>
             </div>
             <img
               src="/Servizi/CoachingOnline.webp"

@@ -4,6 +4,8 @@ const config = require('../config');
 const { route, unauthorized } = require('../utils/http');
 const { run: sendReminders } = require('../scripts/send-checkin-reminders');
 const { findUsersToDelete, recordExpiredPlans, deleteUserCompletely } = require('../utils/userRetention');
+const { endedTrialsToNotify, markEndNotified, deleteOldTrialUsers, deleteOldTrialRecords } = require('../services/trials');
+const { sendTrialsEndedNotification } = require('../services/emailService');
 
 // Jobs called by Vercel Cron with "Authorization: Bearer <CRON_SECRET>"
 const router = express.Router();
@@ -29,6 +31,7 @@ router.get('/send-reminders', requireCronSecret, route(async (req, res) => {
 // GET /api/cron/cleanup-users[?dryRun=1] — daily: records the plans that expired, then permanently
 // deletes deactivated clients and clients whose plan expired long ago, recording each deletion
 // (see utils/userRetention). dryRun only lists who would be deleted and records nothing.
+// Trials (see services/trials): emails the trainer the trials that ended, deletes old trial users and records.
 router.get('/cleanup-users', requireCronSecret, route(async (req, res) => {
     const dryRun = req.query.dryRun === '1';
     const expiredRecorded = dryRun ? 0 : await recordExpiredPlans();
@@ -50,7 +53,20 @@ router.get('/cleanup-users', requireCronSecret, route(async (req, res) => {
             failed.push({ ...label, error: err.message });
         }
     }
-    res.json({ success: true, dryRun, expiredRecorded, deletedCount: deleted.length, deleted, failed });
+
+    const trials = dryRun ? { ended: 0, deletedUsers: [], deletedRecords: 0 } : await trialJobs();
+    res.json({ success: true, dryRun, expiredRecorded, deletedCount: deleted.length, deleted, failed, trials });
 }));
+
+/** Tells the trainer which trials ended (one email; retried the next day if it fails), then deletes old trial users and records. */
+async function trialJobs() {
+    const ended = await endedTrialsToNotify();
+    if (ended.length > 0) {
+        const { success } = await sendTrialsEndedNotification(ended);
+        if (success) await markEndNotified(ended.map((t) => t.id));
+    }
+    const deletedUsers = await deleteOldTrialUsers();
+    return { ended: ended.length, deletedUsers, deletedRecords: await deleteOldTrialRecords() };
+}
 
 module.exports = router;

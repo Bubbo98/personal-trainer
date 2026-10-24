@@ -57,7 +57,7 @@ router.get('/trainers', route(async (req, res) => {
     });
 }));
 
-// GET /api/admin/users — active users with their plan, soonest expiry first
+// GET /api/admin/users — active clients (no trial users) with their plan, soonest expiry first
 router.get('/users', route(async (req, res) => {
     const users = await db.query(`
         SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.phone, u.is_active, u.is_paying, u.checkin_exempt,
@@ -70,7 +70,7 @@ router.get('/users', route(async (req, res) => {
         FROM users u
         LEFT JOIN trainers t ON t.id = u.trainer_id
         LEFT JOIN user_pdf_files upf ON upf.user_id = u.id
-        WHERE u.is_active = 1
+        WHERE u.is_active = 1 AND u.account_type = 'client'
         ORDER BY upf.expiration_date IS NULL, upf.expiration_date, u.created_at DESC
     `);
 

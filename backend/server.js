@@ -44,6 +44,7 @@ app.use('/api/cron', require('./routes/cron'));
 app.use('/api/body-composition', require('./routes/body-composition'));
 app.use('/api/integration', require('./routes/integration'));
 app.use('/api/thumbnails', require('./routes/thumbnails'));
+app.use('/api/trials', require('./routes/trials'));
 
 // 404 for unknown endpoints, then the central error handler
 app.use((req, res) => {

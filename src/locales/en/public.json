@@ -141,6 +141,7 @@
     ],
     "cta": "Book the free consultation",
     "ctaNote": "15 minutes on the phone, no strings attached",
+    "trialLink": "Want to try first? Try the method free for 7 days",
     "imageAlt": "Online coaching with Joshua Maurizio",
     "paths": {
       "title": "Two ways to train with me",
@@ -302,5 +303,82 @@
     "goToPage": "Go to page",
     "sectionLabel": "Client reviews",
     "loadFailed": "The reviews could not be loaded."
+  },
+  "trialSignup": {
+    "badge": "Free trial · 7 days",
+    "title": "Try our online training method for free",
+    "subtitle": "Answer a few questions about your level: we send you a 45-minute workout plan that suits you, with a video guide for every exercise, to use for 7 days.",
+    "includes": [
+      {
+        "title": "A plan for your level",
+        "text": "At the gym or bodyweight (calisthenics), picked from your answers."
+      },
+      {
+        "title": "Video guides for every exercise",
+        "text": "See how every movement is done, on your phone, while you train."
+      },
+      {
+        "title": "Your personal area",
+        "text": "Log weights and reps week after week, like our clients do."
+      }
+    ],
+    "how": {
+      "title": "How it works",
+      "steps": [
+        "Answer the questionnaire and leave your contacts.",
+        "Get the link to your personal area by email.",
+        "Train for 7 days: they start the first time you open the link.",
+        "At the end we get in touch to hear how it went."
+      ]
+    },
+    "step": "Step {{step}} of {{total}}",
+    "back": "Back",
+    "disciplineQuestion": "How do you want to train?",
+    "disciplines": {
+      "gym": {
+        "title": "At the gym",
+        "text": "With weights, barbells and machines."
+      },
+      "calisthenics": {
+        "title": "Calisthenics",
+        "text": "Bodyweight, with bar and parallel bars."
+      }
+    },
+    "contact": {
+      "title": "Where do we send your trial?",
+      "subtitle": "We email you the link. The {{days}} days start when you open it.",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "emailHint": "The access link arrives here.",
+      "phone": "Phone",
+      "privacyBefore": "I have read the ",
+      "privacyLink": "privacy policy",
+      "privacyAfter": " and agree to be contacted when the trial ends.",
+      "marketing": "I want to receive tips and offers by email or WhatsApp (optional).",
+      "submit": "Start the free trial"
+    },
+    "errors": {
+      "firstName": "Enter your first name.",
+      "email": "Check the email address.",
+      "phone": "Check the phone number.",
+      "privacy": "To start the trial you need to accept the privacy policy.",
+      "alreadyUsed": "You already did the free trial with this email. If you want to continue with us, write to us!",
+      "unavailable": "The online trial is not available right now. Write to us and we will help you.",
+      "tooMany": "Too many requests from this connection: try again in an hour.",
+      "captcha": "Anti-bot check failed: reload the page and try again.",
+      "generic": "Something went wrong. Try again in a moment.",
+      "load": "We can't load the questionnaire. Try again."
+    },
+    "done": {
+      "title": "Done! Check your email",
+      "resentTitle": "We sent you the link again",
+      "message": "We sent the link to your trial to {{email}}. Open it when you are ready to train: the 7 days start from there.",
+      "spam": "Can't find it? Look in spam or in the Promotions folder.",
+      "noEmailTitle": "Signup received!",
+      "noEmailMessage": "We couldn't send you the email right now: we will contact you soon with the link. If you prefer, write to us."
+    },
+    "whatsapp": "Message us on WhatsApp",
+    "whatsappMessage": "Hi! I'd like to know more about the free trial and the online coaching."
   }
 }

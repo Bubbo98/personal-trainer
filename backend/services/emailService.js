@@ -3,8 +3,10 @@ const config = require('../config');
 
 /**
  * Transactional emails (Resend):
- *   - to the admin, when a client submits a weekly check;
- *   - to a client, as check-in reminder or when their trainer read the check.
+ *   - to the admin, when a client submits a weekly check, when someone signs up for
+ *     the online trial, and each day with the trials that ended;
+ *   - to a client, as check-in reminder or when their trainer read the check;
+ *   - to someone who signed up for the online trial, with their access link.
  * render* build { to, subject, html }; send* deliver them. Without RESEND_API_KEY
  * nothing is sent. send* resolve to { success, id } or { success: false, error } and never throw.
  */
@@ -255,16 +257,148 @@ function renderTrainerSeen(userEmail, userName, trainerName, feedbackDate, dashb
     return { to: userEmail, subject: '✅ Il tuo PT ha letto il tuo check-in!', html };
 }
 
+// ─── Trials ──────────────────────────────────────────────────────────────────
+
+const TRIAL_TEXT = {
+    it: {
+        subject: (days) => `💪 La tua prova gratuita di ${days} giorni è pronta`,
+        title: (name) => `Ciao ${name}!`,
+        subtitle: 'La tua prova gratuita è pronta',
+        intro: (days) => `Abbiamo preparato una scheda di allenamento adatta al tuo livello, con le videoguide di ogni esercizio. Hai <strong>${days} giorni</strong> per provare il nostro metodo di programmazione online.`,
+        start: 'I giorni partono dalla prima volta che apri il link: aprilo quando sei pronto ad allenarti.',
+        button: 'Inizia la prova →',
+        after: 'Al termine della prova ti ricontatteremo per sapere come ti sei trovato.',
+        ignore: 'Non hai richiesto tu questa prova? Ignora questa email.',
+    },
+    en: {
+        subject: (days) => `💪 Your free ${days}-day trial is ready`,
+        title: (name) => `Hi ${name}!`,
+        subtitle: 'Your free trial is ready',
+        intro: (days) => `We prepared a workout plan suited to your level, with a video guide for every exercise. You have <strong>${days} days</strong> to try our online coaching method.`,
+        start: 'The days start the first time you open the link: open it when you are ready to train.',
+        button: 'Start the trial →',
+        after: 'When the trial ends we will get in touch to hear how it went.',
+        ignore: 'Did not ask for this trial? Just ignore this email.',
+    },
+};
+
+/** To someone who signed up for the online trial: their access link (lang 'it' | 'en'). */
+function renderTrialAccess(email, firstName, loginUrl, days, lang = 'it') {
+    const t = TRIAL_TEXT[lang] || TRIAL_TEXT.it;
+    const html = page(`
+  <div style="background: linear-gradient(135deg, #1f2937 0%, #374151 100%); border-radius: 16px 16px 0 0; padding: 40px 32px; text-align: center;">
+    <div style="font-size: 48px; margin-bottom: 16px;">💪</div>
+    <h1 style="color: white; margin: 0; font-size: 26px; font-weight: 700;">${t.title(escape(firstName))}</h1>
+    <p style="color: #d1d5db; margin: 12px 0 0 0; font-size: 16px;">${t.subtitle}</p>
+  </div>
+
+  <div style="background: white; padding: 32px; ${SIDES}">
+    <p style="color: #4b5563; font-size: 16px; line-height: 1.7; margin: 0 0 16px 0;">${t.intro(days)}</p>
+    <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin: 0 0 24px 0;">${t.start}</p>
+    <div style="text-align: center; margin: 32px 0;">
+      ${button(escape(loginUrl), t.button, '#1f2937 0%, #374151 100%', 'rgba(31, 41, 55, 0.35)')}
+    </div>
+    <p style="color: #6b7280; font-size: 14px; text-align: center; margin: 0;">${t.after}</p>
+  </div>
+
+  ${trainerFooter('Joshua Maurizio e Denise Bergamo', `
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+    <p style="margin: 0; color: #9ca3af; font-size: 11px;">${t.ignore}</p>`)}`);
+
+    return { to: email, subject: t.subject(days), html };
+}
+
+const KIND_LABELS = { free_session: 'Free session in palestra', online: 'Prova online' };
+const DISCIPLINE_LABELS = { gym: 'Palestra', calisthenics: 'Calisthenics' };
+
+const trialContact = (trial) => [
+    trial.email && `✉️ ${escape(trial.email)}`,
+    trial.phone && `📞 ${escape(trial.phone)}`,
+].filter(Boolean).join(' &nbsp; ') || '<em>nessun contatto</em>';
+
+const trialName = (trial) => escape(`${trial.firstName || ''} ${trial.lastName || ''}`.trim() || 'Senza nome');
+
+const adminFooter = `
+  <div style="background: #f9fafb; border-radius: 0 0 16px 16px; padding: 20px; text-align: center; border: 1px solid #e5e7eb; border-top: none;">
+    <p style="margin: 0; color: #9ca3af; font-size: 12px;">Notifica automatica da <strong>EserciziFacili.com</strong></p>
+  </div>`;
+
+const trialsButton = () => `
+  <div style="background: white; padding: 0 24px 24px; ${SIDES} text-align: center;">
+    ${button(`${config.appUrl}/admin/trials`, 'Vai alle prove →', '#1f2937 0%, #374151 100%')}
+  </div>`;
+
+/** To the admin: someone signed up for the online trial (trial = services/trials toTrial). */
+function renderTrialSignup(trial) {
+    const answers = (trial.answers || []).map((a) => `
+      <tr>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #f3f4f6; color: #6b7280; font-size: 13px;">${escape(a.question)}</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #f3f4f6; color: #1f2937; font-size: 13px; text-align: right;">${escape(a.answer)}</td>
+      </tr>`).join('');
+
+    const html = page(`
+  <div style="background: linear-gradient(135deg, #1f2937 0%, #374151 100%); border-radius: 16px 16px 0 0; padding: 32px; text-align: center;">
+    <h1 style="color: white; margin: 0; font-size: 22px; font-weight: 700;">🆕 Nuova iscrizione alla prova online</h1>
+  </div>
+  <div style="background: white; padding: 24px; ${SIDES}">
+    <h2 style="margin: 0 0 8px 0; color: #1f2937; font-size: 18px;">${trialName(trial)}</h2>
+    <p style="margin: 0 0 16px 0; color: #4b5563; font-size: 14px;">${trialContact(trial)}</p>
+    <p style="margin: 0 0 16px 0; color: #4b5563; font-size: 14px;">
+      ${escape(DISCIPLINE_LABELS[trial.discipline] || trial.discipline || '')} · punteggio <strong>${escape(trial.score)}</strong>
+      · scheda <strong>${escape(trial.templateName || '')}</strong>
+    </p>
+    ${answers ? `<table style="width: 100%; border-collapse: collapse;">${answers}</table>` : ''}
+  </div>
+  ${trialsButton()}
+  ${adminFooter}`);
+
+    const name = `${trial.firstName || ''} ${trial.lastName || ''}`.trim();
+    return { to: config.email.adminEmail, subject: `🆕 Prova online: ${name}`, html };
+}
+
+/** To the admin: the trials that just ended, to call back. */
+function renderTrialsEnded(trials) {
+    const rows = trials.map((trial) => `
+      <div style="border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px 16px; margin-bottom: 12px;">
+        <p style="margin: 0 0 4px 0; color: #1f2937; font-size: 16px; font-weight: 600;">${trialName(trial)}</p>
+        <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 13px;">
+          ${escape(KIND_LABELS[trial.kind] || trial.kind)} · ${escape(trial.templateName || '')}
+          · ${trial.logCount > 0 ? `ha registrato ${trial.logCount} esercizi` : 'nessun esercizio registrato'}
+        </p>
+        <p style="margin: 0; color: #4b5563; font-size: 14px;">${trialContact(trial)}</p>
+      </div>`).join('');
+
+    const html = page(`
+  <div style="background: linear-gradient(135deg, #1f2937 0%, #374151 100%); border-radius: 16px 16px 0 0; padding: 32px; text-align: center;">
+    <h1 style="color: white; margin: 0; font-size: 22px; font-weight: 700;">📞 Prove terminate da ricontattare</h1>
+  </div>
+  <div style="background: white; padding: 24px; ${SIDES}">${rows}</div>
+  ${trialsButton()}
+  ${adminFooter}`);
+
+    const count = trials.length;
+    return { to: config.email.adminEmail, subject: `📞 ${count} ${count === 1 ? 'prova terminata' : 'prove terminate'} da ricontattare`, html };
+}
+
 const sendNewFeedbackNotification = (...args) => send(renderNewFeedback(...args));
 const sendCheckInReminder = (...args) => send(renderCheckInReminder(...args));
 const sendTrainerSeenFeedbackNotification = (...args) => send(renderTrainerSeen(...args));
+const sendTrialAccess = (...args) => send(renderTrialAccess(...args));
+const sendTrialSignupNotification = (...args) => send(renderTrialSignup(...args));
+const sendTrialsEndedNotification = (...args) => send(renderTrialsEnded(...args));
 
 module.exports = {
     sendNewFeedbackNotification,
     sendCheckInReminder,
     sendTrainerSeenFeedbackNotification,
+    sendTrialAccess,
+    sendTrialSignupNotification,
+    sendTrialsEndedNotification,
     // for tests
     renderNewFeedback,
     renderCheckInReminder,
     renderTrainerSeen,
+    renderTrialAccess,
+    renderTrialSignup,
+    renderTrialsEnded,
 };

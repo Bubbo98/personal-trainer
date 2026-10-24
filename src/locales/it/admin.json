@@ -7,6 +7,7 @@
   "nav": {
     "label": "Sezioni dell'amministrazione",
     "users": "Utenti",
+    "trials": "Prove",
     "videos": "Video",
     "reviews": "Recensioni",
     "supplements": "Integrazione",
@@ -606,6 +607,177 @@
       "returned_other": "{{count}} righe di clienti tornati (il loro telefono è di un utente attivo)",
       "duplicates_one": "{{count}} riga con un telefono già in elenco",
       "duplicates_other": "{{count}} righe con un telefono già in elenco"
+    }
+  },
+  "trials": {
+    "nav": {
+      "label": "Sezioni delle prove",
+      "people": "Persone",
+      "templates": "Schede modello",
+      "questionnaire": "Questionario online"
+    },
+    "planTabs": {
+      "label": "Sezioni della scheda",
+      "plan": "Esercizi",
+      "days": "Video degli esercizi"
+    },
+    "state": {
+      "active_one": "Ultimo giorno",
+      "active_other": "{{count}} giorni rimasti",
+      "not_opened": "Link non ancora aperto",
+      "ended": "Prova terminata",
+      "link_expired": "Link mai aperto",
+      "deleted": "Account eliminato"
+    },
+    "status": {
+      "to_contact": "Da ricontattare",
+      "contacted": "Contattato",
+      "client": "Diventato cliente",
+      "not_interested": "Non interessato"
+    },
+    "kind": {
+      "free_session": "Free session",
+      "online": "Online"
+    },
+    "discipline": {
+      "gym": "Palestra",
+      "calisthenics": "Calisthenics"
+    },
+    "share": {
+      "message": "Ciao {{name}}, ecco la tua prova gratuita di 7 giorni con scheda e videoguide: {{url}} (i 7 giorni partono quando apri il link)",
+      "link": "Link della prova",
+      "copy": "Copia link",
+      "copied": "Link copiato.",
+      "notCopied": "Copia non riuscita: seleziona il link e copialo a mano.",
+      "notCopiedUrl": "Copia non riuscita, ecco il link: {{url}}",
+      "whatsapp": "Invia su WhatsApp"
+    },
+    "free": {
+      "title": "Nuova free session",
+      "template": "Scheda modello",
+      "noTemplates": "Prima crea almeno una scheda modello (Prove → Schede modello).",
+      "phoneHint": "Serve per mandargli il link su WhatsApp e per ricontattarlo.",
+      "daysHint": "I 7 giorni partono dalla prima volta che la persona apre il link.",
+      "create": "Crea link",
+      "createdTitle": "Link della prova pronto",
+      "createdHint": "Mandalo alla persona. Se vuoi cambiare esercizi o video solo per lei, apri \"Personalizza la scheda\".",
+      "customize": "Personalizza la scheda",
+      "done": "Fatto"
+    },
+    "fields": {
+      "firstName": "Nome",
+      "lastName": "Cognome",
+      "phone": "Telefono",
+      "email": "Email",
+      "notes": "Note",
+      "status": "Stato"
+    },
+    "noContacts": "Nessun contatto",
+    "noName": "Senza nome",
+    "scoreValue": "punteggio {{score}}",
+    "createdOn": "creata il {{date}}",
+    "logCount_one": "{{count}} esercizio registrato",
+    "logCount_other": "{{count}} esercizi registrati",
+    "points_one": "{{count}} punto",
+    "points_other": "{{count}} punti",
+    "people": {
+      "title": "Persone in prova",
+      "subtitle": "Free session in palestra e iscrizioni online: chi ha finito la prova va ricontattato.",
+      "newFreeSession": "Nuova free session",
+      "filterLabel": "Filtra le prove",
+      "filters": {
+        "to_call": "Da chiamare",
+        "running": "In corso",
+        "done": "Gestite",
+        "all": "Tutte"
+      },
+      "search": "Cerca nome, telefono, email…",
+      "empty": "Nessuna prova qui",
+      "emptyHint": "Crea una free session o aspetta le iscrizioni dal sito."
+    },
+    "detail": {
+      "back": "Torna alle prove",
+      "notFound": "Prova non trovata.",
+      "contacts": "Contatti e stato",
+      "saved": "Modifiche salvate.",
+      "marketingYes": "Ha accettato di ricevere comunicazioni.",
+      "marketingNo": "Non ha accettato di ricevere comunicazioni promozionali.",
+      "access": "Accesso",
+      "created": "Creata",
+      "opened": "Primo accesso",
+      "ends": "Fine prova",
+      "endsAfterOpening": "7 giorni dal primo accesso",
+      "lastLogin": "Ultimo accesso",
+      "notYet": "Non ancora",
+      "accountDeleted": "L'account della prova è stato eliminato dalla pulizia automatica: restano solo i contatti.",
+      "extend": "Allunga la prova:",
+      "extendDays_one": "+{{count}} giorno",
+      "extendDays_other": "+{{count}} giorni",
+      "extended": "Prova allungata.",
+      "delete": "Elimina prova e contatti",
+      "deleteTitle": "Eliminare la prova?",
+      "deleteMessage": "Vengono cancellati i contatti, le risposte e l'account della prova. Non si può annullare.",
+      "deleted": "Prova eliminata.",
+      "answers": "Risposte al questionario",
+      "plan": "Scheda di questa persona",
+      "planHint": "È una copia della scheda modello: le modifiche valgono solo per questa persona."
+    },
+    "templates": {
+      "title": "Schede modello",
+      "subtitle": "Le schede da cui parte ogni prova, per disciplina e livello.",
+      "new": "Nuova scheda modello",
+      "created": "Scheda modello creata: ora aggiungi esercizi e video.",
+      "saved": "Scheda modello salvata.",
+      "deleted": "Scheda modello eliminata.",
+      "empty": "Nessuna scheda modello",
+      "emptyHint": "Creane una per la palestra e una per il calisthenics, magari per livello (base, avanzato).",
+      "counts": "{{exercises}} esercizi · {{videos}} video",
+      "onlineRange": "Online · punteggio {{range}}",
+      "anyScore": "qualsiasi",
+      "gymOnly": "Solo free session",
+      "noOnline": "{{discipline}}: nessuna scheda è disponibile online, quindi questa disciplina non compare nel questionario del sito.",
+      "uncovered": "{{discipline}}: i punteggi {{scores}} non rientrano in nessuna scheda; ricevono quella con l'intervallo più vicino.",
+      "back": "Torna alle schede modello",
+      "notFound": "Scheda modello non trovata.",
+      "deleteTitle": "Eliminare la scheda modello?",
+      "deleteMessage": "\"{{name}}\" verrà eliminata. Le prove già create tengono la loro copia della scheda.",
+      "planHint": "Modifica qui esercizi e video: ogni nuova prova parte da una copia di questa scheda. Le prove già create non cambiano.",
+      "form": {
+        "createTitle": "Nuova scheda modello",
+        "editTitle": "Modifica scheda modello",
+        "name": "Nome",
+        "nameHint": "Per esempio \"Palestra · base\" o \"Calisthenics · avanzato\".",
+        "discipline": "Disciplina",
+        "description": "Descrizione (solo per te)",
+        "online": "Usala anche per la prova online dal sito",
+        "rangeHint": "Chi compila il questionario riceve questa scheda se il suo punteggio è nell'intervallo. Lascia vuoto per non mettere limiti.",
+        "minScore": "Punteggio minimo",
+        "maxScore": "Punteggio massimo",
+        "rangeError": "Il minimo è più alto del massimo.",
+        "create": "Crea scheda"
+      }
+    },
+    "questionnaire": {
+      "title": "Questionario della prova online",
+      "subtitle": "Chi si iscrive dal sito sceglie palestra o calisthenics e risponde a queste domande. I punti delle risposte si sommano e il punteggio sceglie la scheda modello.",
+      "isDefault": "Questo è il questionario di partenza: modificalo e salvalo per renderlo tuo.",
+      "updatedAt": "Ultima modifica: {{date}}",
+      "range": "punteggio possibile da {{min}} a {{max}}",
+      "questionNumber": "Domanda {{number}}",
+      "questionText": "Domanda (italiano)",
+      "questionTextEn": "Domanda (inglese, facoltativa)",
+      "askedTo": "Chiesta a:",
+      "everyone": "Tutti",
+      "answerText": "Risposta (italiano)",
+      "answerTextEn": "Risposta (inglese)",
+      "points": "Punti",
+      "addAnswer": "Aggiungi risposta",
+      "removeAnswer": "Rimuovi risposta",
+      "addQuestion": "Aggiungi domanda",
+      "removeQuestion": "Rimuovi domanda",
+      "moveUp": "Sposta su",
+      "moveDown": "Sposta giù",
+      "saved": "Questionario salvato."
     }
   }
 }

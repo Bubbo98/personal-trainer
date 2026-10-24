@@ -17,6 +17,7 @@ import type {
   VideoPage,
 } from './types';
 import type { LinkDay } from './users/detail/linker';
+import type { Questionnaire, Trial, TrialTemplate } from './trials/types';
 
 /** Query keys of the admin area: invalidations go through these. */
 export const adminKeys = {
@@ -42,6 +43,9 @@ export const adminKeys = {
   reviews: ['admin', 'reviews'] as const,
   retentionLog: (month: string) => ['admin', 'retention-log', month] as const,
   catalog: ['admin', 'catalog'] as const,
+  trials: ['admin', 'trials'] as const,
+  trialTemplates: ['admin', 'trial-templates'] as const,
+  trialQuestionnaire: ['admin', 'trial-questionnaire'] as const,
 };
 
 const query = (params: Record<string, string | number | boolean | undefined>) => {
@@ -197,4 +201,23 @@ export const useRetentionLog = (month: string) =>
     queryKey: adminKeys.retentionLog(month),
     queryFn: ({ signal }) => adminApi.get<RetentionLog>(`/admin/retention-log${query({ month })}`, signal),
     placeholderData: keepPreviousData,
+  });
+
+export const useTrials = () =>
+  useQuery({
+    queryKey: adminKeys.trials,
+    queryFn: ({ signal }) => adminApi.get<{ trials: Trial[] }>('/admin/trials', signal).then((d) => d.trials),
+  });
+
+export const useTrialTemplates = () =>
+  useQuery({
+    queryKey: adminKeys.trialTemplates,
+    queryFn: ({ signal }) => adminApi.get<{ templates: TrialTemplate[] }>('/admin/trial-templates', signal).then((d) => d.templates),
+  });
+
+export const useTrialQuestionnaire = () =>
+  useQuery({
+    queryKey: adminKeys.trialQuestionnaire,
+    queryFn: ({ signal }) =>
+      adminApi.get<{ questionnaire: Questionnaire; isDefault: boolean; updatedAt: string | null }>('/admin/trial-questionnaire', signal),
   });

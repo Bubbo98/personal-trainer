@@ -4,7 +4,7 @@ import { OWNER } from './owner';
 const privacy: LegalDoc = {
   title: 'Privacy Policy',
   subtitle: "Informativa sul trattamento dei dati personali ai sensi dell'art. 13 del Regolamento UE 2016/679 (GDPR)",
-  updated: '2026-10-12',
+  updated: '2026-10-23',
   sections: [
     {
       title: '1. Titolare del Trattamento',
@@ -55,6 +55,8 @@ const privacy: LegalDoc = {
               ['Marketing diretto e comunicazioni promozionali', 'Consenso esplicito (art. 6, par. 1, lett. a) GDPR'],
               ['Miglioramento servizi e analisi statistiche', 'Legittimo interesse (art. 6, par. 1, lett. f) GDPR'],
               ['Prenotazione della consulenza gratuita (nome, email, telefono, tramite Cal.com)', 'Misure precontrattuali su tua richiesta (art. 6, par. 1, lett. b) GDPR'],
+              ['Prova gratuita di 7 giorni (nome, email, telefono, risposte al questionario, pesi registrati) e ricontatto al termine della prova', 'Misure precontrattuali su tua richiesta (art. 6, par. 1, lett. b) GDPR'],
+              ["Protezione del modulo della prova gratuita da bot e abusi (impronta cifrata dell'indirizzo IP, verifica Cloudflare Turnstile)", 'Legittimo interesse (art. 6, par. 1, lett. f) GDPR)'],
               ['Statistiche di visita (Google Analytics) e misura delle pubblicità (Google Ads, Meta Pixel)', 'Consenso (art. 6, par. 1, lett. a) GDPR), dato e revocabile dal banner cookie'],
             ],
           },
@@ -94,6 +96,7 @@ const privacy: LegalDoc = {
             '**Dati sulla salute:** fino alla revoca del consenso o cessazione del rapporto',
             "**Video personalizzati:** fino alla richiesta di cancellazione dell'utente",
             '**Dati di marketing:** fino alla revoca del consenso',
+            "**Prova gratuita:** l'account e la scheda di prova sono cancellati 30 giorni dopo la fine della prova; nome, contatti e risposte al questionario sono conservati per 12 mesi, per ricontattarti",
             '**Log di navigazione:** massimo 12 mesi',
           ],
         },
@@ -137,6 +140,7 @@ const privacy: LegalDoc = {
               list: [
                 'Non utilizziamo algoritmi per decisioni automatiche sui servizi offerti',
                 'I programmi di allenamento sono creati personalmente dal Personal Trainer',
+                'Nella prova gratuita online la scheda di partenza è scelta in base al punteggio del questionario, tra schede modello preparate dal Personal Trainer',
                 'Le valutazioni sui progressi sono effettuate manualmente',
                 'Non vendiamo o condividiamo dati per finalità di marketing automatizzato',
               ],
@@ -174,7 +178,7 @@ const privacy: LegalDoc = {
             "**Paesi UE/SEE:** trasferimenti all'interno dello Spazio Economico Europeo",
             '**Paesi con Decisione di Adeguatezza:** solo verso paesi riconosciuti dalla Commissione Europea come adeguati',
             '**Clausole Contrattuali Standard:** con garanzie appropriate mediante Clausole Contrattuali Standard UE',
-            '**Stati Uniti (EU-US Data Privacy Framework):** Google (Analytics, Ads, Maps), Meta (Facebook, Instagram), Cal.com (prenotazioni), Vercel (hosting)',
+            '**Stati Uniti (EU-US Data Privacy Framework):** Google (Analytics, Ads, Maps), Meta (Facebook, Instagram), Cal.com (prenotazioni), Vercel (hosting), Cloudflare (protezione anti-bot del modulo della prova gratuita)',
           ],
         },
       ],

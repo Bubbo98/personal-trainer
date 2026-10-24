@@ -35,6 +35,7 @@ import BodyComposition from './progress/BodyComposition';
 import CheckinSection from './checkin/CheckinSection';
 import MoreSection from './more/MoreSection';
 import ReviewSection from './review/ReviewSection';
+import { TrialBanner, TrialOver } from './trial/Trial';
 
 // Top-level sections: bottom bar on phones, top bar on larger screens.
 // 'reviews' has no nav entry: it's only reachable with the ?tab=reviews link of the review email.
@@ -48,6 +49,9 @@ const NAV: { id: Exclude<Section, 'reviews'>; icon: IconType }[] = [
   { id: 'check', icon: FiCheckSquare },
   { id: 'more', icon: FiMoreHorizontal },
 ];
+
+// Trial mode (7-day trial): no check-ins, no reviews, no PDF plan, no body composition
+const TRIAL_NAV = NAV.filter(({ id }) => id !== 'check');
 
 const PAGE = 'min-h-screen bg-gray-50';
 // Extra bottom padding on phones so content clears the fixed bottom bar
@@ -128,8 +132,10 @@ const Dashboard = ({ user, initialSection, onLogout }: { user: SessionUser; init
   const exercises = useExercises();
   const logs = useWorkoutLogs();
 
-  const checkRequired = checkin.data?.shouldShow === true;
-  const [chosenSection, setChosenSection] = useState<Section>(initialSection ?? 'training');
+  const trial = user.trial;
+  const nav = trial ? TRIAL_NAV : NAV;
+  const checkRequired = !trial && checkin.data?.shouldShow === true;
+  const [chosenSection, setChosenSection] = useState<Section>((!trial && initialSection) || 'training');
   // While a check-in is due every other section is locked
   const section: Section = checkRequired ? 'check' : chosenSection;
   const [trainingView, setTrainingView] = useState<TrainingView>('days');
@@ -171,7 +177,7 @@ const Dashboard = ({ user, initialSection, onLogout }: { user: SessionUser; init
         </button>
       </div>
 
-      <TrainerSeenBanner />
+      {trial ? <TrialBanner trial={trial} /> : <TrainerSeenBanner />}
 
       {checkRequired && (
         <Alert kind="warning" className="mb-6 border-2" icon={<FiMessageSquare className="w-8 h-8 text-orange-500" aria-hidden />} title={t('banners.checkRequiredTitle')}>
@@ -181,7 +187,7 @@ const Dashboard = ({ user, initialSection, onLogout }: { user: SessionUser; init
 
       {/* Section nav — larger screens (phones use the bottom bar) */}
       <nav aria-label={t('nav.label')} className="hidden sm:flex gap-1 bg-gray-200 p-1 rounded-xl mb-6">
-        {NAV.map(({ id, icon: Icon }) => {
+        {nav.map(({ id, icon: Icon }) => {
           const locked = checkRequired && id !== 'check';
           return (
             <button
@@ -211,11 +217,11 @@ const Dashboard = ({ user, initialSection, onLogout }: { user: SessionUser; init
           items={[
             { id: 'days', label: t('training.tabs.days'), badge: weightsBadge },
             { id: 'videos', label: t('training.tabs.videos') },
-            { id: 'plan', label: t('training.tabs.plan'), badge: planBadge },
+            ...(trial ? [] : [{ id: 'plan' as const, label: t('training.tabs.plan'), badge: planBadge }]),
           ]}
         />
       )}
-      {section === 'progress' && (
+      {section === 'progress' && !trial && (
         <SubTabs
           label={t('progress.tabs.label')}
           active={progressView}
@@ -239,7 +245,7 @@ const Dashboard = ({ user, initialSection, onLogout }: { user: SessionUser; init
           />
         )}
         {section === 'more' && <MoreSection hasPlan={Boolean(plan.data)} trainerId={user.trainerId} />}
-        {section === 'progress' && (progressView === 'weights' ? <WeightHistory /> : <BodyComposition />)}
+        {section === 'progress' && (progressView === 'weights' || trial ? <WeightHistory /> : <BodyComposition />)}
         {section === 'training' &&
           (planLocked || trainingView === 'plan' ? (
             <PlanCard />
@@ -252,8 +258,8 @@ const Dashboard = ({ user, initialSection, onLogout }: { user: SessionUser; init
 
       {/* Bottom bar — phones only */}
       <nav aria-label={t('nav.label')} className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 pb-[env(safe-area-inset-bottom)]">
-        <div className="grid grid-cols-4">
-          {NAV.map(({ id, icon: Icon }) => {
+        <div className={`grid ${nav.length === 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
+          {nav.map(({ id, icon: Icon }) => {
             const locked = checkRequired && id !== 'check';
             return (
               <button
@@ -307,6 +313,13 @@ const DashboardPage = () => {
 
   if (session.isError) {
     const expired = session.error instanceof ApiError && session.error.code === 'PLAN_EXPIRED';
+    if (session.error instanceof ApiError && session.error.code === 'TRIAL_EXPIRED') {
+      return (
+        <Shell>
+          <TrialOver />
+        </Shell>
+      );
+    }
     // Only a refused link or session means "access denied"; lost signal or a server hiccup can be retried
     const denied = session.error instanceof ApiError && session.error.status >= 400 && session.error.status < 500;
     if (!denied) {

@@ -20,6 +20,7 @@ const PAGES = [
   ['/about', meta.about],
   ['/services', meta.services],
   ['/coaching-online', meta.coaching],
+  ['/prova-gratuita', meta.trial],
   ['/contact', meta.contact],
   ['/booking', meta.booking],
   ['/privacy-policy', meta.privacy],

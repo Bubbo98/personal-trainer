@@ -31,3 +31,9 @@ export const TRACKING = {
   /** Meta (Facebook / Instagram) Pixel id. */
   metaPixelId: '',
 } as const;
+
+/**
+ * Cloudflare Turnstile site key (public) for the free-trial signup: '' keeps the widget off.
+ * The backend checks the tokens only when TURNSTILE_SECRET_KEY is set too: set both together.
+ */
+export const TURNSTILE_SITE_KEY = '';

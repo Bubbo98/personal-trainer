@@ -5,7 +5,7 @@ import { ENGLISH_NOTICE } from './notice';
 const privacy: LegalDoc = {
   title: 'Privacy Policy',
   subtitle: 'Information on the processing of personal data under Art. 13 of EU Regulation 2016/679 (GDPR)',
-  updated: '2026-10-12',
+  updated: '2026-10-23',
   notice: ENGLISH_NOTICE,
   sections: [
     {
@@ -53,6 +53,8 @@ const privacy: LegalDoc = {
               ['Direct marketing and promotional communications', 'Explicit consent (Art. 6(1)(a) GDPR)'],
               ['Improving services and statistical analysis', 'Legitimate interest (Art. 6(1)(f) GDPR)'],
               ['Booking the free consultation (name, email, phone, through Cal.com)', 'Pre-contractual steps at your request (Art. 6(1)(b) GDPR)'],
+              ['7-day free trial (name, email, phone, questionnaire answers, logged weights) and follow-up contact when the trial ends', 'Pre-contractual steps at your request (Art. 6(1)(b) GDPR)'],
+              ['Protecting the free trial form from bots and abuse (keyed hash of the IP address, Cloudflare Turnstile check)', 'Legitimate interest (Art. 6(1)(f) GDPR)'],
               ['Visit statistics (Google Analytics) and ad measurement (Google Ads, Meta Pixel)', 'Consent (Art. 6(1)(a) GDPR), given and withdrawn through the cookie banner'],
             ],
           },
@@ -92,6 +94,7 @@ const privacy: LegalDoc = {
             '**Health data:** until consent is withdrawn or the relationship ends',
             '**Personalised videos:** until the user asks for their deletion',
             '**Marketing data:** until consent is withdrawn',
+            '**Free trial:** the trial account and plan are deleted 30 days after the trial ends; name, contacts and questionnaire answers are kept for 12 months, to get back in touch',
             '**Browsing logs:** up to 12 months',
           ],
         },
@@ -130,6 +133,7 @@ const privacy: LegalDoc = {
               list: [
                 'We do not use algorithms to make automatic decisions on the services offered',
                 'Training programmes are created personally by the Personal Trainer',
+                'In the online free trial the starting plan is picked from the questionnaire score, among template plans prepared by the Personal Trainer',
                 'Progress assessments are made by hand',
                 'We do not sell or share data for automated marketing',
               ],
@@ -167,7 +171,7 @@ const privacy: LegalDoc = {
             '**EU/EEA countries:** transfers within the European Economic Area',
             '**Countries with an adequacy decision:** only to countries recognised as adequate by the European Commission',
             '**Standard Contractual Clauses:** with appropriate safeguards through the EU Standard Contractual Clauses',
-            '**United States (EU-US Data Privacy Framework):** Google (Analytics, Ads, Maps), Meta (Facebook, Instagram), Cal.com (bookings), Vercel (hosting)',
+            '**United States (EU-US Data Privacy Framework):** Google (Analytics, Ads, Maps), Meta (Facebook, Instagram), Cal.com (bookings), Vercel (hosting), Cloudflare (bot protection of the free trial form)',
           ],
         },
       ],

@@ -338,5 +338,18 @@
     "approvalNotice": "La tua recensione sarà visibile pubblicamente solo dopo l'approvazione.",
     "saved": "Recensione inviata: sarà visibile dopo l'approvazione.",
     "deleted": "Recensione eliminata."
+  },
+  "trial": {
+    "label": "Prova gratuita",
+    "lastDay": "Prova gratuita: oggi è l'ultimo giorno",
+    "daysLeft_one": "Prova gratuita: ti resta {{count}} giorno",
+    "daysLeft_other": "Prova gratuita: ti restano {{count}} giorni",
+    "until": "Fino al {{date}}",
+    "intro": "Allenati con la scheda e le videoguide, e segna i pesi che usi: alla fine della prova ti ricontatteremo per sapere come ti sei trovato. Se vuoi continuare prima, scrivici.",
+    "whatsapp": "Scrivici su WhatsApp",
+    "whatsappMessage": "Ciao! Sto facendo la prova gratuita e vorrei avere informazioni sul percorso di programmazione online.",
+    "discoverCoaching": "Scopri il coaching online",
+    "overTitle": "La tua prova gratuita è terminata",
+    "overMessage": "Speriamo ti sia piaciuto allenarti con il nostro metodo! Ti ricontatteremo a breve. Se vuoi continuare subito con un percorso di programmazione online, contattaci."
   }
 }

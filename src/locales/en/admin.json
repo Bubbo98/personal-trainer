@@ -7,6 +7,7 @@
   "nav": {
     "label": "Admin sections",
     "users": "Users",
+    "trials": "Trials",
     "videos": "Videos",
     "reviews": "Reviews",
     "supplements": "Supplements",
@@ -606,6 +607,177 @@
       "returned_other": "{{count}} rows of clients who are back (their phone belongs to an active user)",
       "duplicates_one": "{{count}} row with a phone already listed",
       "duplicates_other": "{{count}} rows with a phone already listed"
+    }
+  },
+  "trials": {
+    "nav": {
+      "label": "Trial sections",
+      "people": "People",
+      "templates": "Template plans",
+      "questionnaire": "Online questionnaire"
+    },
+    "planTabs": {
+      "label": "Plan sections",
+      "plan": "Exercises",
+      "days": "Exercise videos"
+    },
+    "state": {
+      "active_one": "Last day",
+      "active_other": "{{count}} days left",
+      "not_opened": "Link not opened yet",
+      "ended": "Trial ended",
+      "link_expired": "Link never opened",
+      "deleted": "Account deleted"
+    },
+    "status": {
+      "to_contact": "To contact",
+      "contacted": "Contacted",
+      "client": "Became a client",
+      "not_interested": "Not interested"
+    },
+    "kind": {
+      "free_session": "Free session",
+      "online": "Online"
+    },
+    "discipline": {
+      "gym": "Gym",
+      "calisthenics": "Calisthenics"
+    },
+    "share": {
+      "message": "Hi {{name}}, here is your free 7-day trial with workout plan and video guides: {{url}} (the 7 days start when you open the link)",
+      "link": "Trial link",
+      "copy": "Copy link",
+      "copied": "Link copied.",
+      "notCopied": "Copy failed: select the link and copy it by hand.",
+      "notCopiedUrl": "Copy failed, here is the link: {{url}}",
+      "whatsapp": "Send on WhatsApp"
+    },
+    "free": {
+      "title": "New free session",
+      "template": "Template plan",
+      "noTemplates": "Create at least one template plan first (Trials → Template plans).",
+      "phoneHint": "To send the link on WhatsApp and to call them back.",
+      "daysHint": "The 7 days start the first time the person opens the link.",
+      "create": "Create link",
+      "createdTitle": "Trial link ready",
+      "createdHint": "Send it to the person. To change exercises or videos just for them, open \"Customize the plan\".",
+      "customize": "Customize the plan",
+      "done": "Done"
+    },
+    "fields": {
+      "firstName": "First name",
+      "lastName": "Last name",
+      "phone": "Phone",
+      "email": "Email",
+      "notes": "Notes",
+      "status": "Status"
+    },
+    "noContacts": "No contacts",
+    "noName": "No name",
+    "scoreValue": "score {{score}}",
+    "createdOn": "created on {{date}}",
+    "logCount_one": "{{count}} exercise logged",
+    "logCount_other": "{{count}} exercises logged",
+    "points_one": "{{count}} point",
+    "points_other": "{{count}} points",
+    "people": {
+      "title": "People on trial",
+      "subtitle": "Free sessions in the gym and online signups: call back whoever finished the trial.",
+      "newFreeSession": "New free session",
+      "filterLabel": "Filter trials",
+      "filters": {
+        "to_call": "To call",
+        "running": "Running",
+        "done": "Handled",
+        "all": "All"
+      },
+      "search": "Search name, phone, email…",
+      "empty": "No trials here",
+      "emptyHint": "Create a free session or wait for signups from the website."
+    },
+    "detail": {
+      "back": "Back to trials",
+      "notFound": "Trial not found.",
+      "contacts": "Contacts and status",
+      "saved": "Changes saved.",
+      "marketingYes": "Agreed to receive communications.",
+      "marketingNo": "Did not agree to receive promotional communications.",
+      "access": "Access",
+      "created": "Created",
+      "opened": "First access",
+      "ends": "Trial ends",
+      "endsAfterOpening": "7 days after the first access",
+      "lastLogin": "Last access",
+      "notYet": "Not yet",
+      "accountDeleted": "The trial account was deleted by the automatic cleanup: only the contacts are left.",
+      "extend": "Extend the trial:",
+      "extendDays_one": "+{{count}} day",
+      "extendDays_other": "+{{count}} days",
+      "extended": "Trial extended.",
+      "delete": "Delete trial and contacts",
+      "deleteTitle": "Delete the trial?",
+      "deleteMessage": "The contacts, the answers and the trial account are deleted. This cannot be undone.",
+      "deleted": "Trial deleted.",
+      "answers": "Questionnaire answers",
+      "plan": "This person's plan",
+      "planHint": "A copy of the template plan: changes only apply to this person."
+    },
+    "templates": {
+      "title": "Template plans",
+      "subtitle": "The plans every trial starts from, by discipline and level.",
+      "new": "New template plan",
+      "created": "Template plan created: now add exercises and videos.",
+      "saved": "Template plan saved.",
+      "deleted": "Template plan deleted.",
+      "empty": "No template plans",
+      "emptyHint": "Create one for the gym and one for calisthenics, maybe by level (beginner, advanced).",
+      "counts": "{{exercises}} exercises · {{videos}} videos",
+      "onlineRange": "Online · score {{range}}",
+      "anyScore": "any",
+      "gymOnly": "Free sessions only",
+      "noOnline": "{{discipline}}: no plan is available online, so this discipline is not offered in the website questionnaire.",
+      "uncovered": "{{discipline}}: scores {{scores}} fall in no plan's range; they get the plan with the closest range.",
+      "back": "Back to template plans",
+      "notFound": "Template plan not found.",
+      "deleteTitle": "Delete the template plan?",
+      "deleteMessage": "\"{{name}}\" will be deleted. Trials already created keep their copy of the plan.",
+      "planHint": "Edit exercises and videos here: every new trial starts from a copy of this plan. Trials already created don't change.",
+      "form": {
+        "createTitle": "New template plan",
+        "editTitle": "Edit template plan",
+        "name": "Name",
+        "nameHint": "For example \"Gym · beginner\" or \"Calisthenics · advanced\".",
+        "discipline": "Discipline",
+        "description": "Description (only for you)",
+        "online": "Also use it for the online trial on the website",
+        "rangeHint": "Whoever fills in the questionnaire gets this plan if their score is in the range. Leave empty for no limit.",
+        "minScore": "Minimum score",
+        "maxScore": "Maximum score",
+        "rangeError": "The minimum is higher than the maximum.",
+        "create": "Create plan"
+      }
+    },
+    "questionnaire": {
+      "title": "Online trial questionnaire",
+      "subtitle": "People signing up on the website choose gym or calisthenics and answer these questions. The answers' points add up and the score picks the template plan.",
+      "isDefault": "This is the starting questionnaire: edit it and save it to make it yours.",
+      "updatedAt": "Last change: {{date}}",
+      "range": "possible score from {{min}} to {{max}}",
+      "questionNumber": "Question {{number}}",
+      "questionText": "Question (Italian)",
+      "questionTextEn": "Question (English, optional)",
+      "askedTo": "Asked to:",
+      "everyone": "Everyone",
+      "answerText": "Answer (Italian)",
+      "answerTextEn": "Answer (English)",
+      "points": "Points",
+      "addAnswer": "Add answer",
+      "removeAnswer": "Remove answer",
+      "addQuestion": "Add question",
+      "removeQuestion": "Remove question",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "saved": "Questionnaire saved."
     }
   }
 }

@@ -383,3 +383,40 @@ describe('DashboardPage — reviews', () => {
     });
   });
 });
+
+describe('DashboardPage — trial mode', () => {
+  const inDays = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 1000 - 60_000).toISOString();
+  const trialUser = (days: number) => ({ ...user, firstName: 'Mario', trial: { kind: 'free_session', expiresAt: inDays(days), daysLeft: days } });
+
+  it('shows the days left and hides check-ins, the PDF plan and body composition', async () => {
+    const trial = trialUser(5);
+    // A due check-in would lock the dashboard of a client: a trial never gets one
+    setup({ checkin: { shouldShow: true }, api: { 'POST /auth/login-link': { token: 's', user: trial }, 'GET /auth/verify': { user: trial } } });
+    renderPage('/dashboard/link-token');
+
+    expect(await screen.findByText('Prova gratuita: ti restano 5 giorni')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Scrivici su WhatsApp' })).toHaveAttribute('href', expect.stringContaining('https://wa.me/'));
+    expect(screen.queryByRole('button', { name: /Check/ })).not.toBeInTheDocument();
+    expect(screen.queryByText('Check settimanale richiesto')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Scheda' })).not.toBeInTheDocument();
+
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    const user_ = userEvent.setup();
+    await user_.click(screen.getAllByRole('button', { name: /Progressi/ })[0]);
+    expect(screen.queryByRole('button', { name: 'Analisi corporea' })).not.toBeInTheDocument();
+  });
+
+  it('the last day says so', async () => {
+    const trial = trialUser(1);
+    setup({ api: { 'POST /auth/login-link': { token: 's', user: trial } } });
+    renderPage('/dashboard/link-token');
+    expect(await screen.findByText("Prova gratuita: oggi è l'ultimo giorno")).toBeInTheDocument();
+  });
+
+  it('an ended trial gets the "trial over" page with the contacts', async () => {
+    mockApi({ 'POST /auth/login-link': () => errorResponse(403, 'Prova terminata', 'TRIAL_EXPIRED') });
+    renderPage('/dashboard/link-token');
+    expect(await screen.findByRole('heading', { name: 'La tua prova gratuita è terminata' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Scopri il coaching online/ })).toHaveAttribute('href', '/coaching-online');
+  });
+});

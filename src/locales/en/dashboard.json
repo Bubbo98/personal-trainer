@@ -338,5 +338,18 @@
     "approvalNotice": "Your review will be publicly visible only after approval.",
     "saved": "Review sent: it will be visible after approval.",
     "deleted": "Review deleted."
+  },
+  "trial": {
+    "label": "Free trial",
+    "lastDay": "Free trial: today is the last day",
+    "daysLeft_one": "Free trial: {{count}} day left",
+    "daysLeft_other": "Free trial: {{count}} days left",
+    "until": "Until {{date}}",
+    "intro": "Train with the plan and the video guides, and log the weights you use: when the trial ends we will get in touch to hear how it went. If you want to continue sooner, write to us.",
+    "whatsapp": "Message us on WhatsApp",
+    "whatsappMessage": "Hi! I'm on the free trial and I'd like to know more about the online coaching.",
+    "discoverCoaching": "Discover online coaching",
+    "overTitle": "Your free trial has ended",
+    "overMessage": "We hope you enjoyed training with our method! We will get in touch soon. If you want to continue right away with online coaching, contact us."
   }
 }

@@ -67,7 +67,7 @@ async function checkinStatusOf(userId) {
 
 /** Active clients (not the admin) who are due a check and have an email to remind. */
 async function clientsToRemind(now = new Date()) {
-    const rows = await db.query(`${STATUS_QUERY} WHERE u.is_active = 1 AND u.username <> ?`, [config.adminUsername]);
+    const rows = await db.query(`${STATUS_QUERY} WHERE u.is_active = 1 AND u.account_type = 'client' AND u.username <> ?`, [config.adminUsername]);
     return rows
         .filter((row) => row.email && checkinStatus(row, now).shouldShow)
         .map((row) => ({

@@ -1,15 +1,13 @@
-import { useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { FiActivity, FiArrowLeft, FiBarChart2, FiCalendar, FiFileText, FiVideo } from 'react-icons/fi';
 import { ErrorState, LoadingState } from '../../../../components/ui/States';
 import { useErrorMessage } from '../../../../lib/errors';
-import { useLinks, useUsers } from '../../queries';
+import { useUsers } from '../../queries';
 import { displayName } from '../../types';
 import BodyReportsPanel from './BodyReportsPanel';
-import ExerciseVideoLinker from './ExerciseVideoLinker';
+import DaysTab from './DaysTab';
 import PlanPdfPanel from './PlanPdfPanel';
-import TrainingDaysEditor from './TrainingDaysEditor';
 import UserVideosPanel from './UserVideosPanel';
 import WorkoutPlanPanel from './WorkoutPlanPanel';
 
@@ -22,34 +20,6 @@ const TABS = [
 ] as const;
 
 type Tab = (typeof TABS)[number]['id'];
-
-/** Days: the exercise ↔ video links; the old days editor for plans without exercises (or on request). */
-const DaysTab = ({ userId }: { userId: number }) => {
-  const { t } = useTranslation('admin');
-  const links = useLinks(userId);
-  const [showOld, setShowOld] = useState(false);
-  const hasPlan = links.data?.some((d) => d.exercises.length > 0);
-
-  return (
-    <>
-      <ExerciseVideoLinker userId={userId} />
-      {links.isPending ? null : hasPlan && !showOld ? (
-        <button type="button" onClick={() => setShowOld(true)} className="text-xs text-gray-400 hover:text-gray-700 underline">
-          {t('detail.showOldEditor')}
-        </button>
-      ) : (
-        <>
-          {hasPlan && (
-            <button type="button" onClick={() => setShowOld(false)} className="mb-3 text-xs text-gray-400 hover:text-gray-700 underline">
-              {t('detail.hideOldEditor')}
-            </button>
-          )}
-          <TrainingDaysEditor userId={userId} />
-        </>
-      )}
-    </>
-  );
-};
 
 /** /admin/users/:userId — everything about one client; the tab lives in the URL (?tab=). */
 const UserDetailPage = () => {

@@ -59,6 +59,7 @@
     "network": "No connection or the server can't be reached. Check your network and try again.",
     "sessionExpired": "Your session has expired. Please sign in again.",
     "planExpired": "Your training plan has expired and access to the client area is suspended. Contact your personal trainer to renew it.",
+    "trialExpired": "Your free trial has ended: contact us to continue.",
     "downloadFailed": "Download failed. Please try again later.",
     "crashTitle": "Something went wrong",
     "crashMessage": "An unexpected error occurred. Reload the page; if the problem persists, contact your personal trainer."
@@ -89,6 +90,10 @@
     "coaching": {
       "title": "Online Personal Trainer and in Milan | Joshua Maurizio",
       "description": "Online coaching with a certified personal trainer: personalized program, exercise videos and regular check-ins. Or 1-to-1 at the gym in Milan. Free consultation!"
+    },
+    "trial": {
+      "title": "7-day free trial | Personal Trainer Joshua",
+      "description": "Try our online training method free for 7 days: a plan for your level, at the gym or calisthenics, with a video guide for every exercise."
     },
     "contact": {
       "title": "Contact | Personal Trainer Joshua",

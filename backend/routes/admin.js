@@ -9,5 +9,6 @@ router.use(require('./admin/users'));
 router.use(require('./admin/videos'));
 router.use(require('./admin/reviews'));
 router.use(require('./admin/retentionLog'));
+router.use(require('./admin/trials'));
 
 module.exports = router;

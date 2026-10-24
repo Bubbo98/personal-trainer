@@ -17,6 +17,7 @@ const About = lazy(() => import('./pages/About'));
 const Contact = lazy(() => import('./pages/Contact'));
 const Services = lazy(() => import('./pages/Services'));
 const CoachingOnline = lazy(() => import('./pages/CoachingOnline'));
+const FreeTrial = lazy(() => import('./pages/FreeTrial'));
 const Booking = lazy(() => import('./pages/Booking'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const AdminCMS = lazy(() => import('./pages/AdminCMS'));
@@ -52,6 +53,7 @@ export const AppShell = ({ router: Router }: { router: (props: { children: React
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/services" element={<Services />} />
                 <Route path="/coaching-online" element={<CoachingOnline />} />
+                <Route path="/prova-gratuita" element={<FreeTrial />} />
                 <Route path="/booking" element={<Booking />} />
                 <Route path="/dashboard/:token?" element={<Dashboard />} />
                 <Route path="/admin/*" element={<AdminCMS />} />

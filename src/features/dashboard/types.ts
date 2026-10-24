@@ -7,6 +7,14 @@ export interface SessionUser {
   firstName?: string | null;
   lastName?: string | null;
   trainerId?: number | null;
+  /** Set for someone on a 7-day trial: the dashboard runs in trial mode. */
+  trial?: TrialSession;
+}
+
+export interface TrialSession {
+  kind: 'free_session' | 'online';
+  expiresAt: string;
+  daysLeft: number;
 }
 
 export interface Technique {

@@ -32,13 +32,14 @@ async function isAccessExpired(userId) {
     return !!row;
 }
 
-/** Users to delete: deactivated, or plan expired more than DELETE_AFTER_DAYS ago. */
+/** Clients to delete: deactivated, or plan expired more than DELETE_AFTER_DAYS ago (trial users: see services/trials). */
 async function findUsersToDelete() {
     const rows = await db.query(
         `SELECT u.id, u.username, u.first_name, u.last_name, u.is_active, p.expiration_date
          FROM users u
          LEFT JOIN user_pdf_files p ON p.user_id = u.id
          WHERE u.username <> ?
+           AND u.account_type = 'client'
            AND (u.is_active = 0 OR (p.expiration_date IS NOT NULL AND p.expiration_date < datetime('now', ?)))
          ORDER BY u.id`,
         [config.adminUsername, `-${DELETE_AFTER_DAYS} days`]
@@ -67,7 +68,8 @@ async function recordExpiredPlans() {
 
 /**
  * Deletes a user and every row that belongs to them (one transaction, children first), then their files on R2.
- * The same transaction records the deletion in retention_log, with reason 'plan_expired' or 'deactivated'.
+ * The same transaction records the deletion in retention_log, with reason 'plan_expired' or 'deactivated';
+ * reason null records nothing (trial users and trial templates, which aren't clients).
  */
 async function deleteUserCompletely(userId, reason) {
     const files = await db.query(
@@ -82,13 +84,13 @@ async function deleteUserCompletely(userId, reason) {
         'user_feedbacks', 'body_composition_reports', 'reviews', 'access_logs',
     ];
     await db.batch([
-        {
+        ...(reason === null ? [] : [{
             sql: `INSERT INTO retention_log (event, reason, occurred_at, ${LOG_COLUMNS})
                   SELECT 'user_deleted', ?, CURRENT_TIMESTAMP, ${LOG_VALUES}
                   FROM users u LEFT JOIN user_pdf_files p ON p.user_id = u.id
                   WHERE u.id = ?`,
             params: [reason, userId],
-        },
+        }]),
         {
             sql: `DELETE FROM training_day_video_techniques
                   WHERE training_day_video_id IN (SELECT id FROM training_day_videos WHERE training_day_id IN (${dayIds}))`,

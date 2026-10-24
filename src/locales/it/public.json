@@ -141,6 +141,7 @@
     ],
     "cta": "Prenota la consulenza gratuita",
     "ctaNote": "15 minuti al telefono, senza impegno",
+    "trialLink": "Vuoi provare prima? Prova gratis il metodo per 7 giorni",
     "imageAlt": "Coaching online con Joshua Maurizio",
     "paths": {
       "title": "Due modi per allenarti con me",
@@ -302,5 +303,82 @@
     "goToPage": "Vai alla pagina",
     "sectionLabel": "Recensioni dei clienti",
     "loadFailed": "Impossibile caricare le recensioni."
+  },
+  "trialSignup": {
+    "badge": "Prova gratuita · 7 giorni",
+    "title": "Prova gratis il nostro metodo di allenamento online",
+    "subtitle": "Rispondi a poche domande sul tuo livello: ti mandiamo una scheda da 45 minuti adatta a te, con le videoguide di ogni esercizio, da usare per 7 giorni.",
+    "includes": [
+      {
+        "title": "Una scheda adatta al tuo livello",
+        "text": "In palestra o a corpo libero (calisthenics), scelta in base alle tue risposte."
+      },
+      {
+        "title": "Videoguide per ogni esercizio",
+        "text": "Vedi come si esegue ogni movimento, dal telefono, mentre ti alleni."
+      },
+      {
+        "title": "La tua area personale",
+        "text": "Segna pesi e ripetizioni settimana dopo settimana, come i nostri clienti."
+      }
+    ],
+    "how": {
+      "title": "Come funziona",
+      "steps": [
+        "Rispondi al questionario e lascia i tuoi contatti.",
+        "Ricevi per email il link alla tua area personale.",
+        "Allenati per 7 giorni: partono dalla prima volta che apri il link.",
+        "Alla fine ti contattiamo per sapere come ti sei trovato."
+      ]
+    },
+    "step": "Passo {{step}} di {{total}}",
+    "back": "Indietro",
+    "disciplineQuestion": "Come vuoi allenarti?",
+    "disciplines": {
+      "gym": {
+        "title": "In palestra",
+        "text": "Con pesi, bilancieri e macchine."
+      },
+      "calisthenics": {
+        "title": "Calisthenics",
+        "text": "A corpo libero, con sbarra e parallele."
+      }
+    },
+    "contact": {
+      "title": "Dove ti mandiamo la prova?",
+      "subtitle": "Ti mandiamo il link per email. I {{days}} giorni partono quando lo apri.",
+      "firstName": "Nome",
+      "lastName": "Cognome",
+      "email": "Email",
+      "emailHint": "Ti arriva qui il link per accedere.",
+      "phone": "Telefono",
+      "privacyBefore": "Ho letto l'",
+      "privacyLink": "informativa privacy",
+      "privacyAfter": " e accetto di essere ricontattato al termine della prova.",
+      "marketing": "Voglio ricevere consigli e offerte via email o WhatsApp (facoltativo).",
+      "submit": "Inizia la prova gratuita"
+    },
+    "errors": {
+      "firstName": "Scrivi il tuo nome.",
+      "email": "Controlla l'indirizzo email.",
+      "phone": "Controlla il numero di telefono.",
+      "privacy": "Per iniziare la prova devi accettare l'informativa privacy.",
+      "alreadyUsed": "Con questa email hai già fatto la prova gratuita. Se vuoi continuare con noi, scrivici!",
+      "unavailable": "La prova online non è disponibile in questo momento. Scrivici e ti aiutiamo noi.",
+      "tooMany": "Troppe richieste da questa connessione: riprova tra un'ora.",
+      "captcha": "Verifica anti-bot non riuscita: ricarica la pagina e riprova.",
+      "generic": "Qualcosa è andato storto. Riprova tra poco.",
+      "load": "Non riusciamo a caricare il questionario. Riprova."
+    },
+    "done": {
+      "title": "Fatto! Controlla la tua email",
+      "resentTitle": "Ti abbiamo rimandato il link",
+      "message": "Abbiamo mandato il link della tua prova a {{email}}. Aprilo quando sei pronto ad allenarti: da lì partono i 7 giorni.",
+      "spam": "Non la trovi? Guarda nello spam o nella cartella Promozioni.",
+      "noEmailTitle": "Iscrizione ricevuta!",
+      "noEmailMessage": "Non siamo riusciti a mandarti l'email in questo momento: ti contattiamo noi a breve con il link. Se preferisci, scrivici."
+    },
+    "whatsapp": "Scrivici su WhatsApp",
+    "whatsappMessage": "Ciao! Vorrei informazioni sulla prova gratuita e sul coaching online."
   }
 }

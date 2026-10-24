@@ -13,6 +13,7 @@ export function useErrorMessage() {
       if (error instanceof ApiError) {
         if (error.code === 'NETWORK') return t('errors.network');
         if (error.code === 'PLAN_EXPIRED') return t('errors.planExpired');
+        if (error.code === 'TRIAL_EXPIRED') return t('errors.trialExpired');
         if (error.status === 401) return t('errors.sessionExpired');
         if (error.status < 500 && error.message) return error.message;
       }

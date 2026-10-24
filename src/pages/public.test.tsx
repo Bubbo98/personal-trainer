@@ -6,6 +6,7 @@ import Home from './Home';
 import Contact from './Contact';
 import Services from './Services';
 import CoachingOnline from './CoachingOnline';
+import FreeTrial from './FreeTrial';
 
 vi.mock('@calcom/embed-react', () => ({ default: () => <div data-testid="cal" />, getCalApi: () => Promise.resolve(vi.fn()) }));
 
@@ -107,5 +108,29 @@ describe('CoachingOnline', () => {
     for (const link of links) expect(link).toHaveAttribute('href', '#booking-calendar');
     expect(screen.getByTestId('cal')).toBeInTheDocument();
     expect(screen.getByText('Quanto costa?')).toBeInTheDocument();
+  });
+});
+
+describe('FreeTrial', () => {
+  it('has its own meta, the method in short and the questionnaire', async () => {
+    mockApi({
+      'GET /trials/questionnaire': {
+        disciplines: ['gym'],
+        trialDays: 7,
+        questions: [{ id: 'a', text: 'Da quanto ti alleni?', textEn: null, discipline: null, options: [{ id: 'x', text: 'Da poco', textEn: null }, { id: 'y', text: 'Da anni', textEn: null }] }],
+      },
+    });
+    renderWithProviders(<FreeTrial />);
+    expect(document.title).toBe('Prova gratuita di 7 giorni | Personal Trainer Joshua');
+    expect(screen.getByRole('heading', { level: 1, name: 'Prova gratis il nostro metodo di allenamento online' })).toBeInTheDocument();
+    // One discipline only: no discipline step, straight to the first question
+    expect(await screen.findByText('Da quanto ti alleni?')).toBeInTheDocument();
+    expect(screen.getByText('Passo 1 di 2')).toBeInTheDocument();
+  });
+
+  it('is linked from the coaching page', () => {
+    mockApi({ 'GET /reviews/featured': { reviews: [] } });
+    renderWithProviders(<CoachingOnline />);
+    expect(screen.getByRole('link', { name: /Prova gratis il metodo per 7 giorni/ })).toHaveAttribute('href', '/prova-gratuita');
   });
 });

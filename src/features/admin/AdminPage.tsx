@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import { FiAlertCircle, FiFileText, FiLock, FiLogOut, FiShoppingBag, FiStar, FiUser, FiUsers, FiVideo } from 'react-icons/fi';
+import { FiAlertCircle, FiFileText, FiGift, FiLock, FiLogOut, FiShoppingBag, FiStar, FiUser, FiUsers, FiVideo } from 'react-icons/fi';
 import Header from '../../components/Header';
 import Button from '../../components/ui/Button';
 import { inputClass } from '../../components/ui/Field';
@@ -16,6 +16,7 @@ import VideosPage from './videos/VideosPage';
 import ReviewsPage from './reviews/ReviewsPage';
 import SupplementsPage from './supplements/SupplementsPage';
 import RetentionLogPage from './retention/RetentionLogPage';
+import TrialsPage from './trials/TrialsPage';
 
 type Session = 'checking' | 'in' | 'out';
 
@@ -183,6 +184,7 @@ const LoginForm = ({ expired, onSignedIn }: { expired: boolean; onSignedIn: () =
 
 const NAV = [
   { to: '/admin/users', icon: FiUsers, label: 'nav.users' },
+  { to: '/admin/trials', icon: FiGift, label: 'nav.trials' },
   { to: '/admin/videos', icon: FiVideo, label: 'nav.videos' },
   { to: '/admin/reviews', icon: FiStar, label: 'nav.reviews' },
   { to: '/admin/supplements', icon: FiShoppingBag, label: 'nav.supplements' },
@@ -242,6 +244,7 @@ const AdminPage = () => {
             <Route index element={<Navigate to="/admin/users" replace />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="users/:userId" element={<UserDetailPage />} />
+            <Route path="trials/*" element={<TrialsPage />} />
             <Route path="videos" element={<VideosPage />} />
             <Route path="reviews" element={<ReviewsPage />} />
             <Route path="supplements" element={<SupplementsPage />} />
