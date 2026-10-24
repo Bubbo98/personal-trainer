@@ -36,4 +36,4 @@ export const TRACKING = {
  * Cloudflare Turnstile site key (public) for the free-trial signup: '' keeps the widget off.
  * The backend checks the tokens only when TURNSTILE_SECRET_KEY is set too: set both together.
  */
-export const TURNSTILE_SITE_KEY = '';
+export const TURNSTILE_SITE_KEY = '0x4AAAAAAFjuOt68pABfUMX4';
