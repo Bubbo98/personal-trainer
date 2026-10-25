@@ -63,7 +63,7 @@ describe('LegalPage', () => {
   it('shows the document in the active language with a fixed update date', async () => {
     renderWithProviders(<LegalPage docs={{ it: privacyIt, en: privacyEn }} path="/privacy-policy" />);
     expect(screen.getByRole('heading', { level: 1, name: 'Privacy Policy' })).toBeInTheDocument();
-    expect(screen.getByText('Ultimo aggiornamento: 23 ottobre 2026')).toBeInTheDocument();
+    expect(screen.getByText('Ultimo aggiornamento: 25 ottobre 2026')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '1. Titolare del Trattamento' })).toBeInTheDocument();
     expect(document.querySelector('link[rel="canonical"]')).toHaveAttribute('href', 'https://www.esercizifacili.com/privacy-policy');
 

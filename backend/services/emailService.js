@@ -262,7 +262,7 @@ function renderTrainerSeen(userEmail, userName, trainerName, feedbackDate, dashb
 const TRIAL_TEXT = {
     it: {
         subject: (days) => `💪 La tua prova gratuita di ${days} giorni è pronta`,
-        title: (name) => `Ciao ${name}!`,
+        title: (name) => (name ? `Ciao ${name}!` : 'Ciao!'),
         subtitle: 'La tua prova gratuita è pronta',
         intro: (days) => `Abbiamo preparato una scheda di allenamento adatta al tuo livello, con le videoguide di ogni esercizio. Hai <strong>${days} giorni</strong> per provare il nostro metodo di programmazione online.`,
         start: 'I giorni partono dalla prima volta che apri il link: aprilo quando sei pronto ad allenarti.',
@@ -272,7 +272,7 @@ const TRIAL_TEXT = {
     },
     en: {
         subject: (days) => `💪 Your free ${days}-day trial is ready`,
-        title: (name) => `Hi ${name}!`,
+        title: (name) => (name ? `Hi ${name}!` : 'Hi!'),
         subtitle: 'Your free trial is ready',
         intro: (days) => `We prepared a workout plan suited to your level, with a video guide for every exercise. You have <strong>${days} days</strong> to try our online coaching method.`,
         start: 'The days start the first time you open the link: open it when you are ready to train.',
@@ -282,7 +282,7 @@ const TRIAL_TEXT = {
     },
 };
 
-/** To someone who signed up for the online trial: their access link (lang 'it' | 'en'). */
+/** To someone who signed up for the online trial, or whose address the admin corrected: their access link (lang 'it' | 'en'). */
 function renderTrialAccess(email, firstName, loginUrl, days, lang = 'it') {
     const t = TRIAL_TEXT[lang] || TRIAL_TEXT.it;
     const html = page(`

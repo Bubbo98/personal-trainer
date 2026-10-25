@@ -9,6 +9,7 @@ import { Alert, ErrorState, LoadingState } from '../../components/ui/States';
 import { CONTACT, TURNSTILE_SITE_KEY } from '../../config';
 import { ApiError, publicApi } from '../../lib/api';
 import { trackTrialSignup } from '../../lib/tracking';
+import { TrialNoticeCheck } from '../../components/TrialNotice';
 import Turnstile from './Turnstile';
 import {
   contactErrors,
@@ -71,9 +72,10 @@ const Done = ({ result, email }: { result: Result; email: string }) => {
 const Wizard = ({ questionnaire }: { questionnaire: PublicQuestionnaire }) => {
   const { t, i18n } = useTranslation('public');
   const [chosen, setChosen] = useState<Discipline | null>(null);
+  const [days, setDays] = useState<number | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [step, setStep] = useState(0);
-  const [form, setForm] = useState<ContactForm>({ firstName: '', lastName: '', email: '', phone: '', privacy: false, marketing: false });
+  const [form, setForm] = useState<ContactForm>({ firstName: '', lastName: '', email: '', phone: '', privacy: false, disclaimer: false, marketing: false });
   const [showErrors, setShowErrors] = useState(false);
   // Bot checks: when the questionnaire appeared, a field only bots fill in, the Turnstile token
   const [startedAt] = useState(() => Date.now());
@@ -91,7 +93,7 @@ const Wizard = ({ questionnaire }: { questionnaire: PublicQuestionnaire }) => {
     mutationFn: (elapsedMs: number) =>
       publicApi.post<Result>(
         '/trials/signup',
-        signupBody(discipline!, answers, questionnaire.questions, form, i18n.language, { elapsedMs, website, captchaToken }),
+        signupBody(discipline!, days!, answers, questionnaire.questions, form, i18n.language, { elapsedMs, website, captchaToken }),
       ),
     onSuccess: (result) => {
       if (!result.resent) trackTrialSignup();
@@ -110,7 +112,7 @@ const Wizard = ({ questionnaire }: { questionnaire: PublicQuestionnaire }) => {
   const submit = (e: FormEvent) => {
     e.preventDefault();
     setShowErrors(true);
-    if (Object.keys(errors).length === 0 && discipline) signup.mutate(Date.now() - startedAt);
+    if (Object.keys(errors).length === 0 && discipline && days) signup.mutate(Date.now() - startedAt);
   };
 
   const errorCode = signup.error instanceof ApiError ? signup.error.code : undefined;
@@ -149,6 +151,26 @@ const Wizard = ({ questionnaire }: { questionnaire: PublicQuestionnaire }) => {
             >
               <span className="block text-lg">{t(`trialSignup.disciplines.${d}.title`)}</span>
               <span className={`block text-sm font-normal mt-0.5 ${chosen === d ? 'text-gray-300' : 'text-gray-500'}`}>{t(`trialSignup.disciplines.${d}.text`)}</span>
+            </button>
+          ))}
+        </fieldset>
+      )}
+
+      {current === 'days' && (
+        <fieldset className="space-y-3">
+          <legend className="text-xl font-bold text-gray-900 mb-4">{t('trialSignup.daysQuestion')}</legend>
+          {questionnaire.dayOptions.map((d) => (
+            <button
+              key={d}
+              type="button"
+              aria-pressed={days === d}
+              onClick={() => {
+                setDays(d);
+                next();
+              }}
+              className={choiceClass(days === d)}
+            >
+              {t('trialSignup.daysOption', { count: d })}
             </button>
           ))}
         </fieldset>
@@ -211,6 +233,7 @@ const Wizard = ({ questionnaire }: { questionnaire: PublicQuestionnaire }) => {
                 </p>
               )}
             </div>
+            <TrialNoticeCheck checked={form.disclaimer} onChange={(checked) => set('disclaimer', checked)} error={fieldError('disclaimer')} />
             <Checkbox label={t('trialSignup.contact.marketing')} checked={form.marketing} onChange={(e) => set('marketing', e.target.checked)} />
           </div>
 

@@ -4,6 +4,7 @@ const { badRequest, notFound } = require('../utils/http');
 const { parseDbDate } = require('./checkins');
 const { loginLink } = require('./loginLinks');
 const { deleteUserCompletely } = require('../utils/userRetention');
+const { readFile, storeFileFor } = require('./storedFiles');
 const { DISCIPLINES } = require('./trialQuestionnaire');
 
 /**
@@ -12,7 +13,7 @@ const { DISCIPLINES } = require('./trialQuestionnaire');
  * A trial template is a plan (exercises, day videos, techniques) held by a hidden
  * user of account_type 'trial_template': the admin edits it with the same tools as
  * a client's plan. Starting a trial creates a user of account_type 'trial' with a
- * copy of the template's plan, so the admin can still change that person's copy.
+ * copy of the template's plan and plan PDF, so the admin can still change that person's copy.
  *
  * The person logs in with an ordinary dashboard link. The 7 days start the first
  * time the link is opened; a link nobody opens dies after UNOPENED_LINK_DAYS.
@@ -31,6 +32,7 @@ const KEEP_RECORD_MONTHS = 12;
 const KINDS = ['free_session', 'online'];
 const STATUSES = ['to_contact', 'contacted', 'client', 'not_interested'];
 const DAY_MS = 24 * 60 * 60 * 1000;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 const TRIAL_EXPIRED_MESSAGE = 'La tua prova gratuita è terminata: contattaci per continuare il percorso.';
 
@@ -57,7 +59,9 @@ const TEMPLATE_COLUMNS = `tt.id, tt.name, tt.discipline, tt.description, tt.user
     tt.created_at, tt.updated_at,
     (SELECT COUNT(*) FROM training_exercises e WHERE e.user_id = tt.user_id) AS exercise_count,
     (SELECT COUNT(*) FROM training_day_videos tdv JOIN user_training_days td ON td.id = tdv.training_day_id
-     WHERE td.user_id = tt.user_id AND td.is_active = 1 AND tdv.is_active = 1) AS video_count`;
+     WHERE td.user_id = tt.user_id AND td.is_active = 1 AND tdv.is_active = 1) AS video_count,
+    (SELECT COUNT(*) FROM (SELECT day_number FROM training_exercises WHERE user_id = tt.user_id
+                           UNION SELECT day_number FROM user_training_days WHERE user_id = tt.user_id AND is_active = 1)) AS day_count`;
 
 const toTemplate = (t) => ({
     id: t.id,
@@ -70,6 +74,8 @@ const toTemplate = (t) => ({
     maxScore: t.max_score,
     exerciseCount: Number(t.exercise_count || 0),
     videoCount: Number(t.video_count || 0),
+    /** Training days in the template's plan: online signups get the template with the days they chose. */
+    dayCount: Number(t.day_count || 0),
     createdAt: t.created_at,
     updatedAt: t.updated_at,
 });
@@ -168,10 +174,11 @@ async function deleteTemplate(templateId) {
 }
 
 /**
- * The online template for a questionnaire score: an online template of the discipline
- * whose range holds the score, else the one whose range is closest. null when there is none.
+ * The online template for a signup: among the online templates of the discipline, those whose
+ * plan has the chosen number of training days (else the closest number; empty plans last),
+ * then the one whose score range holds the score, else the closest range. null when there is none.
  */
-async function pickTemplate(discipline, points) {
+async function pickTemplate(discipline, points, days) {
     const candidates = (await db.query(
         `SELECT ${TEMPLATE_COLUMNS} FROM trial_templates tt
          WHERE tt.is_active = 1 AND tt.online = 1 AND tt.discipline = ? ORDER BY tt.id`,
@@ -182,7 +189,8 @@ async function pickTemplate(discipline, points) {
         t.maxScore !== null ? points - t.maxScore : 0,
         0
     );
-    return candidates.sort((a, b) => distance(a) - distance(b))[0] || null;
+    const daysOff = (t) => (t.dayCount === 0 ? Infinity : Math.abs(t.dayCount - days));
+    return candidates.sort((a, b) => daysOff(a) - daysOff(b) || distance(a) - distance(b))[0] || null;
 }
 
 /** Disciplines that have at least one online template: the only ones a visitor can choose. */
@@ -291,6 +299,8 @@ function toTrial(t, now = new Date()) {
         status: t.status,
         notes: t.notes,
         createdAt: t.created_at,
+        /** The health notice of the trial plan (generic plan, use at your own risk) was accepted. */
+        disclaimerAcceptedAt: t.disclaimer_accepted_at || null,
         openedAt: t.opened_at,
         expiresAt: t.expires_at,
         lastLogin: t.last_login || null,
@@ -317,30 +327,42 @@ async function findTrial(trialId) {
  * @returns {Promise<{ trial, loginUrl }>}
  */
 async function createTrial({ kind, templateId, firstName, lastName, email, phone, discipline, score: points, answers,
-    privacyAccepted = false, marketingConsent = false, notes, ipHash = null }) {
+    privacyAccepted = false, disclaimerAccepted = false, marketingConsent = false, notes, ipHash = null }) {
     if (!KINDS.includes(kind)) throw badRequest('Invalid trial kind');
     const template = await findTemplate(templateId);
     const username = randomName('prova');
     const first = optionalText(firstName, 100);
     const last = optionalText(lastName, 100);
 
-    const results = await db.batch([
+    const writeTrial = (pdfStatements = []) => db.batch([
         {
             sql: `INSERT INTO users (username, first_name, last_name, phone, account_type, is_paying, checkin_exempt)
                   VALUES (?, ?, ?, ?, 'trial', 0, 1)`,
             params: [username, first || 'Prova', last, optionalText(phone, 40)],
         },
         ...copyPlanStatements(template.userId, username),
+        ...pdfStatements,
         {
             sql: `INSERT INTO trials (kind, template_id, template_name, user_id, first_name, last_name, email, phone, discipline,
-                    score, answers, privacy_accepted_at, marketing_consent, notes, ip_hash, phone_digits)
+                    score, answers, privacy_accepted_at, disclaimer_accepted_at, marketing_consent, notes, ip_hash, phone_digits)
                   VALUES (?, ?, ?, (SELECT id FROM users WHERE username = ?), ?, ?, ?, ?, ?, ?, ?,
-                    ${privacyAccepted ? 'CURRENT_TIMESTAMP' : 'NULL'}, ?, ?, ?, ?)`,
+                    ${privacyAccepted ? 'CURRENT_TIMESTAMP' : 'NULL'}, ${disclaimerAccepted ? 'CURRENT_TIMESTAMP' : 'NULL'}, ?, ?, ?, ?)`,
             params: [kind, template.id, template.name, username, first, last, optionalText(email, 200), optionalText(phone, 40),
                 discipline || template.discipline, points ?? null, answers ? JSON.stringify(answers) : null,
                 marketingConsent ? 1 : 0, optionalText(notes, 2000), ipHash, phoneDigits(phone)],
         },
     ]);
+
+    // The template's PDF gets its own file, so deleting either user never removes the other's
+    const pdf = await db.get('SELECT original_name, file_key, file_data, file_size, mime_type FROM user_pdf_files WHERE user_id = ?', [template.userId]);
+    const results = pdf
+        ? await storeFileFor('plan', username, { originalname: pdf.original_name, buffer: await readFile(pdf), mimetype: pdf.mime_type }, (fileKey) =>
+            writeTrial([{
+                sql: `INSERT INTO user_pdf_files (user_id, original_name, file_key, file_data, file_size, mime_type, uploaded_by)
+                      VALUES ((SELECT id FROM users WHERE username = ?), ?, ?, '', ?, ?, 'trial')`,
+                params: [username, pdf.original_name, fileKey, pdf.file_size, pdf.mime_type],
+            }]))
+        : await writeTrial();
     const trial = await findTrial(results[results.length - 1].lastId);
     return { trial, loginUrl: loginLink({ id: trial.userId, username, email: null }).loginUrl };
 }
@@ -361,7 +383,11 @@ const STATUS_FIELDS = {
     notes: ['notes', (v) => optionalText(v, 2000)],
     firstName: ['first_name', (v) => optionalText(v, 100)],
     lastName: ['last_name', (v) => optionalText(v, 100)],
-    email: ['email', (v) => optionalText(v, 200)],
+    email: ['email', (v) => {
+        const email = optionalText(v, 200);
+        if (email && !EMAIL.test(email)) throw badRequest('Invalid email address', 'INVALID_EMAIL');
+        return email;
+    }],
     phone: ['phone', (v) => optionalText(v, 40)],
 };
 
@@ -490,6 +516,15 @@ async function deleteOldTrialRecords() {
     return changes;
 }
 
+/** The trial person accepted the health notice of the plan (first opening of a free session link). */
+async function acceptDisclaimer(userId) {
+    const { changes } = await db.run(
+        'UPDATE trials SET disclaimer_accepted_at = COALESCE(disclaimer_accepted_at, CURRENT_TIMESTAMP) WHERE user_id = ?',
+        [userId]
+    );
+    if (changes === 0) throw notFound('No trial for this account');
+}
+
 /** Records that the access email was just sent (resends are throttled). */
 async function markEmailSent(trialId) {
     await db.run('UPDATE trials SET last_email_at = CURRENT_TIMESTAMP WHERE id = ?', [trialId]);
@@ -525,4 +560,5 @@ module.exports = {
     deleteOldTrialRecords,
     phoneDigits,
     markEmailSent,
+    acceptDisclaimer,
 };

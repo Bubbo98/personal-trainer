@@ -3,9 +3,10 @@ const config = require('../config');
 const rateLimit = require('express-rate-limit');
 const { db } = require('../utils/database');
 const { route, badRequest, conflict, HttpError } = require('../utils/http');
+const { authenticateToken } = require('../middleware/auth');
 const { loadQuestionnaire, publicQuestionnaire, scoreAnswers } = require('../services/trialQuestionnaire');
 const {
-    TRIAL_DAYS, pickTemplate, onlineDisciplines, createTrial, trialLink, trialState, phoneDigits, markEmailSent,
+    TRIAL_DAYS, pickTemplate, onlineDisciplines, createTrial, trialLink, trialState, phoneDigits, markEmailSent, acceptDisclaimer,
 } = require('../services/trials');
 const { isTrapped, isDisposableEmail, ipHash, verifyCaptcha, checkLimits } = require('../services/signupGuard');
 const { sendTrialAccess, sendTrialSignupNotification } = require('../services/emailService');
@@ -39,8 +40,8 @@ router.get('/questionnaire', route(async (req, res) => {
     res.json({ success: true, data: { disciplines, trialDays: TRIAL_DAYS, ...publicQuestionnaire(questionnaire) } });
 }));
 
-// POST /api/trials/signup — Body: { discipline, answers: { [questionId]: optionId }, firstName, lastName, email,
-// phone, privacy: true, marketing?, lang? ('it' | 'en'), elapsedMs, website (hidden trap, empty), captchaToken? }.
+// POST /api/trials/signup — Body: { discipline, daysPerWeek, answers: { [questionId]: optionId }, firstName, lastName, email,
+// phone, privacy: true, disclaimer: true (the notice on the use of the plan), marketing?, lang? ('it' | 'en'), elapsedMs, website (hidden trap, empty), captchaToken? }.
 // The access link goes to the email address only. An email or phone that already has a running trial gets
 // the link again (at most every 15 minutes); one whose trial is over gets 409 TRIAL_ALREADY_USED.
 router.post('/signup', signupLimiter, route(async (req, res) => {
@@ -56,8 +57,9 @@ router.post('/signup', signupLimiter, route(async (req, res) => {
     if (!EMAIL.test(email) || isDisposableEmail(email)) throw badRequest('Invalid email address', 'INVALID_EMAIL');
     if (!PHONE.test(phone) || !phoneDigits(phone)) throw badRequest('Invalid phone number', 'INVALID_PHONE');
     if (body.privacy !== true) throw badRequest('The privacy policy must be accepted', 'PRIVACY_REQUIRED');
+    if (body.disclaimer !== true) throw badRequest('The notice on the use of the plan must be accepted', 'DISCLAIMER_REQUIRED');
 
-    const { score, answers } = scoreAnswers(await loadQuestionnaire(), body.discipline, body.answers);
+    const { score, days, answers } = scoreAnswers(await loadQuestionnaire(), body.discipline, body.answers, body.daysPerWeek);
     await verifyCaptcha(body.captchaToken, req.ip);
 
     const previous = await db.get(
@@ -84,7 +86,7 @@ router.post('/signup', signupLimiter, route(async (req, res) => {
     const hash = ipHash(req.ip);
     await checkLimits(hash);
 
-    const template = await pickTemplate(body.discipline, score);
+    const template = await pickTemplate(body.discipline, score, days);
     if (!template) throw new HttpError(503, 'The trial is not available right now', 'TRIAL_UNAVAILABLE');
 
     const { trial, loginUrl } = await createTrial({
@@ -98,6 +100,7 @@ router.post('/signup', signupLimiter, route(async (req, res) => {
         score,
         answers,
         privacyAccepted: true,
+        disclaimerAccepted: true,
         marketingConsent: body.marketing === true,
         ipHash: hash,
     });
@@ -107,6 +110,13 @@ router.post('/signup', signupLimiter, route(async (req, res) => {
     ]);
     if (sent.success) await markEmailSent(trial.id);
     res.status(201).json({ success: true, data: { resent: false, emailSent: sent.success } });
+}));
+
+// POST /api/trials/accept-disclaimer — the trial person (session token) accepts the notice on the use of the plan;
+// the dashboard asks for it before showing the plan when it wasn't accepted at signup (free sessions)
+router.post('/accept-disclaimer', authenticateToken, route(async (req, res) => {
+    await acceptDisclaimer(req.user.userId);
+    res.json({ success: true });
 }));
 
 module.exports = router;

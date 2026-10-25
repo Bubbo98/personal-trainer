@@ -334,6 +334,9 @@
     "step": "Passo {{step}} di {{total}}",
     "back": "Indietro",
     "disciplineQuestion": "Come vuoi allenarti?",
+    "daysQuestion": "Quanti giorni a settimana pensi di allenarti?",
+    "daysOption_one": "{{count}} giorno",
+    "daysOption_other": "{{count}} giorni",
     "disciplines": {
       "gym": {
         "title": "In palestra",
@@ -363,6 +366,7 @@
       "email": "Controlla l'indirizzo email.",
       "phone": "Controlla il numero di telefono.",
       "privacy": "Per iniziare la prova devi accettare l'informativa privacy.",
+      "disclaimer": "Per iniziare la prova devi accettare l'avvertenza sull'uso della scheda.",
       "alreadyUsed": "Con questa email hai già fatto la prova gratuita. Se vuoi continuare con noi, scrivici!",
       "unavailable": "La prova online non è disponibile in questo momento. Scrivici e ti aiutiamo noi.",
       "tooMany": "Troppe richieste da questa connessione: riprova tra un'ora.",

@@ -5,7 +5,7 @@ import { ENGLISH_NOTICE } from './notice';
 const privacy: LegalDoc = {
   title: 'Privacy Policy',
   subtitle: 'Information on the processing of personal data under Art. 13 of EU Regulation 2016/679 (GDPR)',
-  updated: '2026-10-23',
+  updated: '2026-10-25',
   notice: ENGLISH_NOTICE,
   sections: [
     {
@@ -53,7 +53,7 @@ const privacy: LegalDoc = {
               ['Direct marketing and promotional communications', 'Explicit consent (Art. 6(1)(a) GDPR)'],
               ['Improving services and statistical analysis', 'Legitimate interest (Art. 6(1)(f) GDPR)'],
               ['Booking the free consultation (name, email, phone, through Cal.com)', 'Pre-contractual steps at your request (Art. 6(1)(b) GDPR)'],
-              ['7-day free trial (name, email, phone, questionnaire answers, logged weights) and follow-up contact when the trial ends', 'Pre-contractual steps at your request (Art. 6(1)(b) GDPR)'],
+              ['7-day free trial (name, email, phone, questionnaire answers, date the notice on the plan was accepted, logged weights) and follow-up contact when the trial ends', 'Pre-contractual steps at your request (Art. 6(1)(b) GDPR)'],
               ['Protecting the free trial form from bots and abuse (keyed hash of the IP address, Cloudflare Turnstile check)', 'Legitimate interest (Art. 6(1)(f) GDPR)'],
               ['Visit statistics (Google Analytics) and ad measurement (Google Ads, Meta Pixel)', 'Consent (Art. 6(1)(a) GDPR), given and withdrawn through the cookie banner'],
             ],

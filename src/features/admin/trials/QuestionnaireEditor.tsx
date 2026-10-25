@@ -11,7 +11,7 @@ import { useErrorMessage } from '../../../lib/errors';
 import { formatDateTime } from '../../../lib/format';
 import { adminKeys, useTrialQuestionnaire } from '../queries';
 import { emptyQuestion, newId, scoreRange } from './helpers';
-import { DISCIPLINES, type Discipline, type Question, type QuestionOption, type Questionnaire } from './types';
+import { DISCIPLINES, WEEK_DAYS, type Discipline, type Question, type QuestionOption, type Questionnaire } from './types';
 
 const cell = inputClass.replace('px-4 py-2.5', 'px-3 py-2').replace('rounded-xl', 'rounded-lg') + ' text-sm';
 
@@ -137,7 +137,12 @@ const Editor = ({ initial, isDefault, updatedAt }: { initial: Questionnaire; isD
   const errorMessage = useErrorMessage();
   const queryClient = useQueryClient();
   const [questions, setQuestions] = useState<Question[]>(initial.questions);
+  const [dayOptions, setDayOptions] = useState<number[]>(initial.dayOptions);
   const [dirty, setDirty] = useState(false);
+  const toggleDay = (day: number) => {
+    setDayOptions((list) => (list.includes(day) ? list.filter((d) => d !== day) : [...list, day].sort((a, b) => a - b)));
+    setDirty(true);
+  };
 
   const change = (next: Question[]) => {
     setQuestions(next);
@@ -150,7 +155,7 @@ const Editor = ({ initial, isDefault, updatedAt }: { initial: Questionnaire; isD
   };
 
   const save = useMutation({
-    mutationFn: () => adminApi.put('/admin/trial-questionnaire', { questions }),
+    mutationFn: () => adminApi.put('/admin/trial-questionnaire', { dayOptions, questions }),
     onSuccess: () => {
       setDirty(false);
       queryClient.invalidateQueries({ queryKey: adminKeys.trialQuestionnaire });
@@ -166,7 +171,7 @@ const Editor = ({ initial, isDefault, updatedAt }: { initial: Questionnaire; isD
           <h2 className="text-xl font-bold text-gray-900">{t('trials.questionnaire.title')}</h2>
           <p className="text-sm text-gray-600">{t('trials.questionnaire.subtitle')}</p>
         </div>
-        <Button icon={<FiSave className="w-4 h-4" aria-hidden />} onClick={() => save.mutate()} loading={save.isPending} disabled={!dirty && !isDefault}>
+        <Button icon={<FiSave className="w-4 h-4" aria-hidden />} onClick={() => save.mutate()} loading={save.isPending} disabled={(!dirty && !isDefault) || dayOptions.length < 2}>
           {t('actions.save')}
         </Button>
       </div>
@@ -187,6 +192,26 @@ const Editor = ({ initial, isDefault, updatedAt }: { initial: Questionnaire; isD
           );
         })}
       </div>
+
+      <fieldset className="bg-white rounded-xl shadow p-4 sm:p-5 space-y-3">
+        <legend className="sr-only">{t('trials.questionnaire.daysTitle')}</legend>
+        <div>
+          <p className="font-semibold text-gray-900">{t('trials.questionnaire.daysTitle')}</p>
+          <p className="text-sm text-gray-600">{t('trials.questionnaire.daysHint')}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {WEEK_DAYS.map((day) => (
+            <label
+              key={day}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer ${dayOptions.includes(day) ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-700'}`}
+            >
+              <input type="checkbox" className="sr-only" checked={dayOptions.includes(day)} onChange={() => toggleDay(day)} />
+              {t('trials.questionnaire.daysOption', { count: day })}
+            </label>
+          ))}
+        </div>
+        {dayOptions.length < 2 && <p className="text-sm text-red-600">{t('trials.questionnaire.daysTooFew')}</p>}
+      </fieldset>
 
       <ol className="space-y-4">
         {questions.map((question, i) => (
@@ -209,7 +234,7 @@ const Editor = ({ initial, isDefault, updatedAt }: { initial: Questionnaire; isD
           </Button>
         )}
         {dirty && (
-          <Button icon={<FiSave className="w-4 h-4" aria-hidden />} onClick={() => save.mutate()} loading={save.isPending}>
+          <Button icon={<FiSave className="w-4 h-4" aria-hidden />} onClick={() => save.mutate()} loading={save.isPending} disabled={dayOptions.length < 2}>
             {t('actions.saveChanges')}
           </Button>
         )}

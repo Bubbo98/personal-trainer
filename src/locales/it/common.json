@@ -53,6 +53,12 @@
     "message": "La pagina che cerchi non esiste o è stata spostata.",
     "backHome": "Torna alla Home"
   },
+  "trialNotice": {
+    "title": "Avvertenza sull'uso della scheda",
+    "text": "Questa scheda è un esempio generico di allenamento, creato per un livello e una tipologia di utente standard e non per una persona specifica. Non tiene conto di problemi fisici, infortuni, patologie o limitazioni individuali. Prima di iniziare, consulta il tuo medico e, se hai dubbi, un professionista qualificato. Esegui gli esercizi con carichi adeguati al tuo livello e interrompi subito in caso di dolore o malessere. Usi la scheda a tua responsabilità.",
+    "terms": "Leggi le condizioni complete",
+    "accept": "Ho letto l'avvertenza e la accetto"
+  },
   "errors": {
     "generic": "Qualcosa è andato storto. Riprova.",
     "loadFailed": "Impossibile caricare i dati.",

@@ -4,7 +4,7 @@ import { OWNER } from './owner';
 const terms: LegalDoc = {
   title: 'Termini e Condizioni di Servizio',
   subtitle: "Termini e condizioni generali per l'utilizzo dei servizi di personal training",
-  updated: '2026-07-20',
+  updated: '2026-10-25',
   sections: [
     {
       title: '1. Definizioni',
@@ -96,6 +96,21 @@ const terms: LegalDoc = {
             },
           ],
           tone: 'blue',
+        },
+        { h3: 'Schede della prova gratuita' },
+        {
+          p: "Le schede di prova presenti su questo sito sono programmi di allenamento generici, pensati per una tipologia di utente (base, intermedio o avanzato) e non personalizzati su di te. Non sono basate su un'anamnesi individuale e non tengono conto di infortuni, patologie, limitazioni di movimento, gravidanza, farmaci o altre condizioni personali. Gli esercizi, i carichi e le tecniche indicati sono puramente indicativi e vanno adattati alle tue capacità.",
+        },
+        {
+          p: "Prima di iniziare qualsiasi programma di allenamento, ti consigliamo di effettuare una visita medica e di confrontarti con il tuo medico. Se non conosci un esercizio, guarda la videoguida e, se necessario, chiedi supporto a un professionista qualificato. In caso di dolore, giramenti di testa, difficoltà respiratorie o altri sintomi, interrompi subito l'allenamento.",
+        },
+        {
+          box: [
+            {
+              p: "Utilizzando la scheda dichiari di essere in buona salute e di assumerti la piena responsabilità del suo utilizzo. Il titolare del sito non risponde di eventuali danni o infortuni derivanti da un uso improprio. L'accettazione di questa avvertenza è richiesta prima di iniziare la prova e ne viene registrata la data. Per un programma personalizzato sulle tue esigenze, puoi richiedere una scheda su misura.",
+            },
+          ],
+          tone: 'amber',
         },
       ],
     },

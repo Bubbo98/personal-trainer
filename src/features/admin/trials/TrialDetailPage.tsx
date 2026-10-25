@@ -36,10 +36,13 @@ const ContactForm = ({ trial }: { trial: Trial }) => {
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => setForm((f) => ({ ...f, [key]: value }));
 
   const save = useMutation({
-    mutationFn: () => adminApi.put(`/admin/trials/${trial.id}`, form),
-    onSuccess: () => {
+    mutationFn: () => adminApi.put<{ emailSent: boolean | null }>(`/admin/trials/${trial.id}`, form),
+    // A new address of a running trial gets the access link
+    onSuccess: ({ emailSent }) => {
       queryClient.invalidateQueries({ queryKey: adminKeys.trials });
-      toast.success(t('trials.detail.saved'));
+      if (emailSent === true) toast.success(t('trials.detail.savedEmailSent', { email: form.email }));
+      else if (emailSent === false) toast.error(t('trials.detail.savedEmailFailed', { email: form.email }));
+      else toast.success(t('trials.detail.saved'));
     },
     onError: (error) => toast.error(errorMessage(error)),
   });
@@ -57,7 +60,13 @@ const ContactForm = ({ trial }: { trial: Trial }) => {
         <TextField label={t('trials.fields.firstName')} value={form.firstName} onChange={(e) => set('firstName', e.target.value)} />
         <TextField label={t('trials.fields.lastName')} value={form.lastName} onChange={(e) => set('lastName', e.target.value)} />
         <TextField label={t('trials.fields.phone')} type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} />
-        <TextField label={t('trials.fields.email')} type="email" value={form.email} onChange={(e) => set('email', e.target.value)} />
+        <TextField
+          label={t('trials.fields.email')}
+          type="email"
+          value={form.email}
+          onChange={(e) => set('email', e.target.value)}
+          hint={trial.state === 'not_opened' || trial.state === 'active' ? t('trials.detail.emailHint') : undefined}
+        />
       </div>
       <SelectField label={t('trials.fields.status')} value={form.status} onChange={(e) => set('status', e.target.value as TrialStatus)}>
         {TRIAL_STATUSES.map((s) => (
@@ -119,6 +128,7 @@ const AccessCard = ({ trial }: { trial: Trial }) => {
     [t('trials.detail.opened'), trial.openedAt ? formatDateTime(trial.openedAt) : t('trials.detail.notYet')],
     [t('trials.detail.ends'), trial.expiresAt ? formatDateTime(trial.expiresAt) : t('trials.detail.endsAfterOpening')],
     [t('trials.detail.lastLogin'), trial.lastLogin ? formatDateTime(trial.lastLogin) : t('trials.detail.notYet')],
+    [t('trials.detail.disclaimer'), trial.disclaimerAcceptedAt ? formatDateTime(trial.disclaimerAcceptedAt) : t('trials.detail.notYet')],
   ];
 
   return (
@@ -175,7 +185,13 @@ const AnswersCard = ({ trial }: { trial: Trial }) => {
           <div key={i} className="py-2 flex flex-col sm:flex-row sm:justify-between gap-1">
             <dt className="text-sm text-gray-600">{a.question}</dt>
             <dd className="text-sm font-medium text-gray-900 sm:text-right">
-              {a.answer} <span className="text-xs text-gray-400">({t('trials.points', { count: a.points })})</span>
+              {a.days !== undefined ? (
+                t('trials.daysPerWeek', { count: a.days })
+              ) : (
+                <>
+                  {a.answer} <span className="text-xs text-gray-400">({t('trials.points', { count: a.points })})</span>
+                </>
+              )}
             </dd>
           </div>
         ))}

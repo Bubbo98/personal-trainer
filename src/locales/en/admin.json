@@ -619,7 +619,8 @@
     "planTabs": {
       "label": "Plan sections",
       "plan": "Exercises",
-      "days": "Exercise videos"
+      "days": "Exercise videos",
+      "pdf": "Plan PDF"
     },
     "state": {
       "active_one": "Last day",
@@ -678,6 +679,8 @@
     "createdOn": "created on {{date}}",
     "logCount_one": "{{count}} exercise logged",
     "logCount_other": "{{count}} exercises logged",
+    "daysPerWeek_one": "{{count}} day a week",
+    "daysPerWeek_other": "{{count}} days a week",
     "points_one": "{{count}} point",
     "points_other": "{{count}} points",
     "people": {
@@ -700,6 +703,10 @@
       "notFound": "Trial not found.",
       "contacts": "Contacts and status",
       "saved": "Changes saved.",
+      "emailHint": "If you change it, the new address gets the trial link.",
+      "disclaimer": "Plan notice accepted",
+      "savedEmailSent": "Changes saved. Trial link sent to {{email}}.",
+      "savedEmailFailed": "Changes saved, but the email to {{email}} did not go out: send the link by hand.",
       "marketingYes": "Agreed to receive communications.",
       "marketingNo": "Did not agree to receive promotional communications.",
       "access": "Access",
@@ -731,17 +738,20 @@
       "deleted": "Template plan deleted.",
       "empty": "No template plans",
       "emptyHint": "Create one for the gym and one for calisthenics, maybe by level (beginner, advanced).",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
       "counts": "{{exercises}} exercises · {{videos}} videos",
       "onlineRange": "Online · score {{range}}",
       "anyScore": "any",
       "gymOnly": "Free sessions only",
       "noOnline": "{{discipline}}: no plan is available online, so this discipline is not offered in the website questionnaire.",
+      "missingDays": "{{discipline}}: no online plan has {{days}} days; whoever picks them gets the plan with the closest number of days.",
       "uncovered": "{{discipline}}: scores {{scores}} fall in no plan's range; they get the plan with the closest range.",
       "back": "Back to template plans",
       "notFound": "Template plan not found.",
       "deleteTitle": "Delete the template plan?",
       "deleteMessage": "\"{{name}}\" will be deleted. Trials already created keep their copy of the plan.",
-      "planHint": "Edit exercises and videos here: every new trial starts from a copy of this plan. Trials already created don't change.",
+      "planHint": "Edit exercises, videos and the PDF here: every new trial starts from a copy of this plan. Trials already created don't change. The plan's number of days decides who gets it: whoever picks 3 days in the questionnaire gets a 3-day plan.",
       "form": {
         "createTitle": "New template plan",
         "editTitle": "Edit template plan",
@@ -750,7 +760,7 @@
         "discipline": "Discipline",
         "description": "Description (only for you)",
         "online": "Also use it for the online trial on the website",
-        "rangeHint": "Whoever fills in the questionnaire gets this plan if their score is in the range. Leave empty for no limit.",
+        "rangeHint": "Whoever fills in the questionnaire gets a plan with the days they chose and, among those, this one if their score is in the range. Leave empty for no limit.",
         "minScore": "Minimum score",
         "maxScore": "Maximum score",
         "rangeError": "The minimum is higher than the maximum.",
@@ -759,7 +769,7 @@
     },
     "questionnaire": {
       "title": "Online trial questionnaire",
-      "subtitle": "People signing up on the website choose gym or calisthenics and answer these questions. The answers' points add up and the score picks the template plan.",
+      "subtitle": "People signing up on the site choose gym or calisthenics, how many days a week to train, and answer these questions. The days pick the plans with that many days; among those, the sum of the points picks the template.",
       "isDefault": "This is the starting questionnaire: edit it and save it to make it yours.",
       "updatedAt": "Last change: {{date}}",
       "range": "possible score from {{min}} to {{max}}",
@@ -777,6 +787,11 @@
       "removeQuestion": "Remove question",
       "moveUp": "Move up",
       "moveDown": "Move down",
+      "daysTitle": "Training days (required question)",
+      "daysHint": "Always asked, after the discipline: \"How many days a week do you plan to train?\". Choose the answers offered; it gives no points.",
+      "daysOption_one": "{{count}} day",
+      "daysOption_other": "{{count}} days",
+      "daysTooFew": "Choose at least 2 answers.",
       "saved": "Questionnaire saved."
     }
   }

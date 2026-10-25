@@ -9,7 +9,7 @@ import { useToast } from '../../../components/ui/Toast';
 import { adminApi } from '../../../lib/api';
 import { useErrorMessage } from '../../../lib/errors';
 import { adminKeys, useTrialQuestionnaire, useTrialTemplates } from '../queries';
-import { rangeGaps, rangeLabel } from './helpers';
+import { missingDays, rangeGaps, rangeLabel } from './helpers';
 import TemplateFormModal from './TemplateFormModal';
 import { DISCIPLINES, type TemplateInput, type TrialTemplate } from './types';
 
@@ -22,8 +22,11 @@ const CoverageHints = ({ templates }: { templates: TrialTemplate[] }) => {
     const gaps = rangeGaps(templates, questionnaire.data.questionnaire, discipline);
     const name = t(`trials.discipline.${discipline}`);
     if (!gaps.hasOnline) return [t('trials.templates.noOnline', { discipline: name })];
-    if (gaps.uncovered.length > 0) return [t('trials.templates.uncovered', { discipline: name, scores: gaps.uncovered.join(', ') })];
-    return [];
+    const days = missingDays(templates, questionnaire.data.questionnaire, discipline);
+    return [
+      ...(days.length > 0 ? [t('trials.templates.missingDays', { discipline: name, days: days.join(', ') })] : []),
+      ...(gaps.uncovered.length > 0 ? [t('trials.templates.uncovered', { discipline: name, scores: gaps.uncovered.join(', ') })] : []),
+    ];
   });
   if (hints.length === 0) return null;
   return (
@@ -91,7 +94,7 @@ const TemplatesList = () => {
                       <p className="font-semibold text-gray-900">{template.name}</p>
                       {template.description && <p className="text-sm text-gray-600 line-clamp-2">{template.description}</p>}
                       <p className="text-xs text-gray-500">
-                        {t('trials.templates.counts', { exercises: template.exerciseCount, videos: template.videoCount })}
+                        {t('trials.templates.days', { count: template.dayCount })} · {t('trials.templates.counts', { exercises: template.exerciseCount, videos: template.videoCount })}
                       </p>
                       {template.online ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">

@@ -35,7 +35,7 @@ import BodyComposition from './progress/BodyComposition';
 import CheckinSection from './checkin/CheckinSection';
 import MoreSection from './more/MoreSection';
 import ReviewSection from './review/ReviewSection';
-import { TrialBanner, TrialOver } from './trial/Trial';
+import { TrialBanner, TrialNoticeGate, TrialOver } from './trial/Trial';
 
 // Top-level sections: bottom bar on phones, top bar on larger screens.
 // 'reviews' has no nav entry: it's only reachable with the ?tab=reviews link of the review email.
@@ -50,7 +50,7 @@ const NAV: { id: Exclude<Section, 'reviews'>; icon: IconType }[] = [
   { id: 'more', icon: FiMoreHorizontal },
 ];
 
-// Trial mode (7-day trial): no check-ins, no reviews, no PDF plan, no body composition
+// Trial mode (7-day trial): no check-ins, no reviews, no body composition; the PDF plan only when the trainer gave one
 const TRIAL_NAV = NAV.filter(({ id }) => id !== 'check');
 
 const PAGE = 'min-h-screen bg-gray-50';
@@ -141,6 +141,7 @@ const Dashboard = ({ user, initialSection, onLogout }: { user: SessionUser; init
   const [trainingView, setTrainingView] = useState<TrainingView>('days');
   const [progressView, setProgressView] = useState<ProgressView>('weights');
   const [playing, setPlaying] = useState<Video | null>(null);
+  const [noticeAccepted, setNoticeAccepted] = useState(trial?.disclaimerAccepted ?? true);
 
   // Reminder dots: expired plan = alert, expiring within a week = warn, weights not logged this week = warn
   const daysLeft = plan.data && !plan.data.locked ? daysUntil(plan.data.expirationDate) : null;
@@ -158,24 +159,38 @@ const Dashboard = ({ user, initialSection, onLogout }: { user: SessionUser; init
   };
 
   const name = user.firstName?.trim();
+  const heading = (
+    <div className="flex items-center justify-between gap-4 mb-6">
+      <div>
+        <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">{name ? t('welcomeName', { name }) : `${t('welcome')}!`}</h1>
+        <p className="text-gray-600">{t('subtitle')}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onLogout}
+        className="flex items-center gap-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-300 transition-colors"
+        aria-label={t('logout')}
+      >
+        <FiLogOut className="w-5 h-5" aria-hidden />
+        <span className="hidden sm:inline">{t('logout')}</span>
+      </button>
+    </div>
+  );
+
+  // A trial plan is generic: its notice is accepted before the plan shows
+  if (trial && !noticeAccepted) {
+    return (
+      <>
+        {heading}
+        <TrialBanner trial={trial} />
+        <TrialNoticeGate onAccepted={() => setNoticeAccepted(true)} />
+      </>
+    );
+  }
 
   return (
     <>
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">{name ? t('welcomeName', { name }) : `${t('welcome')}!`}</h1>
-          <p className="text-gray-600">{t('subtitle')}</p>
-        </div>
-        <button
-          type="button"
-          onClick={onLogout}
-          className="flex items-center gap-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-300 transition-colors"
-          aria-label={t('logout')}
-        >
-          <FiLogOut className="w-5 h-5" aria-hidden />
-          <span className="hidden sm:inline">{t('logout')}</span>
-        </button>
-      </div>
+      {heading}
 
       {trial ? <TrialBanner trial={trial} /> : <TrainerSeenBanner />}
 
@@ -217,7 +232,7 @@ const Dashboard = ({ user, initialSection, onLogout }: { user: SessionUser; init
           items={[
             { id: 'days', label: t('training.tabs.days'), badge: weightsBadge },
             { id: 'videos', label: t('training.tabs.videos') },
-            ...(trial ? [] : [{ id: 'plan' as const, label: t('training.tabs.plan'), badge: planBadge }]),
+            ...(trial && !plan.data ? [] : [{ id: 'plan' as const, label: t('training.tabs.plan'), badge: planBadge }]),
           ]}
         />
       )}

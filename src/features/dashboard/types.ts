@@ -15,6 +15,8 @@ export interface TrialSession {
   kind: 'free_session' | 'online';
   expiresAt: string;
   daysLeft: number;
+  /** The notice on the use of the plan was accepted (at the online signup, or once in the dashboard). */
+  disclaimerAccepted: boolean;
 }
 
 export interface Technique {

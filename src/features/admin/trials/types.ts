@@ -21,6 +21,8 @@ export interface TrialTemplate {
   maxScore: number | null;
   exerciseCount: number;
   videoCount: number;
+  /** Training days in the template's plan: online signups get the template with the days they chose. */
+  dayCount: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -38,6 +40,8 @@ export interface TrialAnswer {
   question: string;
   answer: string;
   points: number;
+  /** Set on the training days answer (no points). */
+  days?: number;
 }
 
 export interface Trial {
@@ -58,6 +62,8 @@ export interface Trial {
   status: TrialStatus;
   notes: string | null;
   createdAt: string;
+  /** When the person accepted the notice on the use of the plan (signup, or first opening of the dashboard). */
+  disclaimerAcceptedAt: string | null;
   openedAt: string | null;
   expiresAt: string | null;
   lastLogin: string | null;
@@ -93,7 +99,11 @@ export interface Question {
 }
 
 export interface Questionnaire {
+  /** Training days a week offered to the person (always asked, before the questions). */
+  dayOptions: number[];
   questions: Question[];
 }
+
+export const WEEK_DAYS = [1, 2, 3, 4, 5, 6, 7];
 
 export const trialName = (t: Pick<Trial, 'firstName' | 'lastName'>) => [t.firstName, t.lastName].filter(Boolean).join(' ').trim();

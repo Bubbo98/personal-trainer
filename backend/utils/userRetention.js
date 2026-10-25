@@ -59,7 +59,7 @@ async function recordExpiredPlans() {
         `INSERT OR IGNORE INTO retention_log (event, occurred_at, ${LOG_COLUMNS})
          SELECT 'plan_expired', p.expiration_date, ${LOG_VALUES}
          FROM user_pdf_files p JOIN users u ON u.id = p.user_id
-         WHERE u.is_active = 1 AND u.username <> ? AND p.expiration_date IS NOT NULL AND p.expiration_date < datetime('now')
+         WHERE u.is_active = 1 AND u.account_type = 'client' AND u.username <> ? AND p.expiration_date IS NOT NULL AND p.expiration_date < datetime('now')
            ${protectedIds.length ? `AND u.id NOT IN (${protectedIds.map(() => '?').join(', ')})` : ''}`,
         [config.adminUsername, ...protectedIds]
     );

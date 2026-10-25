@@ -4,7 +4,7 @@ import { OWNER } from './owner';
 const privacy: LegalDoc = {
   title: 'Privacy Policy',
   subtitle: "Informativa sul trattamento dei dati personali ai sensi dell'art. 13 del Regolamento UE 2016/679 (GDPR)",
-  updated: '2026-10-23',
+  updated: '2026-10-25',
   sections: [
     {
       title: '1. Titolare del Trattamento',
@@ -55,7 +55,7 @@ const privacy: LegalDoc = {
               ['Marketing diretto e comunicazioni promozionali', 'Consenso esplicito (art. 6, par. 1, lett. a) GDPR'],
               ['Miglioramento servizi e analisi statistiche', 'Legittimo interesse (art. 6, par. 1, lett. f) GDPR'],
               ['Prenotazione della consulenza gratuita (nome, email, telefono, tramite Cal.com)', 'Misure precontrattuali su tua richiesta (art. 6, par. 1, lett. b) GDPR'],
-              ['Prova gratuita di 7 giorni (nome, email, telefono, risposte al questionario, pesi registrati) e ricontatto al termine della prova', 'Misure precontrattuali su tua richiesta (art. 6, par. 1, lett. b) GDPR'],
+              ["Prova gratuita di 7 giorni (nome, email, telefono, risposte al questionario, data di accettazione dell'avvertenza sulla scheda, pesi registrati) e ricontatto al termine della prova", 'Misure precontrattuali su tua richiesta (art. 6, par. 1, lett. b) GDPR'],
               ["Protezione del modulo della prova gratuita da bot e abusi (impronta cifrata dell'indirizzo IP, verifica Cloudflare Turnstile)", 'Legittimo interesse (art. 6, par. 1, lett. f) GDPR)'],
               ['Statistiche di visita (Google Analytics) e misura delle pubblicità (Google Ads, Meta Pixel)', 'Consenso (art. 6, par. 1, lett. a) GDPR), dato e revocabile dal banner cookie'],
             ],

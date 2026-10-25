@@ -5,7 +5,7 @@ import { OWNER } from './owner';
 const terms: LegalDoc = {
   title: 'Terms and Conditions of Service',
   subtitle: 'General terms and conditions for using the personal training services',
-  updated: '2026-07-20',
+  updated: '2026-10-25',
   notice: ENGLISH_NOTICE,
   sections: [
     {
@@ -96,6 +96,21 @@ const terms: LegalDoc = {
             },
           ],
           tone: 'blue',
+        },
+        { h3: 'Free trial plans' },
+        {
+          p: "The trial plans on this site are generic training programmes, designed for a type of person (beginner, intermediate or advanced) and not tailored to you. They are not based on an individual medical history and do not take into account injuries, medical conditions, movement limitations, pregnancy, medication or other personal conditions. The exercises, loads and techniques shown are only indicative and must be adapted to your abilities.",
+        },
+        {
+          p: 'Before starting any training programme, we recommend a medical check-up and talking to your doctor. If you do not know an exercise, watch its video guide and, if needed, ask a qualified professional for help. In case of pain, dizziness, breathing difficulties or other symptoms, stop training at once.',
+        },
+        {
+          box: [
+            {
+              p: 'By using the plan you declare that you are in good health and take full responsibility for its use. The site owner is not liable for any damage or injury arising from improper use. Accepting this notice is required before starting the trial, and the date of acceptance is recorded. For a programme tailored to your needs, you can ask for a personalised plan.',
+            },
+          ],
+          tone: 'amber',
         },
       ],
     },

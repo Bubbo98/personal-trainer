@@ -334,6 +334,9 @@
     "step": "Step {{step}} of {{total}}",
     "back": "Back",
     "disciplineQuestion": "How do you want to train?",
+    "daysQuestion": "How many days a week do you plan to train?",
+    "daysOption_one": "{{count}} day",
+    "daysOption_other": "{{count}} days",
     "disciplines": {
       "gym": {
         "title": "At the gym",
@@ -363,6 +366,7 @@
       "email": "Check the email address.",
       "phone": "Check the phone number.",
       "privacy": "To start the trial you need to accept the privacy policy.",
+      "disclaimer": "To start the trial you need to accept the notice on the use of the plan.",
       "alreadyUsed": "You already did the free trial with this email. If you want to continue with us, write to us!",
       "unavailable": "The online trial is not available right now. Write to us and we will help you.",
       "tooMany": "Too many requests from this connection: try again in an hour.",

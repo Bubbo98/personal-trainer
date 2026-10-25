@@ -63,6 +63,19 @@ describe('trials', () => {
         assert.equal(listed.videoCount, 2);
     });
 
+    it('the template takes a plan PDF, with no expiry nor unlock date', async () => {
+        const form = new FormData();
+        form.append('pdf', new Blob([Buffer.from('%PDF-1.4 modello')], { type: 'application/pdf' }), 'Modello.pdf');
+        form.append('durationMonths', '2');
+        form.append('visibleFrom', new Date(Date.now() + 3 * 86400000).toISOString());
+        const res = await api('POST', `/api/pdf/admin/upload/${template.userId}`, { token: admin(), body: form });
+        assert.equal(res.status, 200);
+        const info = (await api('GET', `/api/pdf/admin/user/${template.userId}`, { token: admin() })).body.data;
+        assert.equal(info.originalName, 'Modello.pdf');
+        assert.equal(info.expirationDate, null);
+        assert.equal(info.visibleFrom, null);
+    });
+
     it('a free session copies the plan, videos, links and techniques to a new trial user', async () => {
         const res = await api('POST', '/api/admin/trials', {
             token: admin(),
@@ -107,6 +120,15 @@ describe('trials', () => {
         assert.equal(verify.status, 200);
         assert.equal(verify.body.data.user.trial.daysLeft, 7);
 
+        // A free session never saw the notice on the use of the plan: the dashboard asks for it once
+        assert.equal(login.body.data.user.trial.disclaimerAccepted, false);
+        assert.equal((await api('POST', '/api/trials/accept-disclaimer', { token: login.body.data.token })).status, 200);
+        const accepted = await api('GET', '/api/auth/verify', { token: login.body.data.token });
+        assert.equal(accepted.body.data.user.trial.disclaimerAccepted, true);
+        const recorded = (await api('GET', '/api/admin/trials', { token: admin() })).body.data.trials.find((t) => t.id === freeSession.id);
+        assert.ok(recorded.disclaimerAcceptedAt);
+        assert.equal((await api('POST', '/api/trials/accept-disclaimer')).status, 401);
+
         const trial = (await api('GET', '/api/admin/trials', { token: admin() })).body.data.trials.find((t) => t.id === freeSession.id);
         assert.equal(trial.state, 'active');
         assert.ok(trial.openedAt && trial.expiresAt);
@@ -115,6 +137,24 @@ describe('trials', () => {
         await db().execute({ sql: "UPDATE trials SET expires_at = datetime('now', '+2 days') WHERE id = ?", args: [freeSession.id] });
         const again = await openLink(link.body.data.loginUrl);
         assert.equal(again.body.data.user.trial.daysLeft, 2);
+    });
+
+    it('the trial gets its own copy of the template PDF and can download it', async () => {
+        const r2 = require('../utils/r2');
+        const keys = (await db().execute({
+            sql: 'SELECT user_id, file_key, expiration_date FROM user_pdf_files WHERE user_id IN (?, ?)', args: [template.userId, freeSession.userId],
+        })).rows;
+        const own = keys.find((r) => Number(r.user_id) === freeSession.userId);
+        const original = keys.find((r) => Number(r.user_id) === template.userId);
+        assert.ok(own && own.file_key !== original.file_key, 'a separate file');
+        assert.equal(own.expiration_date, null);
+        assert.ok(r2.bucket.get(own.file_key).equals(r2.bucket.get(original.file_key)));
+
+        const link = await api('GET', `/api/admin/trials/${freeSession.id}/link`, { token: admin() });
+        const login = await openLink(link.body.data.loginUrl);
+        const download = await api('GET', '/api/pdf/download', { token: login.body.data.token });
+        assert.equal(download.status, 200);
+        assert.equal(download.body.toString(), '%PDF-1.4 modello');
     });
 
     it('an ended trial is locked out with TRIAL_EXPIRED; extending it opens it again', async () => {
@@ -146,16 +186,42 @@ describe('trials', () => {
         assert.equal(res.body.data.trial.notes, 'Richiamare lunedì');
         assert.equal((await api('PUT', `/api/admin/trials/${freeSession.id}`, { token: admin(), body: { status: 'boh' } })).status, 400);
     });
+
+    it('a corrected email of a running trial gets the access link; an invalid one is refused', async () => {
+        const put = (body) => api('PUT', `/api/admin/trials/${freeSession.id}`, { token: admin(), body });
+        await db().execute({ sql: "UPDATE trials SET expires_at = datetime('now', '+3 days') WHERE id = ?", args: [freeSession.id] });
+        assert.equal((await put({ email: 'mario@exmple' })).status, 400);
+
+        // The tests have no email key: the send is tried (false), not skipped (null)
+        const changed = await put({ email: 'mario.rossi@example.com' });
+        assert.equal(changed.status, 200);
+        assert.equal(changed.body.data.trial.email, 'mario.rossi@example.com');
+        assert.equal(changed.body.data.emailSent, false);
+        assert.equal((await put({ email: 'Mario.Rossi@example.com', notes: 'x' })).body.data.emailSent, null, 'same address');
+        assert.equal((await put({ notes: 'y' })).body.data.emailSent, null);
+
+        // An ended trial gets nothing
+        await db().execute({ sql: "UPDATE trials SET expires_at = datetime('now', '-1 day') WHERE id = ?", args: [freeSession.id] });
+        assert.equal((await put({ email: 'altro@example.com' })).body.data.emailSent, null);
+    });
 });
 
 describe('online trial', () => {
     let low;
     let high;
 
+    /** A plan of that many training days. */
+    const planOfDays = (userId, count) => api('POST', `/api/workout/admin/plan/${userId}`, {
+        token: adminToken(),
+        body: { days: Array.from({ length: count }, (_, i) => ({ dayNumber: i + 1, exercises: [{ name: `Esercizio ${i + 1}` }] })) },
+    });
+    const make = (body) => api('POST', '/api/admin/trial-templates', { token: adminToken(), body: { discipline: 'calisthenics', online: true, ...body } });
+
     before(async () => {
-        const make = (body) => api('POST', '/api/admin/trial-templates', { token: adminToken(), body: { discipline: 'calisthenics', online: true, ...body } });
         low = (await make({ name: 'Calisthenics base', maxScore: 3 })).body.data.template;
         high = (await make({ name: 'Calisthenics avanzato', minScore: 4 })).body.data.template;
+        await planOfDays(low.userId, 3);
+        await planOfDays(high.userId, 3);
     });
 
     it('the questionnaire has no points and lists the disciplines with an online template', async () => {
@@ -165,6 +231,7 @@ describe('online trial', () => {
         assert.equal(res.body.data.trialDays, 7);
         const options = res.body.data.questions.flatMap((q) => q.options);
         assert.ok(options.length > 0 && options.every((o) => o.points === undefined));
+        assert.deepEqual(res.body.data.dayOptions, [2, 3, 4]);
     });
 
     it('the admin edits the questionnaire; invalid ones are refused', async () => {
@@ -180,6 +247,15 @@ describe('online trial', () => {
         const read = await api('GET', '/api/admin/trial-questionnaire', { token: adminToken() });
         assert.equal(read.body.data.isDefault, false);
         assert.equal(read.body.data.questionnaire.questions[0].options[1].points, 5);
+        assert.deepEqual(read.body.data.questionnaire.dayOptions, [2, 3, 4], 'not sent: the default days');
+
+        const days = await api('PUT', '/api/admin/trial-questionnaire', { token: adminToken(), body: { ...questionnaire, dayOptions: [5, 3, 4, 3] } });
+        assert.deepEqual(days.body.data.questionnaire.dayOptions, [3, 4, 5]);
+        for (const dayOptions of [[3], [0, 3], [3, 8], 'tre']) {
+            assert.equal((await api('PUT', '/api/admin/trial-questionnaire', { token: adminToken(), body: { ...questionnaire, dayOptions } })).status, 400);
+        }
+        // 5 days too, for the closest-plan test below
+        await api('PUT', '/api/admin/trial-questionnaire', { token: adminToken(), body: { ...questionnaire, dayOptions: [2, 3, 4, 5] } });
 
         const dupId = { questions: [{ id: 'a', text: 'A', options: [{ id: 'x', text: 'X', points: 0 }, { id: 'x', text: 'Y', points: 1 }] }] };
         assert.equal((await api('PUT', '/api/admin/trial-questionnaire', { token: adminToken(), body: dupId })).status, 400);
@@ -192,8 +268,8 @@ describe('online trial', () => {
     const signup = (body, ip = `10.0.0.${nextIp++}`) => api('POST', '/api/trials/signup', {
         headers: { 'X-Forwarded-For': ip },
         body: {
-            discipline: 'calisthenics', answers: { pullups: 'many', years: 'old' },
-            firstName: 'Giulia', lastName: 'Bianchi', email: 'giulia.prova@example.com', phone: '+39 333 0000000', privacy: true,
+            discipline: 'calisthenics', daysPerWeek: 3, answers: { pullups: 'many', years: 'old' },
+            firstName: 'Giulia', lastName: 'Bianchi', email: 'giulia.prova@example.com', phone: '+39 333 0000000', privacy: true, disclaimer: true,
             elapsedMs: 30000, website: '',
             ...body,
         },
@@ -204,7 +280,10 @@ describe('online trial', () => {
         assert.equal((await signup({ email: 'nope' })).body.code, 'INVALID_EMAIL');
         assert.equal((await signup({ phone: '' })).body.code, 'INVALID_PHONE');
         assert.equal((await signup({ privacy: false })).body.code, 'PRIVACY_REQUIRED');
+        assert.equal((await signup({ disclaimer: undefined })).body.code, 'DISCLAIMER_REQUIRED');
         assert.equal((await signup({ answers: { pullups: 'many' } })).body.code, 'MISSING_ANSWER');
+        assert.equal((await signup({ daysPerWeek: undefined })).body.code, 'MISSING_ANSWER');
+        assert.equal((await signup({ daysPerWeek: 6 })).body.code, 'MISSING_ANSWER', 'not one of the days offered');
     });
 
     it('the score picks the template; the trial keeps contacts and answers', async () => {
@@ -219,7 +298,9 @@ describe('online trial', () => {
         assert.equal(trial.score, 6);
         assert.equal(trial.templateId, high.id);
         assert.equal(trial.phone, '+39 333 0000000');
-        assert.deepEqual(trial.answers.map((a) => a.answer), ['Tante', 'Anni'], 'gym questions are not asked');
+        assert.deepEqual(trial.answers.map((a) => a.answer), ['3', 'Tante', 'Anni'], 'the days first; gym questions are not asked');
+        assert.equal(trial.answers[0].days, 3);
+        assert.ok(trial.disclaimerAcceptedAt, 'accepted at signup');
         assert.equal(trial.state, 'not_opened');
     });
 
@@ -310,6 +391,23 @@ describe('online trial', () => {
         assert.equal(res.status, 201);
         const trial = (await api('GET', '/api/admin/trials', { token: adminToken() })).body.data.trials.find((t) => t.email === 'base@example.com');
         assert.equal(trial.templateId, low.id);
+    });
+
+    it('the days chosen come before the score: the template with that many days, else the closest', async () => {
+        const four = (await make({ name: 'Calisthenics 4 giorni', maxScore: 1 })).body.data.template;
+        await planOfDays(four.userId, 4);
+        const listed = (await api('GET', '/api/admin/trial-templates', { token: adminToken() })).body.data.templates;
+        assert.equal(listed.find((t) => t.id === four.id).dayCount, 4);
+
+        const templateOf = async (email) =>
+            (await api('GET', '/api/admin/trials', { token: adminToken() })).body.data.trials.find((t) => t.email === email).templateId;
+        await signup({ email: 'quattro@example.com', phone: '347 2222222', daysPerWeek: 4 });
+        assert.equal(await templateOf('quattro@example.com'), four.id, 'a high score, but the only 4-day plan');
+        await signup({ email: 'cinque@example.com', phone: '347 3333333', daysPerWeek: 5 });
+        assert.equal(await templateOf('cinque@example.com'), four.id, 'no 5-day plan: the closest');
+        await signup({ email: 'due@example.com', phone: '347 4444444', daysPerWeek: 2 });
+        assert.equal(await templateOf('due@example.com'), high.id, '3-day plans are closer; then the score');
+        await api('DELETE', `/api/admin/trial-templates/${four.id}`, { token: adminToken() });
     });
 
     it('the nightly job deletes old trial users but keeps the contacts', async () => {

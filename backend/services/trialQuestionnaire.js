@@ -5,21 +5,26 @@ const { badRequest } = require('../utils/http');
  * The online trial questionnaire, edited by the admin and stored as JSON in
  * app_settings ('trial_questionnaire'):
  *
- *   { questions: [{ id, text, textEn?, discipline: 'gym' | 'calisthenics' | null,
+ *   { dayOptions: [2, 3, 4],
+ *     questions: [{ id, text, textEn?, discipline: 'gym' | 'calisthenics' | null,
  *                   options: [{ id, text, textEn?, points }] }] }
  *
- * The person first picks the discipline (gym or calisthenics); then answers the
+ * The person first picks the discipline (gym or calisthenics), then how many days a
+ * week they mean to train (always asked, one of dayOptions); then answers the
  * questions of that discipline plus those with discipline null. The points of the
- * chosen options add up to the score, and the score picks the trial template
+ * chosen options add up to the score; the days and the score pick the trial template
  * (see services/trials). Visitors never see the points.
  */
 
 const SETTING_KEY = 'trial_questionnaire';
 const DISCIPLINES = ['gym', 'calisthenics'];
 const LIMITS = { questions: 20, options: 8, text: 300, points: 100 };
+const DEFAULT_DAY_OPTIONS = [2, 3, 4];
+const DAYS_QUESTION = 'Quanti giorni a settimana pensi di allenarti?';
 
 /** Used until the admin saves their own: a starting point to edit. */
 const DEFAULT_QUESTIONNAIRE = {
+    dayOptions: DEFAULT_DAY_OPTIONS,
     questions: [
         {
             id: 'experience',
@@ -92,6 +97,15 @@ const text = (value, field, required = true) => {
 
 const ID = /^[\w.+-]{1,40}$/;
 
+/** Days a week offered to the person: 2 to 7 different whole numbers from 1 to 7, sorted. */
+function validateDayOptions(value) {
+    if (!Array.isArray(value)) throw badRequest('The training days to offer are required');
+    const days = [...new Set(value.map(Number))].sort((a, b) => a - b);
+    if (days.some((d) => !Number.isInteger(d) || d < 1 || d > 7)) throw badRequest('Training days must be from 1 to 7');
+    if (days.length < 2) throw badRequest('Offer at least 2 choices of training days');
+    return days;
+}
+
 /** Checks and normalizes a questionnaire sent by the admin; any problem is a 400. */
 function validateQuestionnaire(input) {
     const questions = input && input.questions;
@@ -100,6 +114,7 @@ function validateQuestionnaire(input) {
 
     const questionIds = new Set();
     return {
+        dayOptions: input.dayOptions === undefined ? DEFAULT_DAY_OPTIONS : validateDayOptions(input.dayOptions),
         questions: questions.map((q, i) => {
             const where = `Question ${i + 1}`;
             if (!q || !ID.test(q.id) || questionIds.has(q.id)) throw badRequest(`${where}: missing or duplicate id`);
@@ -132,7 +147,8 @@ async function loadQuestionnaire() {
     const row = await db.get('SELECT value FROM app_settings WHERE key = ?', [SETTING_KEY]);
     if (!row) return DEFAULT_QUESTIONNAIRE;
     try {
-        return JSON.parse(row.value);
+        // Saved before the days question existed: the default choices
+        return { dayOptions: DEFAULT_DAY_OPTIONS, ...JSON.parse(row.value) };
     } catch {
         console.error('Invalid trial questionnaire in app_settings: using the default');
         return DEFAULT_QUESTIONNAIRE;
@@ -154,6 +170,7 @@ const questionsFor = (questionnaire, discipline) =>
 
 /** What a visitor sees: the questions without the points. */
 const publicQuestionnaire = (questionnaire) => ({
+    dayOptions: questionnaire.dayOptions,
     questions: questionnaire.questions.map((q) => ({
         id: q.id,
         text: q.text,
@@ -165,11 +182,15 @@ const publicQuestionnaire = (questionnaire) => ({
 
 /**
  * Score of a signup. answers = { [questionId]: optionId }; every question of the
- * discipline must be answered with one of its options (400 otherwise).
- * @returns {{ score: number, answers: { question, answer, points }[] }}  answers as shown, for the admin
+ * discipline must be answered with one of its options, and days must be one of
+ * dayOptions (400 otherwise).
+ * @returns {{ score: number, days: number, answers: { question, answer, points, days? }[] }}
+ *          answers as shown, for the admin; the days come first (they have no points)
  */
-function scoreAnswers(questionnaire, discipline, answers) {
+function scoreAnswers(questionnaire, discipline, answers, days) {
     if (!DISCIPLINES.includes(discipline)) throw badRequest('Invalid discipline');
+    const chosenDays = Number(days);
+    if (!questionnaire.dayOptions.includes(chosenDays)) throw badRequest('Please choose the training days', 'MISSING_ANSWER');
     const given = answers && typeof answers === 'object' ? answers : {};
     let score = 0;
     const shown = questionsFor(questionnaire, discipline).map((q) => {
@@ -178,7 +199,8 @@ function scoreAnswers(questionnaire, discipline, answers) {
         score += option.points;
         return { question: q.text, answer: option.text, points: option.points };
     });
-    return { score, answers: shown };
+    const daysAnswer = { question: DAYS_QUESTION, answer: String(chosenDays), points: 0, days: chosenDays };
+    return { score, days: chosenDays, answers: [daysAnswer, ...shown] };
 }
 
 module.exports = {

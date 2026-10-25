@@ -44,7 +44,10 @@ router.post('/admin/upload/:userId', admin, upload.single('pdf'), route(async (r
     const days = int(req.body.durationDays, 'durationDays', 0);
     const visibleFrom = req.body.visibleFrom || null;
 
-    if (!(await db.get('SELECT id FROM users WHERE id = ?', [userId]))) throw notFound('User not found');
+    const user = await db.get('SELECT id, account_type FROM users WHERE id = ?', [userId]);
+    if (!user) throw notFound('User not found');
+    // Trial users and trial templates: no expiry nor unlock date, the trial has its own end
+    const client = user.account_type === 'client';
 
     const previous = await db.get('SELECT file_key FROM user_pdf_files WHERE user_id = ?', [userId]);
 
@@ -52,7 +55,7 @@ router.post('/admin/upload/:userId', admin, upload.single('pdf'), route(async (r
     const { changes } = await storeFileFor('plan', userId, req.file, (fileKey) => db.run(
         `INSERT INTO user_pdf_files (user_id, original_name, file_key, file_data, file_size, mime_type, uploaded_by,
                                      duration_months, duration_days, expiration_date, visible_from)
-         VALUES (?, ?, ?, '', ?, ?, ?, ?, ?, datetime(?, ?, ?), ?)
+         VALUES (?, ?, ?, '', ?, ?, ?, ?, ?, ${client ? 'datetime(?, ?, ?)' : 'NULL'}, ?)
          ON CONFLICT(user_id) DO UPDATE SET
             original_name = excluded.original_name, file_key = excluded.file_key, file_data = '', file_size = excluded.file_size,
             mime_type = excluded.mime_type, uploaded_by = excluded.uploaded_by,
@@ -60,7 +63,8 @@ router.post('/admin/upload/:userId', admin, upload.single('pdf'), route(async (r
             expiration_date = excluded.expiration_date, visible_from = excluded.visible_from,
             updated_at = CURRENT_TIMESTAMP`,
         [userId, req.file.originalname, fileKey, req.file.size, req.file.mimetype,
-            req.user.username, months, days, durationStart(visibleFrom), modifier(months, 'months'), modifier(days, 'days'), visibleFrom]
+            req.user.username, client ? months : 0, client ? days : 0,
+            ...(client ? [durationStart(visibleFrom), modifier(months, 'months'), modifier(days, 'days')] : []), client ? visibleFrom : null]
     ));
     if (changes === 0) throw new Error('PDF not saved');
     if (previous) await deleteFiles([previous.file_key]);

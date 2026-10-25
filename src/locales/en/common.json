@@ -53,6 +53,12 @@
     "message": "The page you are looking for does not exist or has been moved.",
     "backHome": "Back to Home"
   },
+  "trialNotice": {
+    "title": "Notice on the use of the plan",
+    "text": "This plan is a generic workout example, made for a standard level and type of person, not for you specifically. It does not take into account physical problems, injuries, medical conditions or individual limitations. Before starting, consult your doctor and, if in doubt, a qualified professional. Use loads suited to your level and stop at once in case of pain or discomfort. You use the plan at your own risk.",
+    "terms": "Read the full terms",
+    "accept": "I have read the notice and accept it"
+  },
   "errors": {
     "generic": "Something went wrong. Please try again.",
     "loadFailed": "Could not load the data.",

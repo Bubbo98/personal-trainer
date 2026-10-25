@@ -1,12 +1,14 @@
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { FiActivity, FiCalendar } from 'react-icons/fi';
+import { FiActivity, FiCalendar, FiFileText } from 'react-icons/fi';
 import DaysTab from '../users/detail/DaysTab';
+import PlanPdfPanel from '../users/detail/PlanPdfPanel';
 import WorkoutPlanPanel from '../users/detail/WorkoutPlanPanel';
 
 const TABS = [
   { id: 'plan', icon: FiActivity },
   { id: 'days', icon: FiCalendar },
+  { id: 'pdf', icon: FiFileText },
 ] as const;
 
 type Tab = (typeof TABS)[number]['id'];
@@ -45,6 +47,11 @@ const PlanTabs = ({ userId, name }: { userId: number; name: string }) => {
         </div>
       )}
       {tab === 'days' && <DaysTab userId={userId} />}
+      {tab === 'pdf' && (
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+          <PlanPdfPanel userId={userId} userName={name} trial />
+        </div>
+      )}
     </div>
   );
 };

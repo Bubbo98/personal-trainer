@@ -3,6 +3,7 @@ const { db } = require('../../utils/database');
 const { route, id } = require('../../utils/http');
 const trials = require('../../services/trials');
 const { loadQuestionnaire, saveQuestionnaire } = require('../../services/trialQuestionnaire');
+const { sendTrialAccess } = require('../../services/emailService');
 
 // Admin: trial templates, trials (free sessions and online signups), the online questionnaire.
 // A template's or a trial's plan is edited with the usual plan routes, on its userId.
@@ -52,9 +53,22 @@ router.get('/trials/:id/link', route(async (req, res) => {
     res.json({ success: true, data: { loginUrl: await trials.trialLink(id(req.params.id, 'trial ID')) } });
 }));
 
-// PUT /api/admin/trials/:id — Body: any of { status, notes, firstName, lastName, email, phone }
+// PUT /api/admin/trials/:id — Body: any of { status, notes, firstName, lastName, email, phone } → { trial, emailSent }
+// A new email address of a trial still running gets the access link (e.g. the person had mistyped it):
+// emailSent is true / false then, null when nothing was sent.
 router.put('/trials/:id', route(async (req, res) => {
-    res.json({ success: true, data: { trial: await trials.updateTrial(id(req.params.id, 'trial ID'), req.body || {}) } });
+    const trialId = id(req.params.id, 'trial ID');
+    const before = await trials.findTrial(trialId);
+    const trial = await trials.updateTrial(trialId, req.body || {});
+
+    let emailSent = null;
+    const newAddress = trial.email && trial.email.toLowerCase() !== (before.email || '').toLowerCase();
+    if (newAddress && (trial.state === 'not_opened' || trial.state === 'active')) {
+        const sent = await sendTrialAccess(trial.email, trial.firstName, await trials.trialLink(trialId), trial.daysLeft);
+        if (sent.success) await trials.markEmailSent(trialId);
+        emailSent = sent.success;
+    }
+    res.json({ success: true, data: { trial, emailSent } });
 }));
 
 // POST /api/admin/trials/:id/extend — Body: { days }

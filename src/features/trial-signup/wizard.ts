@@ -20,6 +20,8 @@ export interface PublicQuestion {
 export interface PublicQuestionnaire {
   disciplines: Discipline[];
   trialDays: number;
+  /** Training days a week the person can choose (always asked: they pick the template). */
+  dayOptions: number[];
   questions: PublicQuestion[];
 }
 
@@ -29,6 +31,8 @@ export interface ContactForm {
   email: string;
   phone: string;
   privacy: boolean;
+  /** The notice on the use of the plan (generic plan, use at your own risk). */
+  disclaimer: boolean;
   marketing: boolean;
 }
 
@@ -41,12 +45,12 @@ export const questionsFor = (questions: PublicQuestion[], discipline: Discipline
   discipline ? questions.filter((q) => !q.discipline || q.discipline === discipline) : [];
 
 /**
- * Steps: the discipline (skipped when only one is offered), one per question, then the contacts.
- * Step ids: 'discipline' | `q:${questionId}` | 'contact'.
+ * Steps: the discipline (skipped when only one is offered), the training days, one per question, then the contacts.
+ * Step ids: 'discipline' | 'days' | `q:${questionId}` | 'contact'.
  */
 export function wizardSteps(questionnaire: PublicQuestionnaire, discipline: Discipline | null) {
   const questions = questionsFor(questionnaire.questions, discipline);
-  return [...(questionnaire.disciplines.length > 1 ? ['discipline'] : []), ...questions.map((q) => `q:${q.id}`), 'contact'];
+  return [...(questionnaire.disciplines.length > 1 ? ['discipline'] : []), 'days', ...questions.map((q) => `q:${q.id}`), 'contact'];
 }
 
 /** The discipline already chosen, or the only one offered. */
@@ -63,6 +67,7 @@ export function contactErrors(form: ContactForm): Partial<Record<keyof ContactFo
   if (!EMAIL.test(form.email.trim())) errors.email = 'trialSignup.errors.email';
   if (!PHONE.test(form.phone.trim())) errors.phone = 'trialSignup.errors.phone';
   if (!form.privacy) errors.privacy = 'trialSignup.errors.privacy';
+  if (!form.disclaimer) errors.disclaimer = 'trialSignup.errors.disclaimer';
   return errors;
 }
 
@@ -79,6 +84,7 @@ export interface BotCheck {
 /** POST /api/trials/signup body. */
 export function signupBody(
   discipline: Discipline,
+  daysPerWeek: number,
   answers: Record<string, string>,
   questions: PublicQuestion[],
   form: ContactForm,
@@ -88,12 +94,14 @@ export function signupBody(
   const asked = questionsFor(questions, discipline).map((q) => q.id);
   return {
     discipline,
+    daysPerWeek,
     answers: Object.fromEntries(asked.filter((id) => answers[id]).map((id) => [id, answers[id]])),
     firstName: form.firstName.trim(),
     lastName: form.lastName.trim(),
     email: form.email.trim(),
     phone: form.phone.trim(),
     privacy: form.privacy,
+    disclaimer: form.disclaimer,
     marketing: form.marketing,
     lang: lang.startsWith('en') ? 'en' : 'it',
     elapsedMs: Math.round(check.elapsedMs),

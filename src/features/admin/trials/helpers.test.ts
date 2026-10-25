@@ -1,7 +1,8 @@
-import { filterTrials, rangeGaps, rangeLabel, scoreRange, whatsappUrl } from './helpers';
+import { filterTrials, missingDays, rangeGaps, rangeLabel, scoreRange, whatsappUrl } from './helpers';
 import type { Questionnaire, Trial, TrialTemplate } from './types';
 
 const questionnaire: Questionnaire = {
+  dayOptions: [2, 3, 4],
   questions: [
     { id: 'a', text: 'A', discipline: null, options: [{ id: 'x', text: 'X', points: 0 }, { id: 'y', text: 'Y', points: 3 }] },
     { id: 'b', text: 'B', discipline: 'gym', options: [{ id: 'x', text: 'X', points: 1 }, { id: 'y', text: 'Y', points: 2 }] },
@@ -11,13 +12,13 @@ const questionnaire: Questionnaire = {
 
 const template = (over: Partial<TrialTemplate>): TrialTemplate => ({
   id: 1, name: 'T', discipline: 'gym', description: null, userId: 9, online: true, minScore: null, maxScore: null,
-  exerciseCount: 0, videoCount: 0, createdAt: '', updatedAt: '', ...over,
+  exerciseCount: 0, videoCount: 0, dayCount: 3, createdAt: '', updatedAt: '', ...over,
 });
 
 const trial = (over: Partial<Trial>): Trial => ({
   id: 1, kind: 'free_session', templateId: 1, templateName: 'Palestra base', userId: 5, firstName: 'Mario', lastName: 'Rossi',
   email: null, phone: '333 1234567', discipline: 'gym', score: null, answers: [], marketingConsent: false, status: 'to_contact',
-  notes: null, createdAt: '2026-10-01 10:00:00', openedAt: null, expiresAt: null, lastLogin: null, logCount: 0, state: 'not_opened', daysLeft: 7,
+  notes: null, createdAt: '2026-10-01 10:00:00', disclaimerAcceptedAt: null, openedAt: null, expiresAt: null, lastLogin: null, logCount: 0, state: 'not_opened', daysLeft: 7,
   ...over,
 });
 
@@ -31,6 +32,13 @@ describe('trial helpers', () => {
     const templates = [template({ minScore: 1, maxScore: 2 }), template({ id: 2, minScore: 4 }), template({ id: 3, online: false, minScore: 3, maxScore: 3 })];
     expect(rangeGaps(templates, questionnaire, 'gym')).toEqual({ min: 1, max: 5, uncovered: [3], hasOnline: true });
     expect(rangeGaps(templates, questionnaire, 'calisthenics').hasOnline).toBe(false);
+  });
+
+  it('missingDays lists the days offered that no online template of the discipline has', () => {
+    const templates = [template({ dayCount: 3 }), template({ id: 2, dayCount: 4, online: false }), template({ id: 3, discipline: 'calisthenics', dayCount: 2 })];
+    expect(missingDays(templates, questionnaire, 'gym')).toEqual([2, 4]);
+    expect(missingDays(templates, questionnaire, 'calisthenics')).toEqual([3, 4]);
+    expect(missingDays([], questionnaire, 'gym')).toEqual([]);
   });
 
   it('rangeLabel', () => {

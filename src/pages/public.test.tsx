@@ -117,15 +117,17 @@ describe('FreeTrial', () => {
       'GET /trials/questionnaire': {
         disciplines: ['gym'],
         trialDays: 7,
+        dayOptions: [3, 4],
         questions: [{ id: 'a', text: 'Da quanto ti alleni?', textEn: null, discipline: null, options: [{ id: 'x', text: 'Da poco', textEn: null }, { id: 'y', text: 'Da anni', textEn: null }] }],
       },
     });
     renderWithProviders(<FreeTrial />);
     expect(document.title).toBe('Prova gratuita di 7 giorni | Personal Trainer Joshua');
     expect(screen.getByRole('heading', { level: 1, name: 'Prova gratis il nostro metodo di allenamento online' })).toBeInTheDocument();
-    // One discipline only: no discipline step, straight to the first question
-    expect(await screen.findByText('Da quanto ti alleni?')).toBeInTheDocument();
-    expect(screen.getByText('Passo 1 di 2')).toBeInTheDocument();
+    // One discipline only: no discipline step, straight to the training days
+    expect(await screen.findByText('Quanti giorni a settimana pensi di allenarti?')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '3 giorni' })).toBeInTheDocument();
+    expect(screen.getByText('Passo 1 di 3')).toBeInTheDocument();
   });
 
   it('is linked from the coaching page', () => {

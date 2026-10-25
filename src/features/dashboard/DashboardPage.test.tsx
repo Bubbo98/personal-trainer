@@ -386,9 +386,30 @@ describe('DashboardPage — reviews', () => {
 
 describe('DashboardPage — trial mode', () => {
   const inDays = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 1000 - 60_000).toISOString();
-  const trialUser = (days: number) => ({ ...user, firstName: 'Mario', trial: { kind: 'free_session', expiresAt: inDays(days), daysLeft: days } });
+  const trialUser = (days: number, disclaimerAccepted = true) => ({
+    ...user,
+    firstName: 'Mario',
+    trial: { kind: 'free_session', expiresAt: inDays(days), daysLeft: days, disclaimerAccepted },
+  });
 
-  it('shows the days left and hides check-ins, the PDF plan and body composition', async () => {
+  it('a free session accepts the notice on the plan before seeing it', async () => {
+    const trial = trialUser(5, false);
+    const { calls } = setup({ api: { 'POST /auth/login-link': { token: 's', user: trial }, 'POST /trials/accept-disclaimer': null } });
+    renderPage('/dashboard/link-token');
+
+    expect(await screen.findByText(/Questa scheda è un esempio generico di allenamento/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Progressi/ })).not.toBeInTheDocument();
+    const start = screen.getByRole('button', { name: 'Inizia la prova' });
+    expect(start).toBeDisabled();
+
+    const user_ = userEvent.setup();
+    await user_.click(screen.getByLabelText("Ho letto l'avvertenza e la accetto"));
+    await user_.click(start);
+    expect((await screen.findAllByRole('button', { name: /Progressi/ })).length).toBeGreaterThan(0);
+    expect(calls.some((c) => c.method === 'POST' && c.path === '/trials/accept-disclaimer')).toBe(true);
+  });
+
+  it('shows the days left and hides check-ins, the PDF plan without a PDF and body composition', async () => {
     const trial = trialUser(5);
     // A due check-in would lock the dashboard of a client: a trial never gets one
     setup({ checkin: { shouldShow: true }, api: { 'POST /auth/login-link': { token: 's', user: trial }, 'GET /auth/verify': { user: trial } } });
@@ -404,6 +425,16 @@ describe('DashboardPage — trial mode', () => {
     const user_ = userEvent.setup();
     await user_.click(screen.getAllByRole('button', { name: /Progressi/ })[0]);
     expect(screen.queryByRole('button', { name: 'Analisi corporea' })).not.toBeInTheDocument();
+  });
+
+  it('shows the PDF plan when the trainer gave one', async () => {
+    const trial = trialUser(5);
+    const plan = { locked: false as const, originalName: 'Scheda prova.pdf', fileSize: 1000, uploadedAt: '2026-10-24 10:00:00', updatedAt: '2026-10-24 10:00:00', expirationDate: null, visibleFrom: null };
+    setup({ plan, api: { 'POST /auth/login-link': { token: 's', user: trial } } });
+    renderPage('/dashboard/link-token');
+
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'Scheda' }));
+    expect(await screen.findByText('Scheda prova.pdf')).toBeInTheDocument();
   });
 
   it('the last day says so', async () => {

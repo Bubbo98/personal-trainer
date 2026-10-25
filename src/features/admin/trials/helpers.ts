@@ -1,11 +1,11 @@
 import type { Discipline, Question, Questionnaire, Trial, TrialTemplate } from './types';
 
 /** Questions a person of that discipline answers. */
-export const questionsFor = (questionnaire: Questionnaire, discipline: Discipline) =>
+export const questionsFor = (questionnaire: Pick<Questionnaire, 'questions'>, discipline: Discipline) =>
   questionnaire.questions.filter((q) => !q.discipline || q.discipline === discipline);
 
 /** Lowest and highest score a person of that discipline can get. */
-export function scoreRange(questionnaire: Questionnaire, discipline: Discipline) {
+export function scoreRange(questionnaire: Pick<Questionnaire, 'questions'>, discipline: Discipline) {
   return questionsFor(questionnaire, discipline).reduce(
     (range, q) => {
       const points = q.options.map((o) => Number(o.points) || 0);
@@ -27,6 +27,13 @@ export function rangeGaps(templates: TrialTemplate[], questionnaire: Questionnai
   const uncovered: number[] = [];
   for (let score = min; score <= max; score++) if (online.length > 0 && !online.some((t) => covers(t, score))) uncovered.push(score);
   return { min, max, uncovered, hasOnline: online.length > 0 };
+}
+
+/** Training days offered in the questionnaire that no online template of the discipline has: they get the closest plan. */
+export function missingDays(templates: TrialTemplate[], questionnaire: Questionnaire, discipline: Discipline) {
+  const online = templates.filter((t) => t.online && t.discipline === discipline);
+  if (online.length === 0) return [];
+  return questionnaire.dayOptions.filter((d) => !online.some((t) => t.dayCount === d));
 }
 
 /** "0-6", "7+", "≤ 3", "tutti" (any) — the score range of a template. */

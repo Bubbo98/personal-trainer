@@ -16,8 +16,11 @@ import { localMidnightIso, toInputDate } from './dateInputs';
 
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
 
-/** The client's plan PDF: details, duration, unlock date, upload/replace. */
-const PlanPdfPanel = ({ userId, userName }: { userId: number; userName: string }) => {
+/**
+ * The client's plan PDF: details, duration, unlock date, upload/replace.
+ * `trial`: a trial account or template, whose PDF has no duration nor unlock date (the trial has its own end).
+ */
+const PlanPdfPanel = ({ userId, userName, trial = false }: { userId: number; userName: string; trial?: boolean }) => {
   const { t } = useTranslation('admin');
   const toast = useToast();
   const confirm = useConfirm();
@@ -95,10 +98,12 @@ const PlanPdfPanel = ({ userId, userName }: { userId: number; userName: string }
     if (!upload.file) return;
     const form = new FormData();
     form.append('pdf', upload.file);
-    form.append('durationMonths', String(upload.months));
-    form.append('durationDays', String(upload.days));
-    const visibleFrom = localMidnightIso(upload.visibleFrom);
-    if (visibleFrom) form.append('visibleFrom', visibleFrom);
+    if (!trial) {
+      form.append('durationMonths', String(upload.months));
+      form.append('durationDays', String(upload.days));
+      const visibleFrom = localMidnightIso(upload.visibleFrom);
+      if (visibleFrom) form.append('visibleFrom', visibleFrom);
+    }
     const replacing = Boolean(info);
     if (await run('upload', () => adminApi.post(`/pdf/admin/upload/${userId}`, form), replacing ? t('pdf.replaced') : t('pdf.uploaded'))) {
       setUpload({ file: null, months: 2, days: 0, visibleFrom: '' });
@@ -166,44 +171,48 @@ const PlanPdfPanel = ({ userId, userName }: { userId: number; userName: string }
             </div>
           </div>
 
-          <section className="bg-white border border-gray-200 rounded-xl p-4">
-            <button type="button" aria-expanded={extendOpen} onClick={() => setExtendOpen(!extendOpen)} className="w-full flex items-center gap-2 text-left font-semibold text-gray-900">
-              <FiChevronDown className={`w-4 h-4 transition-transform ${extendOpen ? 'rotate-180' : '-rotate-90'}`} aria-hidden />
-              {t('pdf.durationTitle')}
-            </button>
-            {extendOpen && (
-              <div className="space-y-3 mt-3">
-                <p className="text-sm text-gray-600">{t('pdf.durationHint')}</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <TextField label={t('pdf.months')} type="number" value={extend.months} onChange={(e) => setExtend((x) => ({ ...x, months: parseInt(e.target.value, 10) || 0 }))} />
-                  <TextField label={t('pdf.days')} type="number" value={extend.days} onChange={(e) => setExtend((x) => ({ ...x, days: parseInt(e.target.value, 10) || 0 }))} />
-                </div>
-                <Button fullWidth onClick={applyExtend} loading={busy === 'extend'} disabled={extend.months === 0 && extend.days === 0}>
-                  {t('pdf.applyDuration')}
-                </Button>
-              </div>
-            )}
-          </section>
+          {!trial && (
+            <>
+              <section className="bg-white border border-gray-200 rounded-xl p-4">
+                <button type="button" aria-expanded={extendOpen} onClick={() => setExtendOpen(!extendOpen)} className="w-full flex items-center gap-2 text-left font-semibold text-gray-900">
+                  <FiChevronDown className={`w-4 h-4 transition-transform ${extendOpen ? 'rotate-180' : '-rotate-90'}`} aria-hidden />
+                  {t('pdf.durationTitle')}
+                </button>
+                {extendOpen && (
+                  <div className="space-y-3 mt-3">
+                    <p className="text-sm text-gray-600">{t('pdf.durationHint')}</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <TextField label={t('pdf.months')} type="number" value={extend.months} onChange={(e) => setExtend((x) => ({ ...x, months: parseInt(e.target.value, 10) || 0 }))} />
+                      <TextField label={t('pdf.days')} type="number" value={extend.days} onChange={(e) => setExtend((x) => ({ ...x, days: parseInt(e.target.value, 10) || 0 }))} />
+                    </div>
+                    <Button fullWidth onClick={applyExtend} loading={busy === 'extend'} disabled={extend.months === 0 && extend.days === 0}>
+                      {t('pdf.applyDuration')}
+                    </Button>
+                  </div>
+                )}
+              </section>
 
-          <section className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
-            <h4 className="font-semibold text-gray-900">{t('pdf.visibleFromTitle')}</h4>
-            <input
-              type="date"
-              value={unlockDate ?? toInputDate(info.visibleFrom)}
-              onChange={(e) => setUnlockDate(e.target.value)}
-              aria-label={t('pdf.visibleFromTitle')}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-            />
-            <div className="flex gap-2">
-              <Button className="flex-1" onClick={() => setVisibleFrom(localMidnightIso(unlockDate ?? toInputDate(info.visibleFrom)))} loading={busy === 'visible'}>
-                {t('pdf.saveVisibleFrom')}
-              </Button>
-              <Button variant="secondary" onClick={() => setVisibleFrom(null)} disabled={busy === 'visible'}>
-                {t('pdf.unlock')}
-              </Button>
-            </div>
-            <p className="text-xs text-gray-400">{t('pdf.visibleFromHint')}</p>
-          </section>
+              <section className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
+                <h4 className="font-semibold text-gray-900">{t('pdf.visibleFromTitle')}</h4>
+                <input
+                  type="date"
+                  value={unlockDate ?? toInputDate(info.visibleFrom)}
+                  onChange={(e) => setUnlockDate(e.target.value)}
+                  aria-label={t('pdf.visibleFromTitle')}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                />
+                <div className="flex gap-2">
+                  <Button className="flex-1" onClick={() => setVisibleFrom(localMidnightIso(unlockDate ?? toInputDate(info.visibleFrom)))} loading={busy === 'visible'}>
+                    {t('pdf.saveVisibleFrom')}
+                  </Button>
+                  <Button variant="secondary" onClick={() => setVisibleFrom(null)} disabled={busy === 'visible'}>
+                    {t('pdf.unlock')}
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-400">{t('pdf.visibleFromHint')}</p>
+              </section>
+            </>
+          )}
         </>
       ) : (
         <EmptyState icon={<FiFileText className="w-12 h-12" aria-hidden />} title={t('pdf.empty')} />
@@ -226,17 +235,21 @@ const PlanPdfPanel = ({ userId, userName }: { userId: number; userName: string }
             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
           />
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <TextField label={t('pdf.durationMonths')} type="number" min={0} value={upload.months} onChange={(e) => setUpload((u) => ({ ...u, months: Math.max(0, parseInt(e.target.value, 10) || 0) }))} />
-          <TextField label={t('pdf.durationDays')} type="number" min={0} value={upload.days} onChange={(e) => setUpload((u) => ({ ...u, days: Math.max(0, parseInt(e.target.value, 10) || 0) }))} />
-        </div>
-        <TextField
-          label={t('pdf.visibleFrom')}
-          type="date"
-          value={upload.visibleFrom}
-          onChange={(e) => setUpload((u) => ({ ...u, visibleFrom: e.target.value }))}
-          hint={upload.visibleFrom ? t('pdf.visibleFromPreview', { date: formatDate(upload.visibleFrom, 'long') }) : undefined}
-        />
+        {!trial && (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <TextField label={t('pdf.durationMonths')} type="number" min={0} value={upload.months} onChange={(e) => setUpload((u) => ({ ...u, months: Math.max(0, parseInt(e.target.value, 10) || 0) }))} />
+              <TextField label={t('pdf.durationDays')} type="number" min={0} value={upload.days} onChange={(e) => setUpload((u) => ({ ...u, days: Math.max(0, parseInt(e.target.value, 10) || 0) }))} />
+            </div>
+            <TextField
+              label={t('pdf.visibleFrom')}
+              type="date"
+              value={upload.visibleFrom}
+              onChange={(e) => setUpload((u) => ({ ...u, visibleFrom: e.target.value }))}
+              hint={upload.visibleFrom ? t('pdf.visibleFromPreview', { date: formatDate(upload.visibleFrom, 'long') }) : undefined}
+            />
+          </>
+        )}
         {upload.file && (
           <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
             <div className="flex items-center gap-2 min-w-0">

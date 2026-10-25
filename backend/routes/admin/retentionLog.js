@@ -19,7 +19,7 @@ function monthRange(month) {
 async function returnedPhones() {
     const rows = await db.query(
         `SELECT u.phone FROM users u LEFT JOIN user_pdf_files p ON p.user_id = u.id
-         WHERE u.is_active = 1 AND u.phone IS NOT NULL
+         WHERE u.is_active = 1 AND u.account_type = 'client' AND u.phone IS NOT NULL
            AND (p.expiration_date IS NULL OR p.expiration_date >= datetime('now'))`
     );
     return new Set(rows.map((r) => normalizePhone(r.phone)).filter(Boolean));

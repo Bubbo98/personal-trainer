@@ -8,13 +8,13 @@ import type { Trial, TrialTemplate } from './types';
 
 const template: TrialTemplate = {
   id: 3, name: 'Palestra base', discipline: 'gym', description: null, userId: 900, online: true, minScore: 0, maxScore: 6,
-  exerciseCount: 6, videoCount: 6, createdAt: '', updatedAt: '',
+  exerciseCount: 6, videoCount: 6, dayCount: 3, createdAt: '', updatedAt: '',
 };
 
 const trial = (over: Partial<Trial>): Trial => ({
   id: 1, kind: 'free_session', templateId: 3, templateName: 'Palestra base', userId: 901, firstName: 'Mario', lastName: 'Rossi',
   email: null, phone: '333 1234567', discipline: 'gym', score: null, answers: [], marketingConsent: false, status: 'to_contact',
-  notes: null, createdAt: '2026-10-20 10:00:00', openedAt: '2026-10-20 11:00:00', expiresAt: '2026-10-27 11:00:00', lastLogin: null,
+  notes: null, createdAt: '2026-10-20 10:00:00', disclaimerAcceptedAt: null, openedAt: '2026-10-20 11:00:00', expiresAt: '2026-10-27 11:00:00', lastLogin: null,
   logCount: 4, state: 'ended', daysLeft: 0, ...over,
 });
 
@@ -87,7 +87,7 @@ describe('Admin — trials', () => {
     mockApi({
       ...base,
       'GET /admin/trial-questionnaire': {
-        questionnaire: { questions: [{ id: 'a', text: 'A', discipline: null, options: [{ id: 'x', text: 'X', points: 0 }, { id: 'y', text: 'Y', points: 9 }] }] },
+        questionnaire: { dayOptions: [3, 4], questions: [{ id: 'a', text: 'A', discipline: null, options: [{ id: 'x', text: 'X', points: 0 }, { id: 'y', text: 'Y', points: 9 }] }] },
         isDefault: true,
         updatedAt: null,
       },
@@ -95,5 +95,28 @@ describe('Admin — trials', () => {
     renderAdmin('/admin/trials/templates');
     expect(await screen.findByText(/Calisthenics: nessuna scheda è disponibile online/)).toBeInTheDocument();
     expect(screen.getByText(/Palestra: i punteggi 7, 8, 9 non rientrano/)).toBeInTheDocument();
+    expect(screen.getByText(/Palestra: nessuna scheda online ha 4 giorni/)).toBeInTheDocument();
+    expect(screen.getByText(/3 giorni · 6 esercizi/)).toBeInTheDocument();
+  });
+
+  it('the questionnaire editor sets the training days offered', async () => {
+    const { calls } = mockApi({
+      ...base,
+      'GET /admin/trial-questionnaire': {
+        questionnaire: { dayOptions: [3, 4], questions: [{ id: 'a', text: 'A', discipline: null, options: [{ id: 'x', text: 'X', points: 0 }, { id: 'y', text: 'Y', points: 1 }] }] },
+        isDefault: false,
+        updatedAt: '2026-10-20 10:00:00',
+      },
+      'PUT /admin/trial-questionnaire': null,
+    });
+    renderAdmin('/admin/trials/questionnaire');
+    const user = userEvent.setup();
+    await user.click(await screen.findByLabelText('5 giorni'));
+    await user.click(screen.getByLabelText('3 giorni'));
+    await user.click(screen.getByLabelText('4 giorni'));
+    expect(screen.getByText('Scegli almeno 2 risposte.')).toBeInTheDocument();
+    await user.click(screen.getByLabelText('2 giorni'));
+    await user.click(screen.getByRole('button', { name: 'Salva modifiche' }));
+    expect(calls.find((c) => c.method === 'PUT')?.body).toMatchObject({ dayOptions: [2, 5] });
   });
 });

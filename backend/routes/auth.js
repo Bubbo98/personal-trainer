@@ -38,7 +38,7 @@ const toUser = (u, trial = null) => ({
     lastName: u.last_name,
     trainerId: u.trainer_id || 1,
     // Trial users see the dashboard in trial mode (see services/trials)
-    ...(trial ? { trial: { kind: trial.kind, expiresAt: trial.expiresAt, daysLeft: trial.daysLeft } } : {}),
+    ...(trial ? { trial: { kind: trial.kind, expiresAt: trial.expiresAt, daysLeft: trial.daysLeft, disclaimerAccepted: !!trial.disclaimerAcceptedAt } } : {}),
 });
 
 function recordLogin(userId) {

@@ -1,7 +1,14 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useMutation } from '@tanstack/react-query';
 import { FiArrowRight, FiClock, FiMessageCircle, FiPhone } from 'react-icons/fi';
+import Button from '../../../components/ui/Button';
+import { Alert } from '../../../components/ui/States';
+import { TrialNoticeCheck } from '../../../components/TrialNotice';
 import { CONTACT } from '../../../config';
+import { clientApi } from '../../../lib/api';
+import { useErrorMessage } from '../../../lib/errors';
 import { formatDate } from '../../../lib/format';
 import type { TrialSession } from '../types';
 import { trialDaysLeft } from './trialDays';
@@ -49,6 +56,25 @@ export const TrialBanner = ({ trial }: { trial: TrialSession }) => {
         </div>
       </div>
       <ContactButtons dark />
+    </section>
+  );
+};
+
+/** Before the plan of a trial whose notice wasn't accepted yet (free sessions skip the signup form). */
+export const TrialNoticeGate = ({ onAccepted }: { onAccepted: () => void }) => {
+  const { t } = useTranslation('dashboard');
+  const errorMessage = useErrorMessage();
+  const [checked, setChecked] = useState(false);
+  const accept = useMutation({ mutationFn: () => clientApi.post('/trials/accept-disclaimer'), onSuccess: onAccepted });
+
+  return (
+    <section className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-5 sm:p-6 space-y-4">
+      <p className="text-gray-700">{t('trial.noticeIntro')}</p>
+      <TrialNoticeCheck checked={checked} onChange={setChecked} />
+      {accept.isError && <Alert kind="error">{errorMessage(accept.error)}</Alert>}
+      <Button fullWidth size="lg" disabled={!checked} loading={accept.isPending} onClick={() => accept.mutate()}>
+        {t('trial.noticeStart')}
+      </Button>
     </section>
   );
 };
