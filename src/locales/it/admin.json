@@ -769,7 +769,7 @@
     },
     "questionnaire": {
       "title": "Questionario della prova online",
-      "subtitle": "Chi si iscrive dal sito sceglie palestra o calisthenics, quanti giorni a settimana allenarsi e risponde a queste domande. I giorni scelgono le schede con quel numero di giorni; tra quelle, la somma dei punti sceglie la scheda modello.",
+      "subtitle": "Chi si iscrive dal sito sceglie palestra o calisthenics, quanti giorni a settimana allenarsi e risponde a queste domande. I giorni scelgono le schede con quel numero di giorni; tra quelle, la somma dei punti sceglie la scheda modello. Le domande senza punti servono solo a te: le risposte le trovi nella pagina della prova.",
       "isDefault": "Questo è il questionario di partenza: modificalo e salvalo per renderlo tuo.",
       "updatedAt": "Ultima modifica: {{date}}",
       "range": "punteggio possibile da {{min}} a {{max}}",
@@ -781,6 +781,14 @@
       "answerText": "Risposta (italiano)",
       "answerTextEn": "Risposta (inglese)",
       "points": "Punti",
+      "type": "Tipo:",
+      "types": {
+        "scored": "Con punteggio",
+        "choice": "Scelta singola, senza punti",
+        "multiple": "Scelta multipla, senza punti",
+        "open": "Risposta aperta, senza punti"
+      },
+      "openHint": "La persona scrive la risposta con parole sue (facoltativa). La trovi nella pagina della prova, tra le risposte.",
       "addAnswer": "Aggiungi risposta",
       "removeAnswer": "Rimuovi risposta",
       "addQuestion": "Aggiungi domanda",

@@ -263,6 +263,38 @@ describe('online trial', () => {
         assert.equal((await api('PUT', '/api/admin/trial-questionnaire', { token: adminToken(), body: oneOption })).status, 400);
     });
 
+    it('questions without points: one answer, several answers, free text', () => {
+        const { validateQuestionnaire, scoreAnswers } = require('../services/trialQuestionnaire');
+        const two = [{ id: 'a', text: 'A', points: 4 }, { id: 'b', text: 'B', points: 9 }];
+        const questionnaire = validateQuestionnaire({
+            questions: [
+                { id: 'level', text: 'Livello?', options: two },
+                { id: 'pain', text: 'Dolori?', type: 'choice', options: two },
+                { id: 'goals', text: 'Obiettivi?', type: 'multiple', options: [...two, { id: 'c', text: 'C', points: 1 }] },
+                { id: 'notes', text: 'Raccontaci', type: 'open', options: two },
+            ],
+        });
+        assert.deepEqual(questionnaire.questions.map((q) => q.type), ['scored', 'choice', 'multiple', 'open'], 'no type: scored');
+        assert.deepEqual(questionnaire.questions[1].options.map((o) => o.points), [0, 0], 'unscored answers keep no points');
+        assert.deepEqual(questionnaire.questions[3].options, []);
+        assert.throws(() => validateQuestionnaire({ questions: [{ id: 'x', text: 'X', type: 'free', options: two }] }), /invalid type/);
+
+        const answers = { level: 'b', pain: 'a', goals: ['c', 'a', 'zzz'] };
+        const result = scoreAnswers({ ...questionnaire, dayOptions: [3] }, 'gym', { ...answers, notes: '  Mal di schiena  ' }, 3);
+        assert.equal(result.score, 9, 'only the scored question counts');
+        assert.deepEqual(result.answers.slice(1), [
+            { question: 'Livello?', answer: 'B', points: 9 },
+            { question: 'Dolori?', answer: 'A' },
+            { question: 'Obiettivi?', answer: 'A, C' },
+            { question: 'Raccontaci', answer: 'Mal di schiena' },
+        ]);
+        assert.equal(scoreAnswers({ ...questionnaire, dayOptions: [3] }, 'gym', answers, 3).answers.length, 4, 'the open one may be left out');
+        for (const goals of [[], 'a', undefined]) {
+            assert.throws(() => scoreAnswers({ ...questionnaire, dayOptions: [3] }, 'gym', { ...answers, goals }, 3), /answer every question/);
+        }
+        assert.throws(() => scoreAnswers({ ...questionnaire, dayOptions: [3] }, 'gym', { ...answers, pain: undefined }, 3), /answer every question/);
+    });
+
     // Each signup comes from its own IP unless one is given (the per-IP daily limit is tested apart)
     let nextIp = 1;
     const signup = (body, ip = `10.0.0.${nextIp++}`) => api('POST', '/api/trials/signup', {

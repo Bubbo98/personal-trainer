@@ -39,7 +39,8 @@ export interface TemplateInput {
 export interface TrialAnswer {
   question: string;
   answer: string;
-  points: number;
+  /** Only on scored questions. */
+  points?: number;
   /** Set on the training days answer (no points). */
   days?: number;
 }
@@ -89,12 +90,18 @@ export interface QuestionOption {
   points: number;
 }
 
+/** scored: one answer, its points add up to the score; choice / multiple: one / one or more answers, no points; open: free text, optional. */
+export type QuestionType = 'scored' | 'choice' | 'multiple' | 'open';
+export const QUESTION_TYPES: QuestionType[] = ['scored', 'choice', 'multiple', 'open'];
+
 export interface Question {
   id: string;
   text: string;
   textEn?: string;
   /** null: asked for both disciplines. */
   discipline: Discipline | null;
+  /** Missing on questions saved before the types: scored. */
+  type?: QuestionType;
   options: QuestionOption[];
 }
 

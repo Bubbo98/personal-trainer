@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { FiArrowLeft, FiCheckCircle, FiMail, FiMessageCircle } from 'react-icons/fi';
 import Button from '../../components/ui/Button';
-import { Checkbox, TextField } from '../../components/ui/Field';
+import { Checkbox, TextAreaField, TextField } from '../../components/ui/Field';
 import { Alert, ErrorState, LoadingState } from '../../components/ui/States';
 import { CONTACT, TURNSTILE_SITE_KEY } from '../../config';
 import { ApiError, publicApi } from '../../lib/api';
@@ -14,10 +14,12 @@ import Turnstile from './Turnstile';
 import {
   contactErrors,
   effectiveDiscipline,
+  isAnswered,
   localized,
   questionsFor,
   signupBody,
   wizardSteps,
+  type Answer,
   type ContactForm,
   type Discipline,
   type PublicQuestionnaire,
@@ -73,7 +75,7 @@ const Wizard = ({ questionnaire }: { questionnaire: PublicQuestionnaire }) => {
   const { t, i18n } = useTranslation('public');
   const [chosen, setChosen] = useState<Discipline | null>(null);
   const [days, setDays] = useState<number | null>(null);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, Answer>>({});
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<ContactForm>({ firstName: '', lastName: '', email: '', phone: '', privacy: false, disclaimer: false, marketing: false });
   const [showErrors, setShowErrors] = useState(false);
@@ -179,23 +181,58 @@ const Wizard = ({ questionnaire }: { questionnaire: PublicQuestionnaire }) => {
       {current.startsWith('q:') &&
         (() => {
           const question = questions.find((q) => `q:${q.id}` === current)!;
+          const answer = answers[question.id];
+          const setAnswer = (value: Answer) => setAnswers((a) => ({ ...a, [question.id]: value }));
+          if (question.type === 'open') {
+            const text = typeof answer === 'string' ? answer : '';
+            return (
+              <div className="space-y-4" key={question.id}>
+                <TextAreaField
+                  label={<span className="text-xl font-bold text-gray-900">{localized(question, i18n.language)}</span>}
+                  placeholder={t('trialSignup.openPlaceholder')}
+                  rows={4}
+                  maxLength={1000}
+                  value={text}
+                  onChange={(e) => setAnswer(e.target.value)}
+                />
+                <Button size="lg" fullWidth variant={text.trim() ? 'primary' : 'secondary'} onClick={next}>
+                  {text.trim() ? t('trialSignup.continue') : t('trialSignup.skip')}
+                </Button>
+              </div>
+            );
+          }
+          const multiple = question.type === 'multiple';
+          const chosen = Array.isArray(answer) ? answer : [];
+          const isChosen = (id: string) => (multiple ? chosen.includes(id) : answer === id);
           return (
             <fieldset className="space-y-3" key={question.id}>
-              <legend className="text-xl font-bold text-gray-900 mb-4">{localized(question, i18n.language)}</legend>
+              <legend className="text-xl font-bold text-gray-900 mb-4">
+                {localized(question, i18n.language)}
+                {multiple && <span className="block text-sm font-normal text-gray-500 mt-1">{t('trialSignup.multipleHint')}</span>}
+              </legend>
               {question.options.map((option) => (
                 <button
                   key={option.id}
                   type="button"
-                  aria-pressed={answers[question.id] === option.id}
+                  aria-pressed={isChosen(option.id)}
                   onClick={() => {
-                    setAnswers((a) => ({ ...a, [question.id]: option.id }));
+                    if (multiple) {
+                      setAnswer(chosen.includes(option.id) ? chosen.filter((id) => id !== option.id) : [...chosen, option.id]);
+                      return;
+                    }
+                    setAnswer(option.id);
                     next();
                   }}
-                  className={choiceClass(answers[question.id] === option.id)}
+                  className={choiceClass(isChosen(option.id))}
                 >
                   {localized(option, i18n.language)}
                 </button>
               ))}
+              {multiple && (
+                <Button size="lg" fullWidth onClick={next} disabled={!isAnswered(answer)}>
+                  {t('trialSignup.continue')}
+                </Button>
+              )}
             </fieldset>
           );
         })()}

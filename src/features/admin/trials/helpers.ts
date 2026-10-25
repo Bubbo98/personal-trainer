@@ -4,9 +4,11 @@ import type { Discipline, Question, Questionnaire, Trial, TrialTemplate } from '
 export const questionsFor = (questionnaire: Pick<Questionnaire, 'questions'>, discipline: Discipline) =>
   questionnaire.questions.filter((q) => !q.discipline || q.discipline === discipline);
 
-/** Lowest and highest score a person of that discipline can get. */
+export const questionType = (q: Pick<Question, 'type'>) => q.type ?? 'scored';
+
+/** Lowest and highest score a person of that discipline can get (scored questions only). */
 export function scoreRange(questionnaire: Pick<Questionnaire, 'questions'>, discipline: Discipline) {
-  return questionsFor(questionnaire, discipline).reduce(
+  return questionsFor(questionnaire, discipline).filter((q) => questionType(q) === 'scored').reduce(
     (range, q) => {
       const points = q.options.map((o) => Number(o.points) || 0);
       if (points.length === 0) return range;
@@ -65,7 +67,7 @@ export const newId = (taken: string[]) => {
 
 export const emptyQuestion = (taken: string[]): Question => {
   const id = newId(taken);
-  return { id, text: '', textEn: '', discipline: null, options: [{ id: 'a', text: '', textEn: '', points: 0 }, { id: 'b', text: '', textEn: '', points: 1 }] };
+  return { id, text: '', textEn: '', discipline: null, type: 'scored', options: [{ id: 'a', text: '', textEn: '', points: 0 }, { id: 'b', text: '', textEn: '', points: 1 }] };
 };
 
 /** The trials to call first: ended and still to contact, then running ones. */

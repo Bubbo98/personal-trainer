@@ -184,12 +184,12 @@ const AnswersCard = ({ trial }: { trial: Trial }) => {
         {trial.answers.map((a, i) => (
           <div key={i} className="py-2 flex flex-col sm:flex-row sm:justify-between gap-1">
             <dt className="text-sm text-gray-600">{a.question}</dt>
-            <dd className="text-sm font-medium text-gray-900 sm:text-right">
+            <dd className="text-sm font-medium text-gray-900 sm:text-right whitespace-pre-line">
               {a.days !== undefined ? (
                 t('trials.daysPerWeek', { count: a.days })
               ) : (
                 <>
-                  {a.answer} <span className="text-xs text-gray-400">({t('trials.points', { count: a.points })})</span>
+                  {a.answer} {a.points !== undefined && <span className="text-xs text-gray-400">({t('trials.points', { count: a.points })})</span>}
                 </>
               )}
             </dd>

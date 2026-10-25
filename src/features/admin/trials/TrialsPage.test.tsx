@@ -119,4 +119,32 @@ describe('Admin — trials', () => {
     await user.click(screen.getByRole('button', { name: 'Salva modifiche' }));
     expect(calls.find((c) => c.method === 'PUT')?.body).toMatchObject({ dayOptions: [2, 5] });
   });
+
+  it('a question without points hides the points; an open one has no answers', async () => {
+    const { calls } = mockApi({
+      ...base,
+      'GET /admin/trial-questionnaire': {
+        questionnaire: { dayOptions: [3, 4], questions: [{ id: 'a', text: 'A', discipline: null, options: [{ id: 'x', text: 'X', points: 0 }, { id: 'y', text: 'Y', points: 4 }] }] },
+        isDefault: false,
+        updatedAt: '2026-10-20 10:00:00',
+      },
+      'PUT /admin/trial-questionnaire': null,
+    });
+    renderAdmin('/admin/trials/questionnaire');
+    const user = userEvent.setup();
+    const type = await screen.findByLabelText('Tipo:');
+    expect(screen.getAllByLabelText('Punti')).toHaveLength(2);
+    expect(screen.getAllByText(/punteggio possibile da 0 a 4/)).toHaveLength(2);
+
+    await user.selectOptions(type, 'multiple');
+    expect(screen.queryByLabelText('Punti')).not.toBeInTheDocument();
+    expect(screen.getAllByText(/punteggio possibile da 0 a 0/)).toHaveLength(2);
+
+    await user.selectOptions(type, 'open');
+    expect(screen.queryByLabelText('Risposta (italiano)')).not.toBeInTheDocument();
+    await user.selectOptions(type, 'choice');
+    expect(screen.getAllByLabelText('Risposta (italiano)')).toHaveLength(2);
+    await user.click(screen.getByRole('button', { name: 'Salva modifiche' }));
+    expect(calls.find((c) => c.method === 'PUT')?.body).toMatchObject({ questions: [{ id: 'a', type: 'choice' }] });
+  });
 });

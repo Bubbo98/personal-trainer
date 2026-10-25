@@ -26,6 +26,8 @@ describe('trial helpers', () => {
   it('scoreRange adds the lowest and highest points of the questions of the discipline', () => {
     expect(scoreRange(questionnaire, 'gym')).toEqual({ min: 1, max: 5 });
     expect(scoreRange(questionnaire, 'calisthenics')).toEqual({ min: -1, max: 8 });
+    const unscored = { questions: [...questionnaire.questions, { ...questionnaire.questions[0], id: 'd', type: 'choice' as const }, { id: 'e', text: 'E', discipline: null, type: 'open' as const, options: [] }] };
+    expect(scoreRange(unscored, 'gym')).toEqual({ min: 1, max: 5 });
   });
 
   it('rangeGaps lists the scores no online template covers', () => {

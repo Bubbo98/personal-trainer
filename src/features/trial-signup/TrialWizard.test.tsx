@@ -9,9 +9,9 @@ const questionnaire: PublicQuestionnaire = {
   trialDays: 7,
   dayOptions: [2, 3, 4],
   questions: [
-    { id: 'years', text: 'Da quanto ti alleni?', textEn: null, discipline: null, options: [{ id: 'new', text: 'Ho appena iniziato', textEn: null }, { id: 'old', text: 'Da anni', textEn: null }] },
-    { id: 'bench', text: 'Fai la panca?', textEn: null, discipline: 'gym', options: [{ id: 'no', text: 'No', textEn: null }, { id: 'yes', text: 'Sì', textEn: null }] },
-    { id: 'pullups', text: 'Quante trazioni?', textEn: null, discipline: 'calisthenics', options: [{ id: 'few', text: 'Poche', textEn: null }, { id: 'many', text: 'Tante', textEn: null }] },
+    { id: 'years', text: 'Da quanto ti alleni?', textEn: null, discipline: null, type: 'scored', options: [{ id: 'new', text: 'Ho appena iniziato', textEn: null }, { id: 'old', text: 'Da anni', textEn: null }] },
+    { id: 'bench', text: 'Fai la panca?', textEn: null, discipline: 'gym', type: 'scored', options: [{ id: 'no', text: 'No', textEn: null }, { id: 'yes', text: 'Sì', textEn: null }] },
+    { id: 'pullups', text: 'Quante trazioni?', textEn: null, discipline: 'calisthenics', type: 'scored', options: [{ id: 'few', text: 'Poche', textEn: null }, { id: 'many', text: 'Tante', textEn: null }] },
   ],
 };
 
@@ -80,6 +80,43 @@ describe('trial signup wizard', () => {
       website: '',
     });
     expect(calls.find((c) => c.path === '/trials/signup')?.body).toHaveProperty('elapsedMs', expect.any(Number));
+  });
+
+  it('questions without points: several answers, then free text that can be skipped', async () => {
+    const { calls } = mockApi({
+      'GET /trials/questionnaire': {
+        ...questionnaire,
+        disciplines: ['calisthenics'],
+        questions: [
+          { id: 'goals', text: 'Obiettivi?', textEn: null, discipline: null, type: 'multiple', options: [{ id: 'fat', text: 'Dimagrire', textEn: null }, { id: 'strength', text: 'Forza', textEn: null }, { id: 'skills', text: 'Skill', textEn: null }] },
+          { id: 'pain', text: 'Raccontaci i tuoi dolori', textEn: null, discipline: null, type: 'open', options: [] },
+          { id: 'notes', text: 'Altro?', textEn: null, discipline: null, type: 'open', options: [] },
+        ],
+      },
+      'POST /trials/signup': { resent: false, emailSent: true },
+    });
+    renderWithProviders(<TrialWizard />);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: '3 giorni' }));
+
+    expect(screen.getByText('Puoi scegliere piÃ¹ risposte.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continua' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Dimagrire' }));
+    await user.click(screen.getByRole('button', { name: 'Skill' }));
+    await user.click(screen.getByRole('button', { name: 'Forza' }));
+    await user.click(screen.getByRole('button', { name: 'Dimagrire' }));
+    expect(screen.getByRole('button', { name: 'Skill' })).toHaveAttribute('aria-pressed', 'true');
+    await user.click(screen.getByRole('button', { name: 'Continua' }));
+
+    await user.type(screen.getByLabelText('Raccontaci i tuoi dolori'), 'Spalla destra');
+    await user.click(screen.getByRole('button', { name: 'Continua' }));
+    await user.click(screen.getByRole('button', { name: 'Salta' }));
+
+    await fillContacts(user);
+    await user.click(screen.getByRole('button', { name: 'Inizia la prova gratuita' }));
+    await screen.findByRole('heading', { name: 'Fatto! Controlla la tua email' });
+    const body = calls.find((c) => c.path === '/trials/signup')?.body as { answers: unknown };
+    expect(body.answers).toEqual({ goals: ['skills', 'strength'], pain: 'Spalla destra' });
   });
 
   it('the back button returns to the previous answer', async () => {

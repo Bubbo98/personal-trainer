@@ -8,13 +8,23 @@ export interface PublicOption {
   textEn: string | null;
 }
 
+/** scored / choice: one answer; multiple: one or more; open: free text, optional (no options). */
+export type QuestionType = 'scored' | 'choice' | 'multiple' | 'open';
+
 export interface PublicQuestion {
   id: string;
   text: string;
   textEn: string | null;
   discipline: Discipline | null;
+  type: QuestionType;
   options: PublicOption[];
 }
+
+/** An option id, the option ids of a multiple choice, or the text of an open question. */
+export type Answer = string | string[];
+
+/** Whether the answer can be sent: open questions may stay empty. */
+export const isAnswered = (answer: Answer | undefined) => (Array.isArray(answer) ? answer.length > 0 : !!answer?.trim());
 
 /** GET /api/trials/questionnaire */
 export interface PublicQuestionnaire {
@@ -85,7 +95,7 @@ export interface BotCheck {
 export function signupBody(
   discipline: Discipline,
   daysPerWeek: number,
-  answers: Record<string, string>,
+  answers: Record<string, Answer>,
   questions: PublicQuestion[],
   form: ContactForm,
   lang: string,
@@ -95,7 +105,7 @@ export function signupBody(
   return {
     discipline,
     daysPerWeek,
-    answers: Object.fromEntries(asked.filter((id) => answers[id]).map((id) => [id, answers[id]])),
+    answers: Object.fromEntries(asked.filter((id) => isAnswered(answers[id])).map((id) => [id, answers[id]])),
     firstName: form.firstName.trim(),
     lastName: form.lastName.trim(),
     email: form.email.trim(),

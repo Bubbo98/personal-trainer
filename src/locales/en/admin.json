@@ -769,7 +769,7 @@
     },
     "questionnaire": {
       "title": "Online trial questionnaire",
-      "subtitle": "People signing up on the site choose gym or calisthenics, how many days a week to train, and answer these questions. The days pick the plans with that many days; among those, the sum of the points picks the template.",
+      "subtitle": "People signing up on the site choose gym or calisthenics, how many days a week to train, and answer these questions. The days pick the plans with that many days; among those, the sum of the points picks the template. Questions without points are just for you: you find the answers on the trial page.",
       "isDefault": "This is the starting questionnaire: edit it and save it to make it yours.",
       "updatedAt": "Last change: {{date}}",
       "range": "possible score from {{min}} to {{max}}",
@@ -781,6 +781,14 @@
       "answerText": "Answer (Italian)",
       "answerTextEn": "Answer (English)",
       "points": "Points",
+      "type": "Type:",
+      "types": {
+        "scored": "Scored",
+        "choice": "Single choice, no points",
+        "multiple": "Multiple choice, no points",
+        "open": "Open answer, no points"
+      },
+      "openHint": "The person writes the answer in their own words (optional). You find it on the trial page, with the answers.",
       "addAnswer": "Add answer",
       "removeAnswer": "Remove answer",
       "addQuestion": "Add question",

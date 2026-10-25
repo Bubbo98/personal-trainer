@@ -40,7 +40,7 @@ router.get('/questionnaire', route(async (req, res) => {
     res.json({ success: true, data: { disciplines, trialDays: TRIAL_DAYS, ...publicQuestionnaire(questionnaire) } });
 }));
 
-// POST /api/trials/signup — Body: { discipline, daysPerWeek, answers: { [questionId]: optionId }, firstName, lastName, email,
+// POST /api/trials/signup — Body: { discipline, daysPerWeek, answers: { [questionId]: optionId | optionId[] | text }, firstName, lastName, email,
 // phone, privacy: true, disclaimer: true (the notice on the use of the plan), marketing?, lang? ('it' | 'en'), elapsedMs, website (hidden trap, empty), captchaToken? }.
 // The access link goes to the email address only. An email or phone that already has a running trial gets
 // the link again (at most every 15 minutes); one whose trial is over gets 409 TRIAL_ALREADY_USED.

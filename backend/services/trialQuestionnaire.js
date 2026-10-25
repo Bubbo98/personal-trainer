@@ -7,18 +7,22 @@ const { badRequest } = require('../utils/http');
  *
  *   { dayOptions: [2, 3, 4],
  *     questions: [{ id, text, textEn?, discipline: 'gym' | 'calisthenics' | null,
+ *                   type: 'scored' | 'choice' | 'multiple' | 'open',
  *                   options: [{ id, text, textEn?, points }] }] }
  *
  * The person first picks the discipline (gym or calisthenics), then how many days a
  * week they mean to train (always asked, one of dayOptions); then answers the
- * questions of that discipline plus those with discipline null. The points of the
- * chosen options add up to the score; the days and the score pick the trial template
- * (see services/trials). Visitors never see the points.
+ * questions of that discipline plus those with discipline null. Only 'scored'
+ * questions give points: the points of the chosen options add up to the score; the
+ * days and the score pick the trial template (see services/trials). 'choice' takes one
+ * answer and 'multiple' one or more, without points; 'open' is free text, optional,
+ * without options. Visitors never see the points.
  */
 
 const SETTING_KEY = 'trial_questionnaire';
 const DISCIPLINES = ['gym', 'calisthenics'];
-const LIMITS = { questions: 20, options: 8, text: 300, points: 100 };
+const LIMITS = { questions: 20, options: 8, text: 300, points: 100, openAnswer: 1000 };
+const TYPES = ['scored', 'choice', 'multiple', 'open'];
 const DEFAULT_DAY_OPTIONS = [2, 3, 4];
 const DAYS_QUESTION = 'Quanti giorni a settimana pensi di allenarti?';
 
@@ -97,6 +101,9 @@ const text = (value, field, required = true) => {
 
 const ID = /^[\w.+-]{1,40}$/;
 
+// Questions saved before the types existed all gave points
+const typeOf = (question) => (question.type === undefined ? 'scored' : question.type);
+
 /** Days a week offered to the person: 2 to 7 different whole numbers from 1 to 7, sorted. */
 function validateDayOptions(value) {
     if (!Array.isArray(value)) throw badRequest('The training days to offer are required');
@@ -121,20 +128,21 @@ function validateQuestionnaire(input) {
             questionIds.add(q.id);
             const discipline = q.discipline || null;
             if (discipline !== null && !DISCIPLINES.includes(discipline)) throw badRequest(`${where}: invalid discipline`);
+            const type = typeOf(q);
+            if (!TYPES.includes(type)) throw badRequest(`${where}: invalid type`);
+            const question = { id: q.id, text: text(q.text, `${where} text`), textEn: text(q.textEn, `${where} English text`, false), discipline, type };
+            if (type === 'open') return { ...question, options: [] };
             if (!Array.isArray(q.options) || q.options.length < 2) throw badRequest(`${where}: at least 2 answers are required`);
             if (q.options.length > LIMITS.options) throw badRequest(`${where}: at most ${LIMITS.options} answers`);
 
             const optionIds = new Set();
             return {
-                id: q.id,
-                text: text(q.text, `${where} text`),
-                textEn: text(q.textEn, `${where} English text`, false),
-                discipline,
+                ...question,
                 options: q.options.map((o, j) => {
                     const at = `${where}, answer ${j + 1}`;
                     if (!o || !ID.test(o.id) || optionIds.has(o.id)) throw badRequest(`${at}: missing or duplicate id`);
                     optionIds.add(o.id);
-                    const points = Number(o.points);
+                    const points = type === 'scored' ? Number(o.points) : 0;
                     if (!Number.isInteger(points) || Math.abs(points) > LIMITS.points) throw badRequest(`${at}: points must be a whole number`);
                     return { id: o.id, text: text(o.text, `${at} text`), textEn: text(o.textEn, `${at} English text`, false), points };
                 }),
@@ -176,16 +184,19 @@ const publicQuestionnaire = (questionnaire) => ({
         text: q.text,
         textEn: q.textEn || null,
         discipline: q.discipline,
+        type: typeOf(q),
         options: q.options.map((o) => ({ id: o.id, text: o.text, textEn: o.textEn || null })),
     })),
 });
 
 /**
- * Score of a signup. answers = { [questionId]: optionId }; every question of the
- * discipline must be answered with one of its options, and days must be one of
- * dayOptions (400 otherwise).
- * @returns {{ score: number, days: number, answers: { question, answer, points, days? }[] }}
- *          answers as shown, for the admin; the days come first (they have no points)
+ * Score of a signup. answers = { [questionId]: optionId | optionId[] | text }: an option
+ * id for 'scored' and 'choice', a list of option ids for 'multiple', the text of an
+ * 'open' one (may be left out). Every choice question of the discipline must be
+ * answered with its options, and days must be one of dayOptions (400 otherwise).
+ * @returns {{ score: number, days: number, answers: { question, answer, points?, days? }[] }}
+ *          answers as shown, for the admin: points only on scored questions, unanswered
+ *          open ones left out; the days come first (they have no points)
  */
 function scoreAnswers(questionnaire, discipline, answers, days) {
     if (!DISCIPLINES.includes(discipline)) throw badRequest('Invalid discipline');
@@ -193,11 +204,24 @@ function scoreAnswers(questionnaire, discipline, answers, days) {
     if (!questionnaire.dayOptions.includes(chosenDays)) throw badRequest('Please choose the training days', 'MISSING_ANSWER');
     const given = answers && typeof answers === 'object' ? answers : {};
     let score = 0;
-    const shown = questionsFor(questionnaire, discipline).map((q) => {
-        const option = q.options.find((o) => o.id === given[q.id]);
-        if (!option) throw badRequest('Please answer every question', 'MISSING_ANSWER');
+    const missing = () => badRequest('Please answer every question', 'MISSING_ANSWER');
+    const shown = questionsFor(questionnaire, discipline).flatMap((q) => {
+        const value = given[q.id];
+        const type = typeOf(q);
+        if (type === 'open') {
+            const answer = typeof value === 'string' ? value.trim().slice(0, LIMITS.openAnswer) : '';
+            return answer ? [{ question: q.text, answer }] : [];
+        }
+        if (type === 'multiple') {
+            const chosen = q.options.filter((o) => Array.isArray(value) && value.includes(o.id));
+            if (chosen.length === 0) throw missing();
+            return [{ question: q.text, answer: chosen.map((o) => o.text).join(', ') }];
+        }
+        const option = q.options.find((o) => o.id === value);
+        if (!option) throw missing();
+        if (type === 'choice') return [{ question: q.text, answer: option.text }];
         score += option.points;
-        return { question: q.text, answer: option.text, points: option.points };
+        return [{ question: q.text, answer: option.text, points: option.points }];
     });
     const daysAnswer = { question: DAYS_QUESTION, answer: String(chosenDays), points: 0, days: chosenDays };
     return { score, days: chosenDays, answers: [daysAnswer, ...shown] };

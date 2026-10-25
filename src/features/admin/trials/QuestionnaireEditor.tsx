@@ -10,15 +10,15 @@ import { adminApi } from '../../../lib/api';
 import { useErrorMessage } from '../../../lib/errors';
 import { formatDateTime } from '../../../lib/format';
 import { adminKeys, useTrialQuestionnaire } from '../queries';
-import { emptyQuestion, newId, scoreRange } from './helpers';
-import { DISCIPLINES, WEEK_DAYS, type Discipline, type Question, type QuestionOption, type Questionnaire } from './types';
+import { emptyQuestion, newId, questionType, scoreRange } from './helpers';
+import { DISCIPLINES, QUESTION_TYPES, WEEK_DAYS, type Discipline, type Question, type QuestionOption, type QuestionType, type Questionnaire } from './types';
 
 const cell = inputClass.replace('px-4 py-2.5', 'px-3 py-2').replace('rounded-xl', 'rounded-lg') + ' text-sm';
 
-const OptionRow = ({ option, onChange, onRemove, canRemove }: { option: QuestionOption; onChange: (o: QuestionOption) => void; onRemove: () => void; canRemove: boolean }) => {
+const OptionRow = ({ option, scored, onChange, onRemove, canRemove }: { option: QuestionOption; scored: boolean; onChange: (o: QuestionOption) => void; onRemove: () => void; canRemove: boolean }) => {
   const { t } = useTranslation('admin');
   return (
-    <li className="grid grid-cols-[1fr_auto_auto] sm:grid-cols-[2fr_2fr_5rem_auto] gap-2 items-center">
+    <li className={`grid gap-2 items-center ${scored ? 'grid-cols-[1fr_auto_auto] sm:grid-cols-[2fr_2fr_5rem_auto]' : 'grid-cols-[1fr_auto] sm:grid-cols-[2fr_2fr_auto]'}`}>
       <input aria-label={t('trials.questionnaire.answerText')} placeholder={t('trials.questionnaire.answerText')} value={option.text} onChange={(e) => onChange({ ...option, text: e.target.value })} className={cell} />
       <input
         aria-label={t('trials.questionnaire.answerTextEn')}
@@ -27,15 +27,22 @@ const OptionRow = ({ option, onChange, onRemove, canRemove }: { option: Question
         onChange={(e) => onChange({ ...option, textEn: e.target.value })}
         className={`${cell} hidden sm:block`}
       />
-      <input
-        aria-label={t('trials.questionnaire.points')}
-        title={t('trials.questionnaire.points')}
-        type="number"
-        step={1}
-        value={option.points}
-        onChange={(e) => onChange({ ...option, points: e.target.value === '' ? 0 : Math.trunc(Number(e.target.value)) })}
-        className={`${cell} w-20`}
-      />
+      {scored && (
+        <input
+          aria-label={t('trials.questionnaire.points')}
+          title={t('trials.questionnaire.points')}
+          type="number"
+          step={1}
+          value={option.points}
+          onChange={(e) =>
+            onChange({
+              ...option,
+              points: e.target.value === '' ? 0 : Math.trunc(Number(e.target.value)),
+            })
+          }
+          className={`${cell} w-20`}
+        />
+      )}
       <button type="button" onClick={onRemove} disabled={!canRemove} className="p-2 text-red-400 hover:text-red-600 disabled:opacity-30" aria-label={t('trials.questionnaire.removeAnswer')}>
         <FiTrash2 className="w-4 h-4" aria-hidden />
       </button>
@@ -59,7 +66,17 @@ const QuestionCard = ({
   onRemove: () => void;
 }) => {
   const { t } = useTranslation('admin');
-  const setOption = (i: number, option: QuestionOption) => onChange({ ...question, options: question.options.map((o, j) => (j === i ? option : o)) });
+  const setOption = (i: number, option: QuestionOption) =>
+    onChange({
+      ...question,
+      options: question.options.map((o, j) => (j === i ? option : o)),
+    });
+  const type = questionType(question);
+  // An open question has no answers to pick: back to a choice, it gets two empty ones
+  const setType = (next: QuestionType) => {
+    const options = next !== 'open' && question.options.length < 2 ? emptyQuestion([]).options : question.options;
+    onChange({ ...question, type: next, options });
+  };
 
   return (
     <li className="bg-white rounded-xl shadow p-4 sm:p-5 space-y-3">
@@ -79,7 +96,13 @@ const QuestionCard = ({
       </div>
 
       <div className="grid sm:grid-cols-2 gap-2">
-        <input aria-label={t('trials.questionnaire.questionText')} placeholder={t('trials.questionnaire.questionText')} value={question.text} onChange={(e) => onChange({ ...question, text: e.target.value })} className={cell} />
+        <input
+          aria-label={t('trials.questionnaire.questionText')}
+          placeholder={t('trials.questionnaire.questionText')}
+          value={question.text}
+          onChange={(e) => onChange({ ...question, text: e.target.value })}
+          className={cell}
+        />
         <input
           aria-label={t('trials.questionnaire.questionTextEn')}
           placeholder={t('trials.questionnaire.questionTextEn')}
@@ -88,44 +111,84 @@ const QuestionCard = ({
           className={cell}
         />
       </div>
-      <label className="flex items-center gap-2 text-sm text-gray-700">
-        {t('trials.questionnaire.askedTo')}
-        <select
-          value={question.discipline ?? ''}
-          onChange={(e) => onChange({ ...question, discipline: (e.target.value || null) as Discipline | null })}
-          className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white"
-        >
-          <option value="">{t('trials.questionnaire.everyone')}</option>
-          {DISCIPLINES.map((d) => (
-            <option key={d} value={d}>
-              {t(`trials.discipline.${d}`)}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          {t('trials.questionnaire.askedTo')}
+          <select
+            value={question.discipline ?? ''}
+            onChange={(e) =>
+              onChange({
+                ...question,
+                discipline: (e.target.value || null) as Discipline | null,
+              })
+            }
+            className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white"
+          >
+            <option value="">{t('trials.questionnaire.everyone')}</option>
+            {DISCIPLINES.map((d) => (
+              <option key={d} value={d}>
+                {t(`trials.discipline.${d}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          {t('trials.questionnaire.type')}
+          <select value={type} onChange={(e) => setType(e.target.value as QuestionType)} className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white">
+            {QUESTION_TYPES.map((value) => (
+              <option key={value} value={value}>
+                {t(`trials.questionnaire.types.${value}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
 
-      <ul className="space-y-2">
-        {question.options.map((option, i) => (
-          <OptionRow
-            key={option.id}
-            option={option}
-            canRemove={question.options.length > 2}
-            onChange={(o) => setOption(i, o)}
-            onRemove={() => onChange({ ...question, options: question.options.filter((_, j) => j !== i) })}
-          />
-        ))}
-      </ul>
-      {question.options.length < 8 && (
-        <Button
-          size="sm"
-          variant="ghost"
-          icon={<FiPlus className="w-4 h-4" aria-hidden />}
-          onClick={() =>
-            onChange({ ...question, options: [...question.options, { id: newId(question.options.map((o) => o.id)), text: '', textEn: '', points: 0 }] })
-          }
-        >
-          {t('trials.questionnaire.addAnswer')}
-        </Button>
+      {type === 'open' ? (
+        <p className="text-sm text-gray-500">{t('trials.questionnaire.openHint')}</p>
+      ) : (
+        <>
+          <ul className="space-y-2">
+            {question.options.map((option, i) => (
+              <OptionRow
+                key={option.id}
+                option={option}
+                scored={type === 'scored'}
+                canRemove={question.options.length > 2}
+                onChange={(o) => setOption(i, o)}
+                onRemove={() =>
+                  onChange({
+                    ...question,
+                    options: question.options.filter((_, j) => j !== i),
+                  })
+                }
+              />
+            ))}
+          </ul>
+          {question.options.length < 8 && (
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={<FiPlus className="w-4 h-4" aria-hidden />}
+              onClick={() =>
+                onChange({
+                  ...question,
+                  options: [
+                    ...question.options,
+                    {
+                      id: newId(question.options.map((o) => o.id)),
+                      text: '',
+                      textEn: '',
+                      points: 0,
+                    },
+                  ],
+                })
+              }
+            >
+              {t('trials.questionnaire.addAnswer')}
+            </Button>
+          )}
+        </>
       )}
     </li>
   );
@@ -179,7 +242,13 @@ const Editor = ({ initial, isDefault, updatedAt }: { initial: Questionnaire; isD
       {isDefault ? (
         <Alert kind="info">{t('trials.questionnaire.isDefault')}</Alert>
       ) : (
-        updatedAt && <p className="text-xs text-gray-500">{t('trials.questionnaire.updatedAt', { date: formatDateTime(updatedAt) })}</p>
+        updatedAt && (
+          <p className="text-xs text-gray-500">
+            {t('trials.questionnaire.updatedAt', {
+              date: formatDateTime(updatedAt),
+            })}
+          </p>
+        )
       )}
 
       <div className="grid sm:grid-cols-2 gap-3">
